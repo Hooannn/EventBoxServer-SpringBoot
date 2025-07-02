@@ -45,6 +45,7 @@ public class Constant {
         public static final String ORGANIZATION_NOT_FOUND = "organization_not_found";
         public static final String USER_NOT_IN_ORGANIZATION = "user_not_in_organization";
         public static final String UNAUTHORIZED = "unauthorized";
+        public static final String CLOUDINARY_UPLOAD_FAILED = "cloudinary_upload_failed";
     }
 
     public static class SuccessCode {
@@ -56,6 +57,9 @@ public class Constant {
         public static final String RESET_PASSWORD_OTP_SUCCESS = "reset_password_otp_success";
         public static final String RESEND_VERIFY_SUCCESS = "resend_verify_success";
         public static final String VERIFY_SUCCESS = "verify_success";
+        public static final String UPDATED = "updated";
+        public static final String UPDATE_SUCCESSFULLY = "UPDATE_SUCCESSFULLY";
+        public static final String DELETE_SUCCESSFULLY = "DELETE_SUCCESSFULLY";
     }
 
     public static class ContextKey {

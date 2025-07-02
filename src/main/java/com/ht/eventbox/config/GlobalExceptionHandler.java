@@ -23,7 +23,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(
                 ExceptionResponse
                         .builder()
-                        .status(HttpStatus.BAD_REQUEST.value())
+                        .code(HttpStatus.BAD_REQUEST.value())
                         .message(errors.toString())
                         .build()
         );
@@ -34,7 +34,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(ex.getStatus()).body(
                 ExceptionResponse
                         .builder()
-                        .status(ex.getStatus().value())
+                        .code(ex.getStatus().value())
                         .message(ex.getMessage())
                         .build()
         );

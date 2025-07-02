@@ -1,5 +1,6 @@
 package com.ht.eventbox.entities;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
@@ -31,6 +32,7 @@ public class EventShow {
 
     @ManyToOne
     @JoinColumn(name = "event_id", nullable = false)
+    @JsonBackReference
     private Event event;
 
     @Column(name = "start_time", nullable = false)

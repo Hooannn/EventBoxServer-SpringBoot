@@ -1,5 +1,6 @@
 package com.ht.eventbox.entities;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ht.eventbox.enums.OrderStatus;
 import com.ht.eventbox.enums.TicketItemTraceEvent;
@@ -23,6 +24,7 @@ public class TicketItemTrace {
 
     @ManyToOne
     @JoinColumn(name = "ticket_item_id", nullable = false)
+    @JsonBackReference
     private TicketItem ticketItem;
 
     @Column(name = "description")

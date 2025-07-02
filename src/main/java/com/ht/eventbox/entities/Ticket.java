@@ -1,5 +1,6 @@
 package com.ht.eventbox.entities;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
@@ -34,6 +35,7 @@ public class Ticket {
     @ManyToOne
     @JoinColumn(name = "event_show_id", nullable = false)
     @JsonProperty("event_show")
+    @JsonBackReference
     private EventShow eventShow;
 
     @Column(name = "name", nullable = false)

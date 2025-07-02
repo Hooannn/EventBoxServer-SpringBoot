@@ -81,7 +81,7 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         response.setCharacterEncoding("UTF-8");
         ObjectMapper objectMapper = new ObjectMapper();
         String errors = objectMapper.writeValueAsString(Map.of(
-                "status", HttpServletResponse.SC_UNAUTHORIZED,
+                "code", HttpServletResponse.SC_UNAUTHORIZED,
                 "message", Constant.ErrorCode.UNAUTHORIZED
         ));
         response.getWriter().write(errors);
@@ -93,7 +93,7 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         response.setCharacterEncoding("UTF-8");
         ObjectMapper objectMapper = new ObjectMapper();
         String errors = objectMapper.writeValueAsString(Map.of(
-                "status", HttpServletResponse.SC_UNAUTHORIZED,
+                "code", HttpServletResponse.SC_UNAUTHORIZED,
                 "message", message
         ));
         response.getWriter().write(errors);

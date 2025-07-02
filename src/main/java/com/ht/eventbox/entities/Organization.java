@@ -56,6 +56,7 @@ public class Organization {
     private Set<Asset> assets = new HashSet<>();
 
     @JsonManagedReference
+    @JsonProperty("user_organizations")
     @OneToMany(mappedBy = "organization", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<UserOrganization> userOrganizations = new ArrayList<>();
 

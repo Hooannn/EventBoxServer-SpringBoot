@@ -412,7 +412,7 @@ public class AuthService {
         if (isValid) {
             String sub = jwtService.extractSub(refreshDto.getToken(), refreshSecretKey);
             String storedToken = redisService.getValue(String.format("%s:user_id:%s", Constant.RedisPrefix.REFRESH_TOKEN, sub));
-            if (storedToken.equals(refreshDto.getToken())) {
+            if (storedToken != null && storedToken.equals(refreshDto.getToken())) {
                 var user = userRepository
                         .findById(Long.valueOf(sub))
                         .orElseThrow(() -> new HttpException(Constant.ErrorCode.INVALID_CREDENTIALS, HttpStatus.FORBIDDEN));

@@ -1,6 +1,5 @@
 package com.ht.eventbox.modules.user;
 
-import com.ht.eventbox.entities.Role;
 import com.ht.eventbox.entities.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 

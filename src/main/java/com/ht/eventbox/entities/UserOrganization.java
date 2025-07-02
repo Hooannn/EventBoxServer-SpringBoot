@@ -1,5 +1,7 @@
 package com.ht.eventbox.entities;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ht.eventbox.enums.OrganizationRole;
 import jakarta.persistence.*;
@@ -28,6 +30,7 @@ public class UserOrganization {
 
     @ManyToOne
     @MapsId("organizationId")
+    @JsonBackReference
     @JoinColumn(name = "organization_id", nullable = false)
     private Organization organization;
 
@@ -46,27 +49,3 @@ public class UserOrganization {
     private java.time.LocalDateTime updatedAt;
 }
 
-@Embeddable
-@Setter
-@Getter
-@NoArgsConstructor
-@AllArgsConstructor
-class UserOrganizationId implements Serializable {
-
-    private Long userId;
-
-    private Long organizationId;
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        UserOrganizationId that = (UserOrganizationId) o;
-        return Objects.equals(userId, that.userId) && Objects.equals(organizationId, that.organizationId);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(userId, organizationId);
-    }
-}

@@ -2,8 +2,13 @@ package com.ht.eventbox.modules.organization;
 
 import com.ht.eventbox.annotations.RequiredPermissions;
 import com.ht.eventbox.config.Response;
+import com.ht.eventbox.constant.Constant;
 import com.ht.eventbox.entities.Organization;
 import com.ht.eventbox.enums.OrganizationRole;
+import com.ht.eventbox.modules.category.dtos.CreateBulkCategoriesDto;
+import com.ht.eventbox.modules.organization.dtos.CreateOrganizationDto;
+import com.ht.eventbox.modules.organization.dtos.UpdateOrganizationDto;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,7 +16,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@RestController()
+@RestController
+@CrossOrigin
 @RequestMapping(path = "/api/v1/organizations")
 @RequiredArgsConstructor
 public class OrganizationController {
@@ -32,7 +38,7 @@ public class OrganizationController {
 
     @GetMapping("/me")
     @RequiredPermissions({"read:organizations"})
-    public ResponseEntity<Response<List<Organization>>> getMyOrganizations(
+    public ResponseEntity<Response<List<Organization>>> getMy(
             @RequestAttribute("sub") String sub
     ) {
         var res = organizationService.getByUserIdAndOrganizationRole(Long.valueOf(sub), OrganizationRole.OWNER);
@@ -55,6 +61,51 @@ public class OrganizationController {
                 new Response<>(
                         HttpStatus.OK.value(),
                         HttpStatus.OK.getReasonPhrase(),
+                        res
+                )
+        );
+    }
+
+    @PutMapping("/{id}")
+    @RequiredPermissions({"update:organizations"})
+    public ResponseEntity<Response<Boolean>> updateById(
+            @RequestAttribute("sub") String sub,
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateOrganizationDto updateOrganizationDto) {
+        var res = organizationService.update(Long.valueOf(sub), id, updateOrganizationDto);
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        Constant.SuccessCode.UPDATE_SUCCESSFULLY,
+                        res
+                )
+        );
+    }
+
+    @DeleteMapping("/{id}")
+    @RequiredPermissions({"delete:organizations"})
+    public ResponseEntity<Response<Boolean>> deleteById(
+            @RequestAttribute("sub") String sub,
+            @PathVariable Long id) {
+        var res = organizationService.deleteById(Long.valueOf(sub), id);
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        Constant.SuccessCode.DELETE_SUCCESSFULLY,
+                        res
+                )
+        );
+    }
+
+    @PostMapping
+    @RequiredPermissions({"create:organizations"})
+    public ResponseEntity<Response<Boolean>> create(@RequestAttribute("sub") String sub,
+                                                    @Valid @RequestBody CreateOrganizationDto createOrganizationDto) {
+        var res = organizationService.create(Long.valueOf(sub), createOrganizationDto);
+        return ResponseEntity.created(null).body(
+                new Response<>(
+                        HttpStatus.CREATED.value(),
+                        HttpStatus.CREATED.getReasonPhrase(),
                         res
                 )
         );
