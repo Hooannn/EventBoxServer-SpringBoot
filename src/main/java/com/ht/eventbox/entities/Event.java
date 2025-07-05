@@ -23,9 +23,6 @@ import java.util.Set;
 @AllArgsConstructor
 @Entity
 @Table(name = "events")
-@Checks({
-        @Check(constraints = "start_time < end_time"),
-})
 public class Event {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -88,14 +85,6 @@ public class Event {
             inverseJoinColumns = @JoinColumn(name = "keyword_id", nullable = false)
     )
     private Set<Keyword> keywords = new HashSet<>();
-
-    @Column(name = "start_time", nullable = false)
-    @JsonProperty("start_time")
-    private java.time.LocalDateTime startTime;
-
-    @Column(name = "end_time", nullable = false)
-    @JsonProperty("end_time")
-    private java.time.LocalDateTime endTime;
 
     @CreationTimestamp
     @Column(name = "created_at")

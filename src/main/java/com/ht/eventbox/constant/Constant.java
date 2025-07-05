@@ -12,11 +12,15 @@ public class Constant {
         public static final String FORGOT_PASSWORD_OTP = "EventBox - Forgot password OTP";
         public static final String FORGOT_PASSWORD_OTP_SUCCESS = "EventBox - Forgot password OTP success";
         public static final String RESET_PASSWORD_OTP_SUCCESS = "EventBox - Reset password OTP success";
+        public static final String MEMBER_ADDED = "EventBox - You have been added to an organization";
+        public static final String MEMBER_REMOVED = "EventBox - You have been removed from an organization";
     }
 
     public static class MailTemplate {
         public static final String VERIFY_EMAIL = "verify-email";
         public static final String FORGOT_PASSWORD = "forgot-password-otp";
+        public static final String MEMBER_ADDED = "member-added";
+        public static final String MEMBER_REMOVED = "member-removed";
     }
 
     public static class ValidationCode {
@@ -29,6 +33,7 @@ public class Constant {
         public static final String OTP_NOT_EMPTY = "otp_not_empty";
         public static final String TOKEN_NOT_EMPTY = "token_not_empty";
         public static final String PLATFORM_NOT_EMPTY = "platform_not_empty";
+        public static final String ORGANIZATION_ROLE_NOT_EMPTY = "organization_role_not_empty";
     }
 
     public static class ErrorCode {

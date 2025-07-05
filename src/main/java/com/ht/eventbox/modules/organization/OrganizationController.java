@@ -6,8 +6,7 @@ import com.ht.eventbox.constant.Constant;
 import com.ht.eventbox.entities.Organization;
 import com.ht.eventbox.enums.OrganizationRole;
 import com.ht.eventbox.modules.category.dtos.CreateBulkCategoriesDto;
-import com.ht.eventbox.modules.organization.dtos.CreateOrganizationDto;
-import com.ht.eventbox.modules.organization.dtos.UpdateOrganizationDto;
+import com.ht.eventbox.modules.organization.dtos.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -106,6 +105,54 @@ public class OrganizationController {
                 new Response<>(
                         HttpStatus.CREATED.value(),
                         HttpStatus.CREATED.getReasonPhrase(),
+                        res
+                )
+        );
+    }
+
+    @PostMapping("/{id}/members")
+    @RequiredPermissions({"update:organizations"})
+    public ResponseEntity<Response<Boolean>> addMember(
+            @RequestAttribute("sub") String sub,
+            @Valid @RequestBody AddMemberDto addMemberDto,
+            @PathVariable Long id) {
+        var res = organizationService.addMember(Long.valueOf(sub), id, addMemberDto);
+        return ResponseEntity.created(null).body(
+                new Response<>(
+                        HttpStatus.CREATED.value(),
+                        HttpStatus.CREATED.getReasonPhrase(),
+                        res
+                )
+        );
+    }
+
+    @PutMapping("/{id}/members")
+    @RequiredPermissions({"update:organizations"})
+    public ResponseEntity<Response<Boolean>> updateMember(
+            @RequestAttribute("sub") String sub,
+            @Valid @RequestBody UpdateMemberDto updateMemberDto,
+            @PathVariable Long id) {
+        var res = organizationService.updateMember(Long.valueOf(sub), id, updateMemberDto);
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        HttpStatus.OK.getReasonPhrase(),
+                        res
+                )
+        );
+    }
+
+    @PostMapping("/{id}/members/remove")
+    @RequiredPermissions({"update:organizations"})
+    public ResponseEntity<Response<Boolean>> removeMember(
+            @RequestAttribute("sub") String sub,
+            @Valid @RequestBody RemoveMemberDto removeMemberDto,
+            @PathVariable Long id) {
+        var res = organizationService.removeMember(Long.valueOf(sub), id, removeMemberDto);
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        HttpStatus.OK.getReasonPhrase(),
                         res
                 )
         );

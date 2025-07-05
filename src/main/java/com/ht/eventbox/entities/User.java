@@ -73,4 +73,8 @@ public class User {
     @Column(name = "updated_at")
     @JsonProperty("updated_at")
     private java.time.LocalDateTime updatedAt;
+
+    public String getFullName() {
+        return firstName + " " + lastName;
+    }
 }

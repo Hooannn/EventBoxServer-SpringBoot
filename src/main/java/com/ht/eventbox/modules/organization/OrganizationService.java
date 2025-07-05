@@ -6,9 +6,11 @@ import com.ht.eventbox.entities.*;
 import com.ht.eventbox.enums.AssetUsage;
 import com.ht.eventbox.enums.OrganizationRole;
 import com.ht.eventbox.modules.asset.AssetRepository;
-import com.ht.eventbox.modules.organization.dtos.CreateOrganizationDto;
-import com.ht.eventbox.modules.organization.dtos.UpdateOrganizationDto;
+import com.ht.eventbox.modules.mail.MailService;
+import com.ht.eventbox.modules.organization.dtos.*;
 import com.ht.eventbox.modules.storage.CloudinaryService;
+import com.ht.eventbox.modules.user.UserRepository;
+import jakarta.mail.MessagingException;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.springframework.http.HttpStatus;
@@ -17,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +29,8 @@ public class OrganizationService {
     private final OrganizationRepository organizationRepository;
     private final CloudinaryService cloudinaryService;
     private final AssetRepository assetRepository;
+    private final UserRepository userRepository;
+    private final MailService mailService;
 
     public List<Organization> getAll() {
         return organizationRepository.findAll();
@@ -199,6 +204,102 @@ public class OrganizationService {
 
         organizationRepository.delete(org);
         assetRepository.deleteAll(org.getAssets());
+        return true;
+    }
+
+    @Transactional
+    public boolean addMember(Long userId, Long orgId, AddMemberDto addMemberDto) {
+        var org = organizationRepository.findByIdAndUserOrganizationsUserIdAndUserOrganizationsRoleIs(orgId, userId, OrganizationRole.OWNER).orElseThrow(() ->
+                new HttpException(Constant.ErrorCode.ORGANIZATION_NOT_FOUND, HttpStatus.NOT_FOUND)
+        );
+
+        var userOrg = org.getUserOrganizations().stream()
+                .filter(uo -> uo.getUser().getEmail().equalsIgnoreCase(addMemberDto.getEmail()))
+                .findFirst();
+
+        if (userOrg.isPresent()) {
+            throw new HttpException(Constant.ErrorCode.USER_ALREADY_IN_ORGANIZATION, HttpStatus.BAD_REQUEST);
+        }
+
+        var user = userRepository.findByEmail(addMemberDto.getEmail())
+                .orElseThrow(() -> new HttpException(Constant.ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND));
+
+        var newUserOrg = UserOrganization.builder()
+                .user(user)
+                .organization(org)
+                .id(UserOrganizationId.builder()
+                        .userId(user.getId())
+                        .organizationId(org.getId())
+                        .build())
+                .role(addMemberDto.getRole().toOrganizationRole())
+                .build();
+
+        org.getUserOrganizations().add(newUserOrg);
+        organizationRepository.save(org);
+
+        CompletableFuture.runAsync(() -> {
+            try {
+                mailService.sendMemberAddedEmail(
+                        user.getEmail(),
+                        user.getFullName(),
+                        org.getName()
+                );
+            } catch (MessagingException e) {
+                logger.error("mailService.sendRegistrationEmail: {}", e.getMessage());
+            }
+        });
+
+        return true;
+    }
+
+    @Transactional
+    public boolean updateMember(Long userId, Long orgId, UpdateMemberDto updateMemberDto) {
+        var org = organizationRepository.findByIdAndUserOrganizationsUserIdAndUserOrganizationsRoleIs(orgId, userId, OrganizationRole.OWNER).orElseThrow(() ->
+                new HttpException(Constant.ErrorCode.ORGANIZATION_NOT_FOUND, HttpStatus.NOT_FOUND)
+        );
+
+        var userOrg = org.getUserOrganizations().stream()
+                .filter(uo -> uo.getUser().getEmail().equalsIgnoreCase(updateMemberDto.getEmail()) && !uo.getUser().getId().equals(userId))
+                .findFirst();
+
+        if (userOrg.isEmpty()) {
+            throw new HttpException(Constant.ErrorCode.USER_NOT_IN_ORGANIZATION, HttpStatus.BAD_REQUEST);
+        }
+
+        userOrg.get().setRole(updateMemberDto.getRole().toOrganizationRole());
+        organizationRepository.save(org);
+        return true;
+    }
+
+    @Transactional
+    public boolean removeMember(Long userId, Long orgId, RemoveMemberDto removeMemberDto) {
+        var org = organizationRepository.findByIdAndUserOrganizationsUserIdAndUserOrganizationsRoleIs(orgId, userId, OrganizationRole.OWNER).orElseThrow(() ->
+                new HttpException(Constant.ErrorCode.ORGANIZATION_NOT_FOUND, HttpStatus.NOT_FOUND)
+        );
+
+        var userOrg = org.getUserOrganizations().stream()
+                .filter(uo -> uo.getUser().getEmail().equalsIgnoreCase(removeMemberDto.getEmail()) && !uo.getUser().getId().equals(userId))
+                .findFirst();
+
+        if (userOrg.isEmpty()) {
+            throw new HttpException(Constant.ErrorCode.USER_NOT_IN_ORGANIZATION, HttpStatus.BAD_REQUEST);
+        }
+
+        org.getUserOrganizations().remove(userOrg.get());
+        organizationRepository.save(org);
+
+        CompletableFuture.runAsync(() -> {
+            try {
+                mailService.sendMemberRemovedEmail(
+                        userOrg.get().getUser().getEmail(),
+                        userOrg.get().getUser().getFullName(),
+                        org.getName()
+                );
+            } catch (MessagingException e) {
+                logger.error("mailService.sendMemberRemovedEmail: {}", e.getMessage());
+            }
+        });
+
         return true;
     }
 }

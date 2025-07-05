@@ -72,4 +72,38 @@ public class MailService {
 
         javaMailSender.send(mimeMessage);
     }
+
+    public void sendMemberAddedEmail(String to, String name, String orgName) throws MessagingException {
+        MimeMessage mimeMessage = javaMailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+        Context context = new Context();
+
+        context.setVariable("name", name);
+        context.setVariable("orgName", orgName);
+
+        String htmlContent = templateEngine.process(Constant.MailTemplate.MEMBER_ADDED, context);
+
+        helper.setTo(to);
+        helper.setSubject(Constant.MailSubject.MEMBER_ADDED);
+        helper.setText(htmlContent, true);
+
+        javaMailSender.send(mimeMessage);
+    }
+
+    public void sendMemberRemovedEmail(String to, String name, String orgName) throws MessagingException {
+        MimeMessage mimeMessage = javaMailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+        Context context = new Context();
+
+        context.setVariable("name", name);
+        context.setVariable("orgName", orgName);
+
+        String htmlContent = templateEngine.process(Constant.MailTemplate.MEMBER_REMOVED, context);
+
+        helper.setTo(to);
+        helper.setSubject(Constant.MailSubject.MEMBER_REMOVED);
+        helper.setText(htmlContent, true);
+
+        javaMailSender.send(mimeMessage);
+    }
 }
