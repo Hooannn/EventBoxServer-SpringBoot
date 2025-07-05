@@ -12,7 +12,6 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 @Builder
 @Setter
@@ -23,6 +22,9 @@ import java.util.Set;
 @Table(name = "event_shows")
 @Checks({
         @Check(constraints = "start_time < end_time"),
+        @Check(constraints = "sale_start_time < sale_end_time"),
+        @Check(constraints = "sale_start_time < end_time"),
+        @Check(constraints = "sale_end_time < end_time"),
 })
 public class EventShow {
     @Id
@@ -42,6 +44,14 @@ public class EventShow {
     @Column(name = "end_time", nullable = false)
     @JsonProperty("end_time")
     private java.time.LocalDateTime endTime;
+
+    @Column(name = "sale_start_time", nullable = false)
+    @JsonProperty("sale_start_time")
+    private java.time.LocalDateTime saleStartTime;
+
+    @Column(name = "sale_end_time", nullable = false)
+    @JsonProperty("sale_end_time")
+    private java.time.LocalDateTime saleEndTime;
 
     @JsonManagedReference
     @OneToMany(mappedBy = "eventShow", targetEntity = Ticket.class, cascade = CascadeType.ALL, orphanRemoval = true)

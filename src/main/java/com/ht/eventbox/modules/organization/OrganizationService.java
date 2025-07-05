@@ -10,6 +10,7 @@ import com.ht.eventbox.modules.mail.MailService;
 import com.ht.eventbox.modules.organization.dtos.*;
 import com.ht.eventbox.modules.storage.CloudinaryService;
 import com.ht.eventbox.modules.user.UserRepository;
+import com.ht.eventbox.utils.Helper;
 import jakarta.mail.MessagingException;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -89,21 +90,7 @@ public class OrganizationService {
             if (uploadResult == null)
                 throw new HttpException(Constant.ErrorCode.CLOUDINARY_UPLOAD_FAILED, HttpStatus.INTERNAL_SERVER_ERROR);
 
-            var asset = Asset.builder()
-                    .resourceType(String.valueOf(uploadResult.get("resource_type")))
-                    .publicId(String.valueOf(uploadResult.get("public_id")))
-                    .signature(String.valueOf(uploadResult.get("signature")))
-                    .id(String.valueOf(uploadResult.get("asset_id")))
-                    .originalUrl(String.valueOf(uploadResult.get("url")))
-                    .secureUrl(String.valueOf(uploadResult.get("secure_url")))
-                    .folder(String.valueOf(uploadResult.get("folder")))
-                    .format(String.valueOf(uploadResult.get("format")))
-                    .width(Integer.parseInt(String.valueOf(uploadResult.get("width"))))
-                    .height(Integer.parseInt(String.valueOf(uploadResult.get("height"))))
-                    .bytes(Long.parseLong(String.valueOf(uploadResult.get("bytes"))))
-                    .eTag(String.valueOf(uploadResult.get("etag")))
-                    .usage(AssetUsage.AVATAR)
-                    .build();
+            var asset = Helper.getAssetFromUploadResult(uploadResult, AssetUsage.AVATAR);
 
             savedOrg.getAssets().add(asset);
         }
@@ -161,21 +148,7 @@ public class OrganizationService {
             if (uploadResult == null)
                 throw new HttpException(Constant.ErrorCode.CLOUDINARY_UPLOAD_FAILED, HttpStatus.INTERNAL_SERVER_ERROR);
 
-            var asset = Asset.builder()
-                    .resourceType(String.valueOf(uploadResult.get("resource_type")))
-                    .publicId(String.valueOf(uploadResult.get("public_id")))
-                    .signature(String.valueOf(uploadResult.get("signature")))
-                    .id(String.valueOf(uploadResult.get("asset_id")))
-                    .originalUrl(String.valueOf(uploadResult.get("url")))
-                    .secureUrl(String.valueOf(uploadResult.get("secure_url")))
-                    .folder(String.valueOf(uploadResult.get("folder")))
-                    .format(String.valueOf(uploadResult.get("format")))
-                    .width(Integer.parseInt(String.valueOf(uploadResult.get("width"))))
-                    .height(Integer.parseInt(String.valueOf(uploadResult.get("height"))))
-                    .bytes(Long.parseLong(String.valueOf(uploadResult.get("bytes"))))
-                    .eTag(String.valueOf(uploadResult.get("etag")))
-                    .usage(AssetUsage.AVATAR)
-                    .build();
+            var asset = Helper.getAssetFromUploadResult(uploadResult, AssetUsage.AVATAR);
 
             org.getAssets().add(asset);
         }
