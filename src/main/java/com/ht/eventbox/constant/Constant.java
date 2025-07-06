@@ -51,6 +51,13 @@ public class Constant {
         public static final String USER_NOT_IN_ORGANIZATION = "user_not_in_organization";
         public static final String UNAUTHORIZED = "unauthorized";
         public static final String CLOUDINARY_UPLOAD_FAILED = "cloudinary_upload_failed";
+        public static final String EVENT_NOT_FOUND = "event_not_found";
+        public static final String ROLE_NOT_FOUND = "role_not_found";
+        public static final String ROLE_IN_USE = "role_in_use";
+        public static final String ROLE_ALREADY_EXISTS = "role_already_exists";
+        public static final String PERMISSION_ALREADY_EXISTS = "permission_already_exists";
+        public static final String PERMISSION_NOT_FOUND = "permission_not_found";
+        public static final String PERMISSION_IN_USE = "permission_in_use";
     }
 
     public static class SuccessCode {

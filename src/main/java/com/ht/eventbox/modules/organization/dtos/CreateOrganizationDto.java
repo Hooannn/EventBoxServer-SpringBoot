@@ -3,6 +3,7 @@ package com.ht.eventbox.modules.organization.dtos;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ht.eventbox.constant.Constant;
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,13 +15,13 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CreateOrganizationDto {
-    @NotEmpty
+    @NotBlank
     private String name;
 
-    @NotEmpty
+    @NotBlank
     private String description;
 
-    @NotEmpty
+    @NotBlank
     @JsonProperty("paypal_account")
     @Email(message = Constant.ValidationCode.EMAIL_MUST_BE_VALID)
     private String paypalAccount;

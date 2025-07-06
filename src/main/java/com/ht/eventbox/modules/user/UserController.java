@@ -2,13 +2,12 @@ package com.ht.eventbox.modules.user;
 
 import com.ht.eventbox.annotations.RequiredPermissions;
 import com.ht.eventbox.config.Response;
-import com.ht.eventbox.entities.Category;
+import com.ht.eventbox.constant.Constant;
+import com.ht.eventbox.entities.Permission;
+import com.ht.eventbox.entities.Role;
 import com.ht.eventbox.entities.User;
-import com.ht.eventbox.modules.category.CategoryService;
-import com.ht.eventbox.modules.category.dtos.CreateBulkCategoriesDto;
 import com.ht.eventbox.modules.category.dtos.UpdateFCMTokensDto;
-import com.ht.eventbox.modules.user.dtos.CreateBulkUsersDto;
-import com.ht.eventbox.modules.user.dtos.CreateUserDto;
+import com.ht.eventbox.modules.user.dtos.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -32,6 +31,139 @@ public class UserController {
                 new Response<>(
                         HttpStatus.OK.value(),
                         HttpStatus.OK.getReasonPhrase(),
+                        res
+                )
+        );
+    }
+
+    @GetMapping("/roles")
+    @RequiredPermissions({"read:roles"})
+    public ResponseEntity<Response<List<Role>>> getAllRoles() {
+        var res = userService.getAllRoles();
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        HttpStatus.OK.getReasonPhrase(),
+                        res
+                )
+        );
+    }
+
+    @PostMapping("/roles")
+    @RequiredPermissions({"create:roles"})
+    public ResponseEntity<Response<Boolean>> createRole(
+            @Valid @RequestBody CreateRoleDto createRoleDto
+    ) {
+        var res = userService.createRole(createRoleDto);
+        return ResponseEntity.created(null).body(
+                new Response<>(
+                        HttpStatus.CREATED.value(),
+                        HttpStatus.CREATED.getReasonPhrase(),
+                        res
+                )
+        );
+    }
+
+    @PutMapping("/roles/{roleId}")
+    @RequiredPermissions({"update:roles"})
+    public ResponseEntity<Response<Boolean>> updateRole(
+            @PathVariable Long roleId,
+            @Valid @RequestBody UpdateRoleDto updateRoleDto
+    ) {
+        var res = userService.updateRole(roleId, updateRoleDto);
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        HttpStatus.OK.getReasonPhrase(),
+                        res
+                )
+        );
+    }
+
+    @DeleteMapping("/roles/{roleId}")
+    @RequiredPermissions({"delete:roles"})
+    public ResponseEntity<Response<Boolean>> deleteRole(
+            @PathVariable Long roleId
+    ) {
+        var res = userService.deleteRole(roleId);
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        HttpStatus.OK.getReasonPhrase(),
+                        res
+                )
+        );
+    }
+
+    @GetMapping("/roles/permissions")
+    @RequiredPermissions({"read:permissions"})
+    public ResponseEntity<Response<List<Permission>>> getAllPermissions() {
+        var res = userService.getAllPermissions();
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        HttpStatus.OK.getReasonPhrase(),
+                        res
+                )
+        );
+    }
+
+    @PostMapping("/roles/permissions")
+    @RequiredPermissions({"create:permissions"})
+    public ResponseEntity<Response<Boolean>> createPermission(
+            @Valid @RequestBody CreatePermissionDto createPermissionDto
+    ) {
+        var res = userService.createPermission(createPermissionDto);
+        return ResponseEntity.created(null).body(
+                new Response<>(
+                        HttpStatus.CREATED.value(),
+                        HttpStatus.CREATED.getReasonPhrase(),
+                        res
+                )
+        );
+    }
+
+    @PutMapping("/roles/permissions/{permissionId}")
+    @RequiredPermissions({"update:roles"})
+    public ResponseEntity<Response<Boolean>> updatePermission(
+            @PathVariable Long permissionId,
+            @Valid @RequestBody UpdatePermissionDto updatePermissionDto
+    ) {
+        var res = userService.updatePermission(permissionId, updatePermissionDto);
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        HttpStatus.OK.getReasonPhrase(),
+                        res
+                )
+        );
+    }
+
+    @DeleteMapping("/roles/permissions/{permissionId}")
+    @RequiredPermissions({"delete:roles"})
+    public ResponseEntity<Response<Boolean>> deletePermission(
+            @PathVariable Long permissionId
+    ) {
+        var res = userService.deletePermission(permissionId);
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        HttpStatus.OK.getReasonPhrase(),
+                        res
+                )
+        );
+    }
+
+    @PutMapping("/{userId}/role")
+    @RequiredPermissions({"update:users"})
+    public ResponseEntity<Response<Boolean>> updateRole(
+            @Valid @RequestBody UpdateUserRoleDto updateUserRoleDto,
+            @PathVariable Long userId) {
+        var res = userService.updateUserRole(userId, updateUserRoleDto);
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        Constant.SuccessCode.UPDATE_SUCCESSFULLY,
                         res
                 )
         );

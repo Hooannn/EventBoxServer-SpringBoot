@@ -2,6 +2,7 @@ package com.ht.eventbox.modules.event.dtos;
 
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -24,15 +25,15 @@ public class CreateEventDto {
         @Data
         @Builder
         public static class CreateTicketTypeDto {
-            @NotEmpty
+            @NotBlank
             private String name;
 
             private String description;
 
-            @NotEmpty
+            @NotNull
             private Double price;
 
-            @NotEmpty
+            @NotNull
             @JsonProperty("initial_stock")
             private int initialStock;
         }
@@ -53,7 +54,7 @@ public class CreateEventDto {
         @JsonProperty("sale_end_time")
         private LocalDateTime saleEndTime;
 
-        @NotNull
+        @NotEmpty
         @JsonProperty("ticket_type_inputs")
         private List<CreateTicketTypeDto> ticketTypeInputs = new ArrayList<>();
     }
@@ -62,36 +63,36 @@ public class CreateEventDto {
     @JsonProperty("organization_id")
     private Long organizationId;
 
-    @NotEmpty
+    @NotBlank
     private String title;
 
-    @NotEmpty
+    @NotBlank
     private String description;
 
-    @NotEmpty
+    @NotBlank
     private String address;
 
     @JsonProperty("place")
-    @NotEmpty
+    @NotBlank
     private String placeName;
 
-    @NotEmpty
+    @NotBlank
     @JsonProperty("background_base64")
     private String backgroundBase64;
 
-    @NotEmpty
+    @NotBlank
     @JsonProperty("logo_base64")
     private String logoBase64;
 
-    @NotNull
+    @NotEmpty
     @JsonProperty("category_ids")
     private List<Long> categoryIds = new ArrayList<>();
 
-    @NotNull
+    @NotEmpty
     @JsonProperty("keywords")
     private List<String> keywords = new ArrayList<>();
 
-    @NotNull
+    @NotEmpty
     @JsonProperty("show_inputs")
     private List<CreateShowDto> showInputs = new ArrayList<>();
 }

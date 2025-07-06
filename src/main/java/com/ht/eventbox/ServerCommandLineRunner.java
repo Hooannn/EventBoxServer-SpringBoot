@@ -44,17 +44,10 @@ public class ServerCommandLineRunner implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
         List<Permission> appPermissions = List.of(
-                Permission.builder().name("create:organizations").build(),
-                Permission.builder().name("read:organizations").build(),
-                Permission.builder().name("update:organizations").build(),
-                Permission.builder().name("delete:organizations").build(),
                 Permission.builder().name("create:orders").build(),
                 Permission.builder().name("read:orders").build(),
                 Permission.builder().name("update:orders").build(),
-                Permission.builder().name("create:events").build(),
                 Permission.builder().name("read:events").build(),
-                Permission.builder().name("update:events").build(),
-                Permission.builder().name("delete:events").build(),
                 Permission.builder().name("read:categories").build()
         );
 

@@ -2,14 +2,9 @@ package com.ht.eventbox.modules.user;
 
 import com.ht.eventbox.config.HttpException;
 import com.ht.eventbox.constant.Constant;
-import com.ht.eventbox.entities.Category;
-import com.ht.eventbox.entities.FCMToken;
-import com.ht.eventbox.entities.User;
-import com.ht.eventbox.modules.category.CategoryRepository;
-import com.ht.eventbox.modules.category.dtos.CreateBulkCategoriesDto;
+import com.ht.eventbox.entities.*;
 import com.ht.eventbox.modules.category.dtos.UpdateFCMTokensDto;
-import com.ht.eventbox.modules.user.dtos.CreateBulkUsersDto;
-import com.ht.eventbox.modules.user.dtos.CreateUserDto;
+import com.ht.eventbox.modules.user.dtos.*;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.springframework.http.HttpStatus;
@@ -27,6 +22,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final RoleRepository roleRepository;
+    private final PermissionRepository permissionRepository;
     private final FCMTokenRepository fcmTokenRepository;
 
     public User getById(Long id) {
@@ -97,6 +93,116 @@ public class UserService {
     }
 
     public List<User> getAll() {
-        return userRepository.findAll();
+        return userRepository.findAllByOrderByIdAsc();
+    }
+
+    public List<Role> getAllRoles() {
+        return roleRepository.findAllByOrderByIdAsc();
+    }
+
+    public List<Permission> getAllPermissions() {
+        return permissionRepository.findAllByOrderByIdAsc();
+    }
+
+    public boolean updateUserRole(Long userId, UpdateUserRoleDto updateUserRoleDto) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new HttpException(Constant.ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND));
+
+        user.setRoles(new HashSet<>(
+                roleRepository.findAllById(updateUserRoleDto.getRoleIds())
+        ));
+
+        userRepository.save(user);
+        return true;
+    }
+
+    public boolean updateRole(Long roleId, UpdateRoleDto updateRoleDto) {
+        Role role = roleRepository.findById(roleId)
+                .orElseThrow(() -> new HttpException(Constant.ErrorCode.ROLE_NOT_FOUND, HttpStatus.NOT_FOUND));
+
+        if (roleRepository.existsByNameAndIdIsNot(updateRoleDto.getName(), roleId)) {
+            throw new HttpException(Constant.ErrorCode.ROLE_ALREADY_EXISTS, HttpStatus.BAD_REQUEST);
+        }
+
+        role.setName(updateRoleDto.getName());
+        role.setDescription(updateRoleDto.getDescription());
+        role.setPermissions(new HashSet<>(
+                permissionRepository.findAllById(updateRoleDto.getPermissionIds())
+        ));
+
+        roleRepository.save(role);
+        return true;
+    }
+
+    public boolean deleteRole(Long roleId) {
+        Role role = roleRepository.findById(roleId)
+                .orElseThrow(() -> new HttpException(Constant.ErrorCode.ROLE_NOT_FOUND, HttpStatus.NOT_FOUND));
+
+        if (userRepository.existsByRolesId(roleId)) {
+            throw new HttpException(Constant.ErrorCode.ROLE_IN_USE, HttpStatus.BAD_REQUEST);
+        }
+
+        role.getPermissions().clear();
+
+        roleRepository.delete(role);
+        return true;
+    }
+
+    public boolean createRole(CreateRoleDto createRoleDto) {
+        if (roleRepository.existsByName(createRoleDto.getName())) {
+            throw new HttpException(Constant.ErrorCode.ROLE_ALREADY_EXISTS, HttpStatus.BAD_REQUEST);
+        }
+
+        Role role = Role.builder()
+                .name(createRoleDto.getName())
+                .description(createRoleDto.getDescription())
+                .permissions(new HashSet<>(
+                        permissionRepository.findAllById(createRoleDto.getPermissionIds())
+                ))
+                .build();
+
+        roleRepository.save(role);
+        return true;
+    }
+
+    public boolean createPermission(CreatePermissionDto createPermissionDto) {
+        if (permissionRepository.existsByName(createPermissionDto.getName())) {
+            throw new HttpException(Constant.ErrorCode.PERMISSION_ALREADY_EXISTS, HttpStatus.BAD_REQUEST);
+        }
+
+        Permission permission = Permission.builder()
+                .name(createPermissionDto.getName())
+                .description(createPermissionDto.getDescription())
+                .build();
+
+        permissionRepository.save(permission);
+        return true;
+    }
+
+    public boolean updatePermission(Long permissionId, UpdatePermissionDto updatePermissionDto) {
+        Permission permission = permissionRepository.findById(permissionId)
+                .orElseThrow(() -> new HttpException(Constant.ErrorCode.PERMISSION_NOT_FOUND, HttpStatus.NOT_FOUND));
+
+        if (permissionRepository.existsByNameAndIdIsNot(updatePermissionDto.getName(), permissionId)) {
+            throw new HttpException(Constant.ErrorCode.PERMISSION_ALREADY_EXISTS, HttpStatus.BAD_REQUEST);
+        }
+
+        permission.setName(updatePermissionDto.getName());
+        permission.setDescription(updatePermissionDto.getDescription());
+
+        permissionRepository.save(permission);
+        return true;
+    }
+
+    public boolean deletePermission(Long permissionId) {
+        Permission permission = permissionRepository.findById(permissionId)
+                .orElseThrow(() -> new HttpException(Constant.ErrorCode.PERMISSION_NOT_FOUND, HttpStatus.NOT_FOUND));
+
+        if (roleRepository.existsByPermissionsId(permissionId)) {
+            throw new HttpException(Constant.ErrorCode.PERMISSION_IN_USE, HttpStatus.BAD_REQUEST);
+        }
+
+        permissionRepository.delete(permission);
+        return true;
     }
 }

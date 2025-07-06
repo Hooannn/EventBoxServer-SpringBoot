@@ -74,6 +74,7 @@ public class User {
     @JsonProperty("updated_at")
     private java.time.LocalDateTime updatedAt;
 
+    @JsonProperty("full_name")
     public String getFullName() {
         return firstName + " " + lastName;
     }

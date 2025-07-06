@@ -11,10 +11,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AuthenticateDto {
-    @NotEmpty(message = Constant.ValidationCode.PASSWORD_NOT_EMPTY)
+    @NotBlank(message = Constant.ValidationCode.PASSWORD_NOT_EMPTY)
     private String password;
 
-    @NotEmpty(message = Constant.ValidationCode.EMAIL_NOT_EMPTY)
+    @NotBlank(message = Constant.ValidationCode.EMAIL_NOT_EMPTY)
     @Email(message = Constant.ValidationCode.EMAIL_MUST_BE_VALID)
     private String username;
 }

@@ -6,8 +6,10 @@ import com.ht.eventbox.entities.*;
 import com.ht.eventbox.enums.AssetUsage;
 import com.ht.eventbox.enums.EventStatus;
 import com.ht.eventbox.enums.OrganizationRole;
+import com.ht.eventbox.modules.asset.AssetRepository;
 import com.ht.eventbox.modules.category.CategoryRepository;
 import com.ht.eventbox.modules.event.dtos.CreateEventDto;
+import com.ht.eventbox.modules.event.dtos.UpdateEventDto;
 import com.ht.eventbox.modules.keyword.KeywordRepository;
 import com.ht.eventbox.modules.organization.OrganizationRepository;
 import com.ht.eventbox.modules.storage.CloudinaryService;
@@ -35,6 +37,7 @@ public class EventService {
     private final CloudinaryService cloudinaryService;
     private final CategoryRepository categoryRepository;
     private final KeywordRepository keywordRepository;
+    private final AssetRepository assetRepository;
 
     @Transactional
     public boolean create(Long userId, CreateEventDto createEventDto) {
@@ -130,7 +133,185 @@ public class EventService {
         return true;
     }
 
+    @Transactional
+    public boolean update(Long userId, Long eventId, UpdateEventDto updateEventDto) {
+        var event = eventRepository.findByIdAndOrganizationUserOrganizationsUserIdAndOrganizationUserOrganizationsRoleIs(eventId, userId, OrganizationRole.OWNER)
+                .orElseThrow(() -> new HttpException(Constant.ErrorCode.EVENT_NOT_FOUND, HttpStatus.NOT_FOUND));
+
+        if (event.getStatus() != EventStatus.PENDING) {
+            throw new HttpException(Constant.ErrorCode.NOT_ALLOWED_OPERATION, HttpStatus.BAD_REQUEST);
+        }
+
+        event.setTitle(updateEventDto.getTitle());
+        event.setDescription(updateEventDto.getDescription());
+        event.setAddress(updateEventDto.getAddress());
+        event.setPlaceName(updateEventDto.getPlaceName());
+        event.setCategories(new HashSet<>(categoryRepository.findAllById(updateEventDto.getCategoryIds())));
+
+        List<EventShow> eventShows = updateEventDto.getShowInputs().stream()
+                .map(createShowDto -> {
+                    var eventShow = EventShow.builder()
+                            .event(event)
+                            .startTime(createShowDto.getStartTime())
+                            .endTime(createShowDto.getEndTime())
+                            .saleStartTime(createShowDto.getSaleStartTime())
+                            .saleEndTime(createShowDto.getSaleEndTime())
+                            .build();
+
+                    List<Ticket> tickets = createShowDto.getTicketTypeInputs().stream()
+                            .map(ticketTypeDto -> {
+                                var ticket = Ticket.builder()
+                                        .eventShow(eventShow)
+                                        .available(true)
+                                        .name(ticketTypeDto.getName())
+                                        .description(ticketTypeDto.getDescription())
+                                        .price(ticketTypeDto.getPrice())
+                                        .initialStock(ticketTypeDto.getInitialStock())
+                                        .stock(ticketTypeDto.getInitialStock())
+                                        .build();
+                                return ticket;
+                            })
+                            .toList();
+
+                    eventShow.setTickets(tickets);
+                    return eventShow;
+                })
+                .toList();
+
+        event.getShows().clear();
+        event.getShows().addAll(eventShows);
+
+        if (updateEventDto.getKeywords() != null && !updateEventDto.getKeywords().isEmpty()) {
+            Set<Keyword> keywords = updateEventDto.getKeywords().stream()
+                    .map(name -> keywordRepository.findById(name)
+                            .orElseGet(() -> keywordRepository.save(Keyword.builder().name(name).build())))
+                    .collect(Collectors.toSet());
+            event.getKeywords().clear();
+            event.getKeywords().addAll(keywords);
+        }
+
+        Set<Asset> assetsToRemove = new HashSet<>();
+        if (updateEventDto.getLogoBase64() != null && !updateEventDto.getLogoBase64().isEmpty()) {
+            event.getAssets().stream().filter(asset -> asset.getUsage() == AssetUsage.EVENT_LOGO).forEach(asset -> {
+                try {
+                    cloudinaryService.destroyByPublicId(asset.getPublicId(), asset.getResourceType());
+                    logger.info("Deleted image: {}", asset.getPublicId());
+                } catch (IOException e) {
+                    throw new HttpException(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+                }
+            });
+            assetsToRemove.addAll(event.getAssets().stream()
+                    .filter(asset -> asset.getUsage() == AssetUsage.EVENT_LOGO)
+                    .collect(Collectors.toSet()));
+            event.getAssets().removeIf(asset -> asset.getUsage() == AssetUsage.EVENT_LOGO);
+
+            Map logoUploadResult = null;
+            try {
+                logoUploadResult = cloudinaryService.uploadByBase64(
+                        updateEventDto.getLogoBase64(),
+                        Constant.StorageFolder.ORGANIZATION_ASSETS
+                );
+                logger.info("Uploaded image: {}", logoUploadResult);
+            } catch (IOException e) {
+                throw new HttpException(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+            if (logoUploadResult == null)
+                throw new HttpException(Constant.ErrorCode.CLOUDINARY_UPLOAD_FAILED, HttpStatus.INTERNAL_SERVER_ERROR);
+
+            var logoAsset = Helper.getAssetFromUploadResult(logoUploadResult, AssetUsage.EVENT_LOGO);
+            event.getAssets().add(logoAsset);
+        }
+
+        if (updateEventDto.getBackgroundBase64() != null && !updateEventDto.getBackgroundBase64().isEmpty()) {
+            event.getAssets().stream().filter(asset -> asset.getUsage() == AssetUsage.EVENT_BANNER).forEach(asset -> {
+                try {
+                    cloudinaryService.destroyByPublicId(asset.getPublicId(), asset.getResourceType());
+                    logger.info("Deleted image: {}", asset.getPublicId());
+                } catch (IOException e) {
+                    throw new HttpException(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+                }
+            });
+            assetsToRemove.addAll(event.getAssets().stream()
+                    .filter(asset -> asset.getUsage() == AssetUsage.EVENT_BANNER)
+                    .collect(Collectors.toSet()));
+            event.getAssets().removeIf(asset -> asset.getUsage() == AssetUsage.EVENT_BANNER);
+
+            Map uploadResult = null;
+            try {
+                uploadResult = cloudinaryService.uploadByBase64(
+                        updateEventDto.getLogoBase64(),
+                        Constant.StorageFolder.ORGANIZATION_ASSETS
+                );
+                logger.info("Uploaded image: {}", uploadResult);
+            } catch (IOException e) {
+                throw new HttpException(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+            if (uploadResult == null)
+                throw new HttpException(Constant.ErrorCode.CLOUDINARY_UPLOAD_FAILED, HttpStatus.INTERNAL_SERVER_ERROR);
+
+            var backgroundAsset = Helper.getAssetFromUploadResult(uploadResult, AssetUsage.EVENT_BANNER);
+            event.getAssets().add(backgroundAsset);
+        }
+
+        eventRepository.save(event);
+        if (!assetsToRemove.isEmpty()) {
+            assetRepository.deleteAll(assetsToRemove);
+        }
+        return true;
+    }
+
     public List<Event> getByOrganizationId(Long organizationId) {
         return eventRepository.findAllByOrganizationId(organizationId);
+    }
+
+    public boolean archive(Long userId, Long eventId) {
+        var event = eventRepository.findByIdAndOrganizationUserOrganizationsUserIdAndOrganizationUserOrganizationsRoleIs(eventId, userId, OrganizationRole.OWNER)
+                .orElseThrow(() -> new HttpException(Constant.ErrorCode.EVENT_NOT_FOUND, HttpStatus.NOT_FOUND));
+
+        if (event.getStatus() != EventStatus.PENDING) {
+            throw new HttpException(Constant.ErrorCode.NOT_ALLOWED_OPERATION, HttpStatus.BAD_REQUEST);
+        }
+
+        event.setStatus(EventStatus.ARCHIVED);
+        eventRepository.save(event);
+
+        return true;
+    }
+
+    public boolean inactive(Long userId, Long eventId) {
+        var event = eventRepository.findByIdAndOrganizationUserOrganizationsUserIdAndOrganizationUserOrganizationsRoleIs(eventId, userId, OrganizationRole.OWNER)
+                .orElseThrow(() -> new HttpException(Constant.ErrorCode.EVENT_NOT_FOUND, HttpStatus.NOT_FOUND));
+
+        if (event.getStatus() != EventStatus.PUBLISHED) {
+            throw new HttpException(Constant.ErrorCode.NOT_ALLOWED_OPERATION, HttpStatus.BAD_REQUEST);
+        }
+
+        event.setStatus(EventStatus.DRAFT);
+        eventRepository.save(event);
+
+        return true;
+    }
+
+    public boolean active(Long userId, Long eventId) {
+        var event = eventRepository.findByIdAndOrganizationUserOrganizationsUserIdAndOrganizationUserOrganizationsRoleIs(eventId, userId, OrganizationRole.OWNER)
+                .orElseThrow(() -> new HttpException(Constant.ErrorCode.EVENT_NOT_FOUND, HttpStatus.NOT_FOUND));
+
+        if (event.getStatus() != EventStatus.DRAFT) {
+            throw new HttpException(Constant.ErrorCode.NOT_ALLOWED_OPERATION, HttpStatus.BAD_REQUEST);
+        }
+
+        event.setStatus(EventStatus.PUBLISHED);
+        eventRepository.save(event);
+
+        return true;
+    }
+
+    public List<Event> getByOrganizationIdAndStatusIsNot(Long organizationId, EventStatus status) {
+        return eventRepository.findAllByOrganizationIdAndStatusIsNotOrderByIdAsc(organizationId, status);
+    }
+
+    public Event getByIdAndStatusIsNot(Long eventId, EventStatus eventStatus) {
+        return eventRepository.findByIdAndStatusIsNot(eventId, eventStatus)
+                .orElseThrow(() -> new HttpException(Constant.ErrorCode.EVENT_NOT_FOUND, HttpStatus.NOT_FOUND));
     }
 }
