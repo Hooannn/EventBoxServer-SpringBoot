@@ -3,6 +3,8 @@ package com.ht.eventbox.modules.event;
 import com.ht.eventbox.entities.Event;
 import com.ht.eventbox.enums.EventStatus;
 import com.ht.eventbox.enums.OrganizationRole;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Collection;
@@ -21,4 +23,6 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     Optional<Event> findByIdAndStatusIsNot(Long eventId, EventStatus eventStatus);
 
     List<Event> findAllByStatusInOrderByIdAsc(Collection<EventStatus> status);
+
+    Page<Event> findByStatusIn(Collection<EventStatus> status, Pageable pageable);
 }

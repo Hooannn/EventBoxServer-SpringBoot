@@ -1,5 +1,6 @@
 package com.ht.eventbox.modules.event;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ht.eventbox.config.HttpException;
 import com.ht.eventbox.constant.Constant;
 import com.ht.eventbox.entities.*;
@@ -14,8 +15,14 @@ import com.ht.eventbox.modules.keyword.KeywordRepository;
 import com.ht.eventbox.modules.organization.OrganizationRepository;
 import com.ht.eventbox.modules.storage.CloudinaryService;
 import com.ht.eventbox.utils.Helper;
+import lombok.Builder;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import org.slf4j.Logger;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +37,20 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class EventService {
+    @Getter
+    @Setter
+    @Builder
+    public static class DiscoveryEvents {
+        @JsonProperty("featured_events")
+        private List<Event> featuredEvents;
+
+        @JsonProperty("trending_events")
+        private List<Event> trendingEvents;
+
+        @JsonProperty("latest_events")
+        private List<Event> latestEvents;
+    }
+
     private static final Logger logger = org.slf4j.LoggerFactory.getLogger(EventService.class);
 
     private final EventRepository eventRepository;
@@ -38,6 +59,20 @@ public class EventService {
     private final CategoryRepository categoryRepository;
     private final KeywordRepository keywordRepository;
     private final AssetRepository assetRepository;
+
+    public DiscoveryEvents getDiscovery() {
+        Pageable pageable = PageRequest.of(0, 4, Sort.by("id").ascending());
+        var featuredEvents = eventRepository.findByStatusIn(
+                List.of(EventStatus.PUBLISHED), pageable
+        ).getContent();
+
+        // Mocking events
+        return DiscoveryEvents.builder()
+                .featuredEvents(featuredEvents)
+                .trendingEvents(featuredEvents)
+                .latestEvents(featuredEvents)
+                .build();
+    }
 
     @Transactional
     public boolean create(Long userId, CreateEventDto createEventDto) {

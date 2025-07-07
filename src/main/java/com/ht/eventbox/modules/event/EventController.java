@@ -172,4 +172,18 @@ public class EventController {
                 )
         );
     }
+
+
+    @GetMapping("/discovery")
+    @RequiredPermissions({"read:events"})
+    public ResponseEntity<Response<EventService.DiscoveryEvents>> getDiscovery() {
+        var res = eventService.getDiscovery();
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        HttpStatus.OK.getReasonPhrase(),
+                        res
+                )
+        );
+    }
 }
