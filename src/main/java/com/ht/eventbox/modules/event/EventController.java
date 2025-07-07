@@ -23,6 +23,49 @@ import java.util.List;
 public class EventController {
     private final EventService eventService;
 
+    @GetMapping
+    @RequiredPermissions({"read:events", "access:admin"})
+    public ResponseEntity<Response<List<Event>>> getAll() {
+        var res = eventService.getAllByStatusIn(
+                List.of(EventStatus.PENDING, EventStatus.PUBLISHED)
+        );
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        HttpStatus.OK.getReasonPhrase(),
+                        res
+                )
+        );
+    }
+
+    @PostMapping("/{eventId}/admin/publish")
+    @RequiredPermissions({"update:events", "access:admin"})
+    public ResponseEntity<Response<Boolean>> publishByAdmin(@PathVariable Long eventId)
+    {
+        var res = eventService.publishByAdmin(eventId);
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        Constant.SuccessCode.UPDATE_SUCCESSFULLY,
+                        res
+                )
+        );
+    }
+
+    @PostMapping("/{eventId}/admin/archive")
+    @RequiredPermissions({"update:events", "access:admin"})
+    public ResponseEntity<Response<Boolean>> archiveByAdmin(@PathVariable Long eventId)
+    {
+        var res = eventService.archiveByAdmin(eventId);
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        Constant.SuccessCode.UPDATE_SUCCESSFULLY,
+                        res
+                )
+        );
+    }
+
     @PostMapping
     @RequiredPermissions({"create:events"})
     public ResponseEntity<Response<Boolean>> create(

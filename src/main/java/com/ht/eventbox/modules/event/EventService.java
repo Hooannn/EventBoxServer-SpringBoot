@@ -264,6 +264,34 @@ public class EventService {
         return eventRepository.findAllByOrganizationId(organizationId);
     }
 
+    public boolean publishByAdmin(Long eventId) {
+        var event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new HttpException(Constant.ErrorCode.EVENT_NOT_FOUND, HttpStatus.NOT_FOUND));
+
+        if (event.getStatus() != EventStatus.PENDING) {
+            throw new HttpException(Constant.ErrorCode.NOT_ALLOWED_OPERATION, HttpStatus.BAD_REQUEST);
+        }
+
+        event.setStatus(EventStatus.PUBLISHED);
+        eventRepository.save(event);
+
+        return true;
+    }
+
+    public boolean archiveByAdmin(Long eventId) {
+        var event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new HttpException(Constant.ErrorCode.EVENT_NOT_FOUND, HttpStatus.NOT_FOUND));
+
+        if (event.getStatus() != EventStatus.PENDING) {
+            throw new HttpException(Constant.ErrorCode.NOT_ALLOWED_OPERATION, HttpStatus.BAD_REQUEST);
+        }
+
+        event.setStatus(EventStatus.ARCHIVED);
+        eventRepository.save(event);
+
+        return true;
+    }
+
     public boolean archive(Long userId, Long eventId) {
         var event = eventRepository.findByIdAndOrganizationUserOrganizationsUserIdAndOrganizationUserOrganizationsRoleIs(eventId, userId, OrganizationRole.OWNER)
                 .orElseThrow(() -> new HttpException(Constant.ErrorCode.EVENT_NOT_FOUND, HttpStatus.NOT_FOUND));
@@ -313,5 +341,11 @@ public class EventService {
     public Event getByIdAndStatusIsNot(Long eventId, EventStatus eventStatus) {
         return eventRepository.findByIdAndStatusIsNot(eventId, eventStatus)
                 .orElseThrow(() -> new HttpException(Constant.ErrorCode.EVENT_NOT_FOUND, HttpStatus.NOT_FOUND));
+    }
+
+    public List<Event> getAllByStatusIn(
+            List<EventStatus> statuses
+    ) {
+        return eventRepository.findAllByStatusInOrderByIdAsc(statuses);
     }
 }
