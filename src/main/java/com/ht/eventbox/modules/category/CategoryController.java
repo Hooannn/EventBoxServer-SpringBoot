@@ -36,6 +36,19 @@ public class CategoryController {
         );
     }
 
+    @GetMapping("/featured")
+    @RequiredPermissions({"read:categories"})
+    public ResponseEntity<Response<List<Category>>> getAllFeatured() {
+        var res = categoryService.getAllFeatured();
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        HttpStatus.OK.getReasonPhrase(),
+                        res
+                )
+        );
+    }
+
     @PostMapping("/bulk")
     @RequiredPermissions({"create:categories"})
     public ResponseEntity<Response<Boolean>> createBulk(@Valid @RequestBody CreateBulkCategoriesDto createBulkCategoriesDto) {

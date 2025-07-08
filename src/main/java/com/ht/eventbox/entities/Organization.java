@@ -35,7 +35,7 @@ public class Organization {
     @JsonProperty("paypal_account")
     private String paypalAccount;
 
-    @Column(name = "description", nullable = false)
+    @Column(name = "description", nullable = false, columnDefinition = "TEXT")
     private String description;
 
     @Column(name = "phone")

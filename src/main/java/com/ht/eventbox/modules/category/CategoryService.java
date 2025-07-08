@@ -32,4 +32,8 @@ public class CategoryService {
         categoryRepository.saveAll(categories);
         return true;
     }
+
+    public List<Category> getAllFeatured() {
+        return categoryRepository.findAllByFeaturedTrueOrderByIdAsc();
+    }
 }

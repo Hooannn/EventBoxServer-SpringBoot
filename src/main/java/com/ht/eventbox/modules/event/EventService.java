@@ -134,7 +134,7 @@ public class EventService {
         try {
             logoUploadResult = cloudinaryService.uploadByBase64(
                     createEventDto.getLogoBase64(),
-                    Constant.StorageFolder.ORGANIZATION_ASSETS
+                    Constant.StorageFolder.EVENT_ASSETS
             );
             logger.info("Uploaded image: {}", logoUploadResult);
         } catch (IOException e) {
@@ -149,7 +149,7 @@ public class EventService {
         try {
             backgroundUploadResult = cloudinaryService.uploadByBase64(
                     createEventDto.getBackgroundBase64(),
-                    Constant.StorageFolder.ORGANIZATION_ASSETS
+                    Constant.StorageFolder.EVENT_ASSETS
             );
             logger.info("Uploaded image: {}", backgroundUploadResult);
         } catch (IOException e) {
@@ -244,7 +244,7 @@ public class EventService {
             try {
                 logoUploadResult = cloudinaryService.uploadByBase64(
                         updateEventDto.getLogoBase64(),
-                        Constant.StorageFolder.ORGANIZATION_ASSETS
+                        Constant.StorageFolder.EVENT_ASSETS
                 );
                 logger.info("Uploaded image: {}", logoUploadResult);
             } catch (IOException e) {
@@ -275,7 +275,7 @@ public class EventService {
             try {
                 uploadResult = cloudinaryService.uploadByBase64(
                         updateEventDto.getLogoBase64(),
-                        Constant.StorageFolder.ORGANIZATION_ASSETS
+                        Constant.StorageFolder.EVENT_ASSETS
                 );
                 logger.info("Uploaded image: {}", uploadResult);
             } catch (IOException e) {
@@ -297,6 +297,12 @@ public class EventService {
 
     public List<Event> getByOrganizationId(Long organizationId) {
         return eventRepository.findAllByOrganizationId(organizationId);
+    }
+
+    public List<Event> getAllByCategoriesId(Long categoryId) {
+        Pageable pageable = PageRequest.of(0, 4, Sort.by("id").ascending());
+        var events = eventRepository.findByCategoriesId(categoryId, pageable);
+        return events.getContent();
     }
 
     public boolean publishByAdmin(Long eventId) {

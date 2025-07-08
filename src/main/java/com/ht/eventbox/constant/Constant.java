@@ -95,7 +95,6 @@ public class Constant {
         public static final String USER_ASSETS = "UserAssets";
         public static final String ORGANIZATION_ASSETS = "OrganizationAssets";
         public static final String EVENT_ASSETS = "EventAssets";
-        public static final String TICKET_ASSETS = "TicketAssets";
     }
 
     public static class DefaultRole {

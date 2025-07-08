@@ -31,6 +31,9 @@ public class Category {
     @JsonProperty("name_en")
     private String nameEn;
 
+    @Column(name = "featured", nullable = false, columnDefinition = "boolean default false")
+    private boolean featured = false;
+
     @CreationTimestamp
     @Column(name = "created_at")
     @JsonProperty("created_at")
