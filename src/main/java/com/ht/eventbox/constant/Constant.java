@@ -58,6 +58,7 @@ public class Constant {
         public static final String PERMISSION_ALREADY_EXISTS = "permission_already_exists";
         public static final String PERMISSION_NOT_FOUND = "permission_not_found";
         public static final String PERMISSION_IN_USE = "permission_in_use";
+        public static final String ORGANIZATION_HAS_EVENTS = "organization_has_events";
     }
 
     public static class SuccessCode {

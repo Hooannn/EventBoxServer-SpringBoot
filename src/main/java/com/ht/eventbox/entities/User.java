@@ -60,6 +60,14 @@ public class User {
     )
     private Set<Role> roles = new HashSet<>();
 
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+            name = "subscriptions",
+            joinColumns = @JoinColumn(name = "user_id", nullable = false),
+            inverseJoinColumns = @JoinColumn(name = "organization_id", nullable = false)
+    )
+    private Set<Organization> subscriptions = new HashSet<>();
+
     @Column(name = "activated_at")
     @JsonProperty("activated_at")
     private java.time.LocalDateTime activatedAt;

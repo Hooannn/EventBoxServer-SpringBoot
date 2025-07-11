@@ -157,4 +157,18 @@ public class OrganizationController {
                 )
         );
     }
+
+    @PostMapping("/{id}/subscribe")
+    public ResponseEntity<Response<Boolean>> subscribe(
+            @RequestAttribute("sub") String sub,
+            @PathVariable Long id) {
+        var res = organizationService.subscribe(Long.valueOf(sub), id);
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        Constant.SuccessCode.UPDATE_SUCCESSFULLY,
+                        res
+                )
+        );
+    }
 }

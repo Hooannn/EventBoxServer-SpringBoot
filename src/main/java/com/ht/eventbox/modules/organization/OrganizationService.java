@@ -6,6 +6,7 @@ import com.ht.eventbox.entities.*;
 import com.ht.eventbox.enums.AssetUsage;
 import com.ht.eventbox.enums.OrganizationRole;
 import com.ht.eventbox.modules.asset.AssetRepository;
+import com.ht.eventbox.modules.event.EventRepository;
 import com.ht.eventbox.modules.mail.MailService;
 import com.ht.eventbox.modules.organization.dtos.*;
 import com.ht.eventbox.modules.storage.CloudinaryService;
@@ -32,6 +33,7 @@ public class OrganizationService {
     private final AssetRepository assetRepository;
     private final UserRepository userRepository;
     private final MailService mailService;
+    private final EventRepository eventRepository;
 
     public List<Organization> getAll() {
         return organizationRepository.findAll();
@@ -166,6 +168,11 @@ public class OrganizationService {
                 new HttpException(Constant.ErrorCode.ORGANIZATION_NOT_FOUND, HttpStatus.NOT_FOUND)
         );
 
+        if (eventRepository.existsByOrganizationId(org.getId())) {
+            throw new HttpException(Constant.ErrorCode.ORGANIZATION_HAS_EVENTS, HttpStatus.BAD_REQUEST);
+        }
+
+        org.getUserOrganizations().clear();
         org.getAssets().forEach(asset -> {
             try {
                 cloudinaryService.destroyByPublicId(asset.getPublicId(), asset.getResourceType());
@@ -272,6 +279,26 @@ public class OrganizationService {
                 logger.error("mailService.sendMemberRemovedEmail: {}", e.getMessage());
             }
         });
+
+        return true;
+    }
+
+    public boolean subscribe(Long userId, Long orgId) {
+        var user = userRepository.findById(userId)
+                .orElseThrow(() -> new HttpException(Constant.ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND));
+
+        var org = organizationRepository.findById(orgId).orElseThrow(() ->
+                new HttpException(Constant.ErrorCode.ORGANIZATION_NOT_FOUND, HttpStatus.NOT_FOUND)
+        );
+
+        if (user.getSubscriptions().stream().anyMatch(subscription -> subscription.getId().equals(org.getId()))) {
+            user.getSubscriptions().remove(org);
+        } else {
+            user.getSubscriptions().add(org);
+
+        }
+
+        userRepository.save(user);
 
         return true;
     }

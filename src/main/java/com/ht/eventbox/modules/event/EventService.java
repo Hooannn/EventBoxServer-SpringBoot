@@ -1,6 +1,7 @@
 package com.ht.eventbox.modules.event;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.firebase.messaging.Notification;
 import com.ht.eventbox.config.HttpException;
 import com.ht.eventbox.constant.Constant;
 import com.ht.eventbox.entities.*;
@@ -12,9 +13,11 @@ import com.ht.eventbox.modules.category.CategoryRepository;
 import com.ht.eventbox.modules.event.dtos.CreateEventDto;
 import com.ht.eventbox.modules.event.dtos.UpdateEventDto;
 import com.ht.eventbox.modules.keyword.KeywordRepository;
+import com.ht.eventbox.modules.messaging.PushNotificationService;
 import com.ht.eventbox.modules.organization.OrganizationRepository;
 import com.ht.eventbox.modules.storage.CloudinaryService;
 import com.ht.eventbox.utils.Helper;
+import jakarta.mail.MessagingException;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -24,14 +27,13 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Service
@@ -59,6 +61,8 @@ public class EventService {
     private final CategoryRepository categoryRepository;
     private final KeywordRepository keywordRepository;
     private final AssetRepository assetRepository;
+    private final JdbcTemplate jdbcTemplate;
+    private final PushNotificationService pushNotificationService;
 
     public DiscoveryEvents getDiscovery() {
         Pageable pageable = PageRequest.of(0, 4, Sort.by("id").ascending());
@@ -315,6 +319,34 @@ public class EventService {
 
         event.setStatus(EventStatus.PUBLISHED);
         eventRepository.save(event);
+
+        CompletableFuture.runAsync(() -> {
+            String sql = "SELECT user_id FROM subscriptions WHERE organization_id = ?";
+            List<Long> subscribers = jdbcTemplate.queryForList(sql, Long.class, event.getOrganization().getId());
+
+            try {
+                pushNotificationService.push(
+                        subscribers,
+                        Notification.builder()
+                                .setBody(event.getTitle())
+                                .setTitle("Sự kiện mới từ " + event.getOrganization().getName())
+                                .setImage(event.getAssets().stream()
+                                        .filter(asset -> asset.getUsage() == AssetUsage.EVENT_LOGO)
+                                        .findFirst()
+                                        .map(Asset::getSecureUrl)
+                                        .orElse(null))
+                                .build(),
+                        new HashMap<>(
+                                Map.of(
+                                        "type", "event",
+                                        "event_id", String.valueOf(event.getId())
+                                )
+                        )
+                );
+            } catch (Exception e) {
+                logger.error("Error sending push notification for event {}: {}", eventId, e.getMessage());
+            }
+        });
 
         return true;
     }
