@@ -45,6 +45,10 @@ public class Order {
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Payment> payments = new ArrayList<>();
 
+    @Column(name = "expired_at", nullable = false)
+    @JsonProperty("expired_at")
+    private java.time.LocalDateTime expiredAt;
+
     @CreationTimestamp
     @Column(name = "created_at")
     @JsonProperty("created_at")

@@ -6,6 +6,7 @@ import com.ht.eventbox.enums.AssetUsage;
 import java.math.BigDecimal;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 import java.util.Date;
 import java.util.Map;
@@ -30,12 +31,12 @@ public class Helper {
         return otp.toString();
     }
 
-    public static String formatDateToString(Date date) {
-        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("dd/MM/yyyy");
-        return sdf.format(date);
+    public static String formatDateToString(LocalDateTime date) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy, HH:mm:ss");
+        return date.format(formatter);
     }
 
-    public static String formatCurrencyToString(BigDecimal amount) {
+    public static String formatCurrencyToString(Double amount) {
         java.text.NumberFormat currencyFormatter = java.text.NumberFormat.getCurrencyInstance();
         return currencyFormatter.format(amount);
     }

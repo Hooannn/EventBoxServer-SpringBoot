@@ -22,7 +22,7 @@ public class AuthenticationFilter extends OncePerRequestFilter {
     public static final String[] PUBLIC_APIS_PREFIX = {
             "/api/v1/auth/",
             "/api/v2/auth/",
-            "/api/v1/payments/paypal/webhook/",
+            "/api/v1/orders/paypal/webhook/",
     };
     private final JwtService jwtService;
 

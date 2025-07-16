@@ -1,5 +1,8 @@
 package com.ht.eventbox.enums;
 
 public enum OrderStatus {
-    PENDING, CANCELED, PROCESSING, FULFILLED
+    WAITING_FOR_PAYMENT,
+    PENDING,
+    APPROVED,
+    FULFILLED
 }

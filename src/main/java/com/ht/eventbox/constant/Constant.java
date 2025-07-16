@@ -14,6 +14,7 @@ public class Constant {
         public static final String RESET_PASSWORD_OTP_SUCCESS = "EventBox - Reset password OTP success";
         public static final String MEMBER_ADDED = "EventBox - You have been added to an organization";
         public static final String MEMBER_REMOVED = "EventBox - You have been removed from an organization";
+        public static final String ORDER_PAID = "EventBox - Your order has been paid successfully";
     }
 
     public static class MailTemplate {
@@ -21,6 +22,7 @@ public class Constant {
         public static final String FORGOT_PASSWORD = "forgot-password-otp";
         public static final String MEMBER_ADDED = "member-added";
         public static final String MEMBER_REMOVED = "member-removed";
+        public static final String ORDER_PAID = "order-paid";
     }
 
     public static class ValidationCode {
@@ -59,6 +61,10 @@ public class Constant {
         public static final String PERMISSION_NOT_FOUND = "permission_not_found";
         public static final String PERMISSION_IN_USE = "permission_in_use";
         public static final String ORGANIZATION_HAS_EVENTS = "organization_has_events";
+        public static final String TICKET_NOT_FOUND = "ticket_not_found";
+        public static final String INTERNAL_SERVER_ERROR = "internal_server_error";
+        public static final String TICKET_OUT_OF_STOCK = "ticket_out_of_stock";
+        public static final String ORDER_NOT_FOUND = "order_not_found";
     }
 
     public static class SuccessCode {
@@ -90,6 +96,11 @@ public class Constant {
         public static final String REFRESH_TOKEN = "refresh_token";
         public static final String PAYPAL_ACCESS_TOKEN = "paypal_access_token";
         public static final String REGISTER = "register";
+    }
+
+    public static class RedisKey {
+        public static final int RESERVATION_EXPIRES = 15 * 60;
+        public static final int EXTENDED_RESERVATION_EXPIRES = 15 * 60;
     }
 
     public static class StorageFolder {

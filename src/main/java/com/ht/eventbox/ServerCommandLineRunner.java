@@ -1,5 +1,6 @@
 package com.ht.eventbox;
 
+import com.corundumstudio.socketio.SocketIOServer;
 import com.ht.eventbox.constant.Constant;
 import com.ht.eventbox.entities.Permission;
 import com.ht.eventbox.entities.Role;
@@ -21,6 +22,7 @@ import java.util.stream.Collectors;
 @Component
 @RequiredArgsConstructor
 public class ServerCommandLineRunner implements CommandLineRunner {
+    private final SocketIOServer server;
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PermissionRepository permissionRepository;
@@ -43,6 +45,8 @@ public class ServerCommandLineRunner implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
+        server.start();
+
         List<Permission> appPermissions = List.of(
                 Permission.builder().name("create:orders").build(),
                 Permission.builder().name("read:orders").build(),

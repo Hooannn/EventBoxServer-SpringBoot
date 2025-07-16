@@ -17,7 +17,6 @@ import com.ht.eventbox.modules.messaging.PushNotificationService;
 import com.ht.eventbox.modules.organization.OrganizationRepository;
 import com.ht.eventbox.modules.storage.CloudinaryService;
 import com.ht.eventbox.utils.Helper;
-import jakarta.mail.MessagingException;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -306,6 +305,12 @@ public class EventService {
     public List<Event> getAllByCategoriesId(Long categoryId) {
         Pageable pageable = PageRequest.of(0, 4, Sort.by("id").ascending());
         var events = eventRepository.findByCategoriesId(categoryId, pageable);
+        return events.getContent();
+    }
+
+    public List<Event> getAllByCategoriesIdAndStatusIs(Long categoryId, EventStatus status) {
+        Pageable pageable = PageRequest.of(0, 4, Sort.by("id").ascending());
+        var events = eventRepository.findByCategoriesIdAndStatusIs(categoryId, status, pageable);
         return events.getContent();
     }
 

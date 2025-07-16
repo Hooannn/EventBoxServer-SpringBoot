@@ -3,10 +3,13 @@ package com.ht.eventbox.modules.redis;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -41,5 +44,32 @@ public class RedisService {
             return null;
         }
         return objectMapper.readValue(json, clazz);
+    }
+
+    public void deleteByPattern(String toDeleteTemplate) {
+        var keys = redisTemplate.keys(toDeleteTemplate);
+        if (keys != null && !keys.isEmpty()) {
+            redisTemplate.delete(keys);
+        }
+    }
+
+    public void deleteByScan(String pattern) {
+        ScanOptions options = ScanOptions.scanOptions().match(pattern).count(1000).build();
+        try (Cursor<byte[]> cursor = redisTemplate.getConnectionFactory()
+                .getConnection()
+                .scan(options)) {
+            while (cursor.hasNext()) {
+                byte[] key = cursor.next();
+                redisTemplate.delete(new String(key));
+            }
+        }
+    }
+
+    public Long getTTLInSeconds(String key) {
+        return redisTemplate.getExpire(key, TimeUnit.SECONDS);
+    }
+
+    public Long getTTLInMilliseconds(String key) {
+        return redisTemplate.getExpire(key, TimeUnit.MILLISECONDS);
     }
 }

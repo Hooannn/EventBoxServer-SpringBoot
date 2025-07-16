@@ -189,8 +189,9 @@ public class EventController {
     @GetMapping("/categories/{categoryId}")
     @RequiredPermissions({"read:events"})
     public ResponseEntity<Response<List<Event>>> getByCategoryId(@PathVariable Long categoryId) {
-        var res = eventService.getAllByCategoriesId(
-                categoryId
+        var res = eventService.getAllByCategoriesIdAndStatusIs(
+                categoryId,
+                EventStatus.PUBLISHED
         );
         return ResponseEntity.ok(
                 new Response<>(

@@ -106,4 +106,22 @@ public class MailService {
 
         javaMailSender.send(mimeMessage);
     }
+
+    public void sendOrderPaidMail(String to, String name, String invoiceId, String total, String paidDate) throws MessagingException {
+        MimeMessage mimeMessage = javaMailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+        Context context = new Context();
+        context.setVariable("name", name);
+        context.setVariable("invoiceId", invoiceId);
+        context.setVariable("total", total);
+        context.setVariable("paidDate", paidDate);
+
+        String htmlContent = templateEngine.process(Constant.MailTemplate.ORDER_PAID, context);
+
+        helper.setTo(to);
+        helper.setSubject(Constant.MailSubject.ORDER_PAID);
+        helper.setText(htmlContent, true);
+
+        javaMailSender.send(mimeMessage);
+    }
 }
