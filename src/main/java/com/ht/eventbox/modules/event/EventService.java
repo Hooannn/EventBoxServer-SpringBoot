@@ -7,6 +7,7 @@ import com.ht.eventbox.constant.Constant;
 import com.ht.eventbox.entities.*;
 import com.ht.eventbox.enums.AssetUsage;
 import com.ht.eventbox.enums.EventStatus;
+import com.ht.eventbox.enums.OrderStatus;
 import com.ht.eventbox.enums.OrganizationRole;
 import com.ht.eventbox.modules.asset.AssetRepository;
 import com.ht.eventbox.modules.category.CategoryRepository;
@@ -14,6 +15,7 @@ import com.ht.eventbox.modules.event.dtos.CreateEventDto;
 import com.ht.eventbox.modules.event.dtos.UpdateEventDto;
 import com.ht.eventbox.modules.keyword.KeywordRepository;
 import com.ht.eventbox.modules.messaging.PushNotificationService;
+import com.ht.eventbox.modules.order.TicketItemRepository;
 import com.ht.eventbox.modules.organization.OrganizationRepository;
 import com.ht.eventbox.modules.storage.CloudinaryService;
 import com.ht.eventbox.utils.Helper;
@@ -55,6 +57,7 @@ public class EventService {
     private static final Logger logger = org.slf4j.LoggerFactory.getLogger(EventService.class);
 
     private final EventRepository eventRepository;
+    private final TicketItemRepository ticketItemRepository;
     private final OrganizationRepository organizationRepository;
     private final CloudinaryService cloudinaryService;
     private final CategoryRepository categoryRepository;
@@ -419,6 +422,20 @@ public class EventService {
     public Event getByIdAndStatusIsNot(Long eventId, EventStatus eventStatus) {
         return eventRepository.findByIdAndStatusIsNot(eventId, eventStatus)
                 .orElseThrow(() -> new HttpException(Constant.ErrorCode.EVENT_NOT_FOUND, HttpStatus.NOT_FOUND));
+    }
+
+    public Event getWithRealStockByIdAndStatusIsNot(Long eventId, EventStatus eventStatus) {
+        var event = eventRepository.findByIdAndStatusIsNot(eventId, eventStatus)
+                .orElseThrow(() -> new HttpException(Constant.ErrorCode.EVENT_NOT_FOUND, HttpStatus.NOT_FOUND));
+
+        event.getShows().forEach(eventShow -> {
+            eventShow.getTickets().forEach(ticket -> {
+                int reservedStock = (int) ticketItemRepository.countAllByTicketIdAndOrderStatusIn(ticket.getId(), List.of(OrderStatus.PENDING, OrderStatus.WAITING_FOR_PAYMENT));
+                ticket.setStock(ticket.getStock() - reservedStock);
+            });
+        });
+
+        return event;
     }
 
     public List<Event> getAllByStatusIn(

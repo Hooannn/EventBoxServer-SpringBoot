@@ -65,6 +65,8 @@ public class Constant {
         public static final String INTERNAL_SERVER_ERROR = "internal_server_error";
         public static final String TICKET_OUT_OF_STOCK = "ticket_out_of_stock";
         public static final String ORDER_NOT_FOUND = "order_not_found";
+        public static final String TICKET_SALE_NOT_STARTED = "ticket_sale_not_started";
+        public static final String TICKET_SALE_ENDED = "ticket_sale_ended";
     }
 
     public static class SuccessCode {

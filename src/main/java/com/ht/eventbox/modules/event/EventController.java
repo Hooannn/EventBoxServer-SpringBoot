@@ -173,6 +173,19 @@ public class EventController {
         );
     }
 
+    @GetMapping("/public/{eventId}")
+    @RequiredPermissions({"read:events"})
+    public ResponseEntity<Response<Event>> getPublicById(@PathVariable Long eventId) {
+        var res = eventService.getWithRealStockByIdAndStatusIsNot(eventId, EventStatus.ARCHIVED);
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        HttpStatus.OK.getReasonPhrase(),
+                        res
+                )
+        );
+    }
+
     @GetMapping("/discovery")
     @RequiredPermissions({"read:events"})
     public ResponseEntity<Response<EventService.DiscoveryEvents>> getDiscovery() {

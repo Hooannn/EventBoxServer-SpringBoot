@@ -23,6 +23,7 @@ public class AuthenticationFilter extends OncePerRequestFilter {
             "/api/v1/auth/",
             "/api/v2/auth/",
             "/api/v1/orders/paypal/webhook/",
+            "/actuator",
     };
     private final JwtService jwtService;
 

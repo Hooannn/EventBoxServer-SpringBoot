@@ -1,15 +1,18 @@
 package com.ht.eventbox.modules.order;
 
+import com.corundumstudio.socketio.SocketIOServer;
+import com.google.firebase.messaging.Notification;
 import com.ht.eventbox.config.HttpException;
 import com.ht.eventbox.constant.Constant;
-import com.ht.eventbox.entities.Order;
-import com.ht.eventbox.entities.Ticket;
-import com.ht.eventbox.entities.TicketItem;
-import com.ht.eventbox.entities.User;
+import com.ht.eventbox.entities.*;
+import com.ht.eventbox.enums.AssetUsage;
 import com.ht.eventbox.enums.OrderStatus;
+import com.ht.eventbox.modules.mail.MailService;
+import com.ht.eventbox.modules.messaging.PushNotificationService;
 import com.ht.eventbox.modules.order.dtos.CreatePaymentDto;
 import com.ht.eventbox.modules.order.dtos.CreateReservationDto;
 import com.ht.eventbox.modules.ticket.TicketRepository;
+import com.ht.eventbox.utils.Helper;
 import com.paypal.sdk.exceptions.ApiException;
 import com.paypal.sdk.http.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +25,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.IntStream;
 
 @Service
@@ -35,6 +41,9 @@ public class OrderService {
     private final CurrencyConverterService currencyConverterService;
     private final PayPalService payPalService;
     private final TicketItemRepository ticketItemRepository;
+    private final MailService mailService;
+    private final PushNotificationService pushNotificationService;
+    private final SocketIOServer socketIOServer;
 
     public Order save(Order order) {
         return orderRepository.save(order);
@@ -48,6 +57,14 @@ public class OrderService {
         );
     }
 
+    public void onStockUpdated(long eventId) {
+        CompletableFuture.runAsync(() -> {
+            socketIOServer.getNamespace("/event")
+                    .getRoomOperations(String.valueOf(eventId))
+                    .sendEvent("stock_updated", Map.of());
+        });
+    }
+
     @Transactional
     public Order createReservation(Long userId, CreateReservationDto createReservationDto) {
         orderRepository.deleteAllByUserIdAndStatusIs(userId, OrderStatus.WAITING_FOR_PAYMENT);
@@ -59,6 +76,22 @@ public class OrderService {
                 .toList();
 
         List<Ticket> tickets = ticketRepository.findAllByIdWithLocked(ticketIds);
+
+        tickets.forEach(ticket -> {
+            if (ticket.getEventShow().getSaleStartTime().isAfter(LocalDateTime.now())) {
+                throw new HttpException(
+                        Constant.ErrorCode.TICKET_SALE_NOT_STARTED,
+                        HttpStatus.BAD_REQUEST
+                );
+            }
+
+            if (ticket.getEventShow().getSaleEndTime().isBefore(LocalDateTime.now())) {
+                throw new HttpException(
+                        Constant.ErrorCode.TICKET_SALE_ENDED,
+                        HttpStatus.BAD_REQUEST
+                );
+            }
+        });
 
         Order order = Order.builder()
                 .user(User.builder().id(userId).build())
@@ -110,12 +143,29 @@ public class OrderService {
                 LocalDateTime.now().plusSeconds(Constant.RedisKey.RESERVATION_EXPIRES)
         );
 
-        return orderRepository.save(order);
+        var savedOrder = orderRepository.save(order);
+
+        if (!tickets.isEmpty()) {
+            onStockUpdated(
+                    tickets.get(0).getEventShow().getEvent().getId()
+            );
+        }
+
+        return savedOrder;
     }
 
     @Transactional
     public boolean cancelReservation(Long userId) {
         var count = orderRepository.deleteAllByUserIdAndStatusIs(userId, OrderStatus.WAITING_FOR_PAYMENT);
+
+        if (count > 0) {
+            CompletableFuture.runAsync(() -> {
+                socketIOServer.getNamespace("/event")
+                        .getBroadcastOperations()
+                        .sendEvent("stock_updated", Map.of());
+            });
+        }
+
         return count > 0;
     }
 
@@ -187,6 +237,61 @@ public class OrderService {
 
         ticketRepository.saveAll(tickets);
 
-        return orderRepository.save(order);
+        var savedOrder = orderRepository.save(order);
+
+        if (!tickets.isEmpty()) {
+            onStockUpdated(
+                    tickets.get(0).getEventShow().getEvent().getId()
+            );
+        }
+
+        return savedOrder;
+    }
+
+
+    public void onOrderFulfilled(Order order) {
+        CompletableFuture.runAsync(() -> {
+            try {
+                mailService.sendOrderPaidMail(
+                        order.getUser().getEmail(),
+                        order.getUser().getFullName(),
+                        order.getId().toString(),
+                        Helper.formatCurrencyToString(order.getPlaceTotal()),
+                        Helper.formatDateToString(LocalDateTime.now())
+                );
+            } catch (Exception e) {
+                logger.error("Có lỗi xảy ra khi gửi mail: {}", e.getMessage());
+            }
+        });
+
+        CompletableFuture.runAsync(() -> {
+            try {
+                pushNotificationService.push(
+                        order.getUser().getId(),
+                        Notification.builder()
+                                .setBody("Cảm ơn bạn đã đặt hàng tại EventBox. Đơn hàng của bạn đã được thanh toán thành công.")
+                                .setTitle("Đơn hàng #" + order.getId() + " đã được thanh toán thành công")
+                                .build(),
+                        new HashMap<>(
+                                Map.of(
+                                        "type", "order",
+                                        "order_id", String.valueOf(order.getId())
+                                )
+                        )
+                );
+            } catch (Exception e) {
+                logger.error("Error sending push notification for order {}: {}", order.getId(), e.getMessage());
+            }
+        });
+
+        CompletableFuture.runAsync(() -> {
+            socketIOServer.getNamespace("/order")
+                    .getRoomOperations(order.getId().toString())
+                    .sendEvent("order_fulfilled", Map.of(
+                            "order_id", order.getId(),
+                            "status", order.getStatus(),
+                            "place_total", order.getPlaceTotal()
+                    ));
+        });
     }
 }

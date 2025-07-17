@@ -29,7 +29,8 @@ public class SocketIOConfiguration {
 
     private AuthorizationListener authorizationListener() {
         return handshakeData -> {
-            boolean isAuthorized = true;
+            boolean isAuthorized = handshakeData.getSingleUrlParam("user_id") != null &&
+                                   !handshakeData.getSingleUrlParam("user_id").isEmpty();
             return isAuthorized ? AuthorizationResult.SUCCESSFUL_AUTHORIZATION : AuthorizationResult.FAILED_AUTHORIZATION;
         };
     }

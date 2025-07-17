@@ -55,6 +55,7 @@ public class EventShow {
 
     @JsonManagedReference
     @OneToMany(mappedBy = "eventShow", targetEntity = Ticket.class, cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("id ASC")
     private List<Ticket> tickets = new ArrayList<>();
 
     @CreationTimestamp

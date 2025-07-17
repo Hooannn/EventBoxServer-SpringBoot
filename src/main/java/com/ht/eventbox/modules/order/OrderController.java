@@ -13,7 +13,6 @@ import com.ht.eventbox.modules.order.dtos.CheckoutWebhookDto;
 import com.ht.eventbox.modules.order.dtos.CreatePaymentDto;
 import com.ht.eventbox.modules.order.dtos.CreateReservationDto;
 import com.ht.eventbox.modules.order.dtos.PaymentWebhookDto;
-import com.ht.eventbox.utils.Helper;
 import com.paypal.sdk.exceptions.ApiException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,9 +23,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
-import java.util.Date;
-import java.util.concurrent.CompletableFuture;
 
 
 @RestController
@@ -35,7 +31,6 @@ import java.util.concurrent.CompletableFuture;
 @RequiredArgsConstructor
 public class OrderController {
     private static final Logger logger = org.slf4j.LoggerFactory.getLogger(OrderController.class);
-    private final MailService mailService;
 
     @Value("${paypal.checkout.webhook.id}")
     private String checkoutWebhookId;
@@ -165,20 +160,7 @@ public class OrderController {
                 paymentService.fulfillPaymentFromPaypalOrder(paymentWebhookDto, paypalOrder);
                 var customId = paypalOrder.getPurchaseUnits().get(0).getCustomId();
                 var order = orderService.fulfill(Long.parseLong(customId));
-                // Gửi email thông báo thanh toán thành công
-                CompletableFuture.runAsync(() -> {
-                    try {
-                        mailService.sendOrderPaidMail(
-                                order.getUser().getEmail(),
-                                order.getUser().getFullName(),
-                                order.getId().toString(),
-                                Helper.formatCurrencyToString(order.getPlaceTotal()),
-                                Helper.formatDateToString(LocalDateTime.now())
-                        );
-                    } catch (Exception e) {
-                        logger.error("Có lỗi xảy ra khi gửi mail: {}", e.getMessage());
-                    }
-                });
+                orderService.onOrderFulfilled(order);
             } catch (IOException | ApiException e) {
                 throw new HttpException("Error getting PayPal order: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
             }

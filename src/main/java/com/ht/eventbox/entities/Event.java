@@ -36,6 +36,7 @@ public class Event {
 
     @JsonManagedReference
     @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("startTime ASC")
     private List<EventShow> shows = new ArrayList<>();
 
     @Column(name = "title", nullable = false)
