@@ -37,10 +37,25 @@ public class OrganizationController {
 
     @GetMapping("/me")
     @RequiredPermissions({"read:organizations"})
-    public ResponseEntity<Response<List<Organization>>> getMy(
+    public ResponseEntity<Response<List<Organization>>> getMyOwn(
             @RequestAttribute("sub") String sub
     ) {
         var res = organizationService.getByUserIdAndOrganizationRole(Long.valueOf(sub), OrganizationRole.OWNER);
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        HttpStatus.OK.getReasonPhrase(),
+                        res
+                )
+        );
+    }
+
+    @GetMapping("/me/member")
+    @RequiredPermissions({"read:organizations"})
+    public ResponseEntity<Response<List<Organization>>> getMy(
+            @RequestAttribute("sub") String sub
+    ) {
+        var res = organizationService.getByUserId(Long.valueOf(sub));
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),

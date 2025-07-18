@@ -40,6 +40,7 @@ public class TicketItem {
 
     @JsonManagedReference
     @OneToMany(mappedBy = "ticketItem", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("id ASC")
     private List<TicketItemTrace> traces = new ArrayList<>();
 
     @CreationTimestamp

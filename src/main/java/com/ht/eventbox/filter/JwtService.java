@@ -30,6 +30,10 @@ public class JwtService {
     private long jwtExpiration;
     @Value("${application.security.jwt.refresh.expiration}")
     private long jwtRefreshExpiration;
+    @Value("${application.security.jwt.qrcode-secret-key}")
+    private String qrcodeSecretKey;
+    @Value("${application.security.jwt.qrcode.expiration}")
+    private long qrcodeExpiration;
 
     private Claims extractAllClaims(String token, String secretKey) {
         return Jwts.parserBuilder()
@@ -96,6 +100,11 @@ public class JwtService {
     public String generateRefreshToken(User user) {
         HashMap<String, Object> claims = new HashMap<>();
         return buildToken(claims, user.getId().toString(), jwtRefreshExpiration, refreshSecretKey);
+    }
+
+    public String generateQrCode(long ticketItemId) {
+        HashMap<String, Object> claims = new HashMap<>();
+        return buildToken(claims, String.valueOf(ticketItemId), qrcodeExpiration, qrcodeSecretKey);
     }
 
     private Date extractExpiration(String token, String secretKey) {

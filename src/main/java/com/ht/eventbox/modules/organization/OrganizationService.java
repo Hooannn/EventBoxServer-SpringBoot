@@ -43,6 +43,10 @@ public class OrganizationService {
         return organizationRepository.findByUserOrganizationsUserIdAndUserOrganizationsRoleIs(userId, organizationRole);
     }
 
+    public List<Organization> getByUserId(Long userId) {
+        return organizationRepository.findByUserOrganizationsUserId(userId);
+    }
+
     public Organization getById(Long id) {
         return organizationRepository.findById(id).orElseThrow(() ->
                 new HttpException(Constant.ErrorCode.ORGANIZATION_NOT_FOUND, HttpStatus.NOT_FOUND)
