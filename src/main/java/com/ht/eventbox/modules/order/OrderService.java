@@ -38,7 +38,7 @@ public class OrderService {
 
     private final TicketRepository ticketRepository;
     private final OrderRepository orderRepository;
-    private final CurrencyConverterService currencyConverterService;
+    private final CurrencyConverterServiceV2 currencyConverterService;
     private final PayPalService payPalService;
     private final TicketItemRepository ticketItemRepository;
     private final MailService mailService;
@@ -109,9 +109,10 @@ public class OrderService {
                             ));
 
                     long reservationCount = ticketItemRepository
-                            .countAllByTicketIdAndOrderStatusIn(
+                            .countAllByTicketIdAndOrderStatusInAndOrderExpiredAtIsAfter(
                                     ticket.getId(),
-                                    List.of(OrderStatus.WAITING_FOR_PAYMENT, OrderStatus.PENDING)
+                                    List.of(OrderStatus.WAITING_FOR_PAYMENT, OrderStatus.PENDING),
+                                    LocalDateTime.now()
                             );
 
                     if (reservationCount + ticketDto.getQuantity() > ticket.getStock()) {

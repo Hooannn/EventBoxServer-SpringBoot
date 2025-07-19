@@ -160,6 +160,19 @@ public class EventController {
         );
     }
 
+    @GetMapping("/organization/{organizationId}/published")
+    @RequiredPermissions({"read:events"})
+    public ResponseEntity<Response<List<Event>>> getPublishedByOrganizationId(@PathVariable Long organizationId) {
+        var res = eventService.getByOrganizationIdAndStatusIs(organizationId, EventStatus.PUBLISHED);
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        HttpStatus.OK.getReasonPhrase(),
+                        res
+                )
+        );
+    }
+
     @GetMapping("/{eventId}")
     @RequiredPermissions({"read:events"})
     public ResponseEntity<Response<Event>> getById(@PathVariable Long eventId) {

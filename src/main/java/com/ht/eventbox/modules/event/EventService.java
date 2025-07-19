@@ -33,6 +33,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -419,6 +420,10 @@ public class EventService {
         return eventRepository.findAllByOrganizationIdAndStatusIsNotOrderByIdAsc(organizationId, status);
     }
 
+    public List<Event> getByOrganizationIdAndStatusIs(Long organizationId, EventStatus status) {
+        return eventRepository.findAllByOrganizationIdAndStatusIsOrderByIdAsc(organizationId, status);
+    }
+
     public Event getByIdAndStatusIsNot(Long eventId, EventStatus eventStatus) {
         return eventRepository.findByIdAndStatusIsNot(eventId, eventStatus)
                 .orElseThrow(() -> new HttpException(Constant.ErrorCode.EVENT_NOT_FOUND, HttpStatus.NOT_FOUND));
@@ -430,7 +435,12 @@ public class EventService {
 
         event.getShows().forEach(eventShow -> {
             eventShow.getTickets().forEach(ticket -> {
-                int reservedStock = (int) ticketItemRepository.countAllByTicketIdAndOrderStatusIn(ticket.getId(), List.of(OrderStatus.PENDING, OrderStatus.WAITING_FOR_PAYMENT));
+                int reservedStock = (int) ticketItemRepository.
+                        countAllByTicketIdAndOrderStatusInAndOrderExpiredAtIsAfter(
+                                ticket.getId(),
+                                List.of(OrderStatus.PENDING, OrderStatus.WAITING_FOR_PAYMENT),
+                                LocalDateTime.now()
+                                );
                 ticket.setStock(ticket.getStock() - reservedStock);
             });
         });
