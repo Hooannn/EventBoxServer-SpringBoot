@@ -2,7 +2,6 @@ package com.ht.eventbox.modules.category;
 
 import com.ht.eventbox.entities.Category;
 import com.ht.eventbox.modules.category.dtos.CreateBulkCategoriesDto;
-import jakarta.validation.Valid;
 import lombok.*;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Service;

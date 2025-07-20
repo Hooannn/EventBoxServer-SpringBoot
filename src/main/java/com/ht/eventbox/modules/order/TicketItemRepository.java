@@ -20,7 +20,13 @@ public interface TicketItemRepository extends JpaRepository<TicketItem, Long> {
 
     <T> Optional<T> findByIdAndOrderUserId(Long id, Long userId, Class<T> clazz);
 
+    <T> Optional<T> findById(Long id, Class<T> clazz);
+
     <T> Optional<T> findByIdAndOrderUserIdAndOrderStatusIs(Long ticketItemId, Long userId, OrderStatus orderStatus, Class<T> clazz);
 
     long countAllByTicketIdAndOrderStatusInAndOrderExpiredAtIsAfter(Long id, List<OrderStatus> statuses, LocalDateTime now);
+
+    <T> Optional<T> findByIdAndOrderStatusIs(long ticketItemId, OrderStatus orderStatus, Class<T> clazz);
+
+    <T> Optional<T> findByIdAndOrderStatusIsAndTicketEventShowId(Long id, OrderStatus orderStatus, Long eventShowId, Class<T> clazz);
 }

@@ -13,4 +13,6 @@ public interface OrganizationRepository extends JpaRepository<Organization, Long
     Optional<Organization> findByIdAndUserOrganizationsUserIdAndUserOrganizationsRoleIs(Long orgId, Long userId, OrganizationRole userOrganizations_role);
 
     List<Organization> findByUserOrganizationsUserId(Long userId);
+
+    boolean existsByIdAndUserOrganizationsUserId(Long orgId, Long userId);
 }

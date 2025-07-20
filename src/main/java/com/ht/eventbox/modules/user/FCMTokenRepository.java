@@ -1,7 +1,6 @@
 package com.ht.eventbox.modules.user;
 
 import com.ht.eventbox.entities.FCMToken;
-import com.ht.eventbox.entities.Permission;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Collection;

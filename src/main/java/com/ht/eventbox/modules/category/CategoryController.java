@@ -2,11 +2,7 @@ package com.ht.eventbox.modules.category;
 
 import com.ht.eventbox.annotations.RequiredPermissions;
 import com.ht.eventbox.config.Response;
-import com.ht.eventbox.constant.Constant;
 import com.ht.eventbox.entities.Category;
-import com.ht.eventbox.modules.auth.AuthService;
-import com.ht.eventbox.modules.auth.AuthenticationResponse;
-import com.ht.eventbox.modules.auth.dtos.*;
 import com.ht.eventbox.modules.category.dtos.CreateBulkCategoriesDto;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

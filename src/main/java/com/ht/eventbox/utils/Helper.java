@@ -3,12 +3,10 @@ package com.ht.eventbox.utils;
 import com.ht.eventbox.entities.Asset;
 import com.ht.eventbox.enums.AssetUsage;
 
-import java.math.BigDecimal;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Base64;
-import java.util.Date;
 import java.util.Map;
 
 public class Helper {

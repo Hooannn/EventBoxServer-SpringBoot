@@ -1,8 +1,8 @@
-package com.ht.eventbox.modules.auth.dtos;
+package com.ht.eventbox.modules.ticket.dtos;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.ht.eventbox.constant.Constant;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,8 +12,11 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RefreshDto {
-    @NotBlank(message = Constant.ValidationCode.TOKEN_NOT_EMPTY)
-    @JsonProperty("refresh_token")
+public class ValidateTicketItemDto {
+    @NotBlank
     private String token;
+
+    @NotNull
+    @JsonProperty("event_show_id")
+    private Long eventShowId;
 }

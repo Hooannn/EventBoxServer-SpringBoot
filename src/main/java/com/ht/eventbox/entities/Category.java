@@ -1,7 +1,6 @@
 package com.ht.eventbox.entities;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.ht.eventbox.enums.AssetUsage;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;

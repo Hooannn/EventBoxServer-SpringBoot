@@ -3,7 +3,6 @@ package com.ht.eventbox.modules.user;
 import com.ht.eventbox.config.HttpException;
 import com.ht.eventbox.constant.Constant;
 import com.ht.eventbox.entities.*;
-import com.ht.eventbox.modules.user.dtos.UpdateFCMTokensDto;
 import com.ht.eventbox.modules.user.dtos.*;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;

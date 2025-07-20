@@ -1,22 +1,35 @@
 package com.ht.eventbox.modules.ticket;
 
+import com.corundumstudio.socketio.SocketIOServer;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ht.eventbox.config.HttpException;
 import com.ht.eventbox.constant.Constant;
 import com.ht.eventbox.entities.*;
 import com.ht.eventbox.enums.OrderStatus;
+import com.ht.eventbox.enums.TicketItemTraceEvent;
 import com.ht.eventbox.filter.JwtService;
 import com.ht.eventbox.modules.order.TicketItemRepository;
+import com.ht.eventbox.modules.organization.OrganizationRepository;
+import com.ht.eventbox.modules.ticket.dtos.ValidateTicketItemDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 @RequiredArgsConstructor
 public class TicketService {
+    @Value("${application.security.jwt.qrcode-secret-key}")
+    private String qrcodeSecretKey;
+
+    public interface OrganizationView {
+        Long getId();
+    }
+
     public interface EventView {
         Long getId();
         String getTitle();
@@ -25,6 +38,8 @@ public class TicketService {
 
         @JsonProperty("place_name")
         String getPlaceName();
+
+        OrganizationView getOrganization();
 
         Set<Asset> getAssets();
     }
@@ -90,6 +105,9 @@ public class TicketService {
 
     private final TicketItemRepository ticketItemRepository;
     private final JwtService jwtService;
+    private final OrganizationRepository organizationRepository;
+    private final TicketItemTraceRepository ticketItemTraceRepository;
+    private final SocketIOServer socketIOServer;
 
     public List<TicketItemDetails> getTicketItemsByUserIdAndOrderStatusIs(Long userId, OrderStatus status) {
         return ticketItemRepository.findAllByOrderUserIdAndOrderStatusIsOrderByIdAsc(
@@ -99,6 +117,16 @@ public class TicketService {
         );
     }
 
+    public TicketItemDetails getTicketItemById(Long ticketItemId) {
+        return ticketItemRepository.findById(
+                ticketItemId,
+                TicketItemDetails.class
+        ).orElseThrow(() -> new HttpException(
+                Constant.ErrorCode.TICKET_ITEM_NOT_FOUND,
+                HttpStatus.BAD_REQUEST
+        ));
+    }
+
     public String getTicketItemQrCode(Long userId, Long ticketItemId) {
         var ticketItem = ticketItemRepository.findByIdAndOrderUserIdAndOrderStatusIs(ticketItemId, userId, OrderStatus.FULFILLED, TicketItemDetails.class)
                 .orElseThrow(() -> new HttpException(
@@ -106,6 +134,121 @@ public class TicketService {
                         HttpStatus.BAD_REQUEST
                 ));
 
+        if (ticketItem.getTicket().getEventShow().getStartTime().isAfter(LocalDateTime.now())) {
+            throw new HttpException(
+                    Constant.ErrorCode.SHOW_NOT_STARTED,
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        if (ticketItem.getTicket().getEventShow().getEndTime().isBefore(LocalDateTime.now())) {
+            throw new HttpException(
+                    Constant.ErrorCode.SHOW_ENDED,
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
         return jwtService.generateQrCode(ticketItem.getId());
+    }
+
+
+    public TicketItemDetails validateTicketItem(Long userId, ValidateTicketItemDto validateTicketItemDto) {
+        String sub;
+
+        try {
+            boolean isTokenValid = jwtService.isTokenValid(validateTicketItemDto.getToken(), qrcodeSecretKey);
+            if (!isTokenValid) {
+                throw new HttpException(
+                        Constant.ErrorCode.TICKET_ITEM_INVALID,
+                        HttpStatus.BAD_REQUEST
+                );
+            }
+
+            sub = jwtService.extractSub(validateTicketItemDto.getToken(), qrcodeSecretKey);
+        } catch (Exception e) {
+            throw new HttpException(
+                    e.getMessage(),
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        if (sub == null || sub.isEmpty()) {
+            throw new HttpException(
+                    Constant.ErrorCode.TICKET_ITEM_INVALID,
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        long ticketItemId = Long.parseLong(sub);
+
+        var ticketItem = ticketItemRepository.findByIdAndOrderStatusIsAndTicketEventShowId(ticketItemId, OrderStatus.FULFILLED, validateTicketItemDto.getEventShowId(), TicketItemDetails.class)
+                .orElseThrow(() -> new HttpException(
+                        Constant.ErrorCode.TICKET_ITEM_NOT_FOUND,
+                        HttpStatus.BAD_REQUEST
+                ));
+
+        if (ticketItem.getTicket().getEventShow().getStartTime().isAfter(LocalDateTime.now())) {
+            throw new HttpException(
+                    Constant.ErrorCode.SHOW_NOT_STARTED,
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        if (ticketItem.getTicket().getEventShow().getEndTime().isBefore(LocalDateTime.now())) {
+            throw new HttpException(
+                    Constant.ErrorCode.SHOW_ENDED,
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        long orgId = ticketItem.getTicket().getEventShow().getEvent().getOrganization().getId();
+
+        boolean isMember = organizationRepository.existsByIdAndUserOrganizationsUserId(
+                orgId,
+                userId
+        );
+
+        if (!isMember) {
+            throw new HttpException(
+                    Constant.ErrorCode.USER_NOT_IN_ORGANIZATION,
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        return ticketItem;
+    }
+
+    public boolean createTicketItemTrace(Long userId, ValidateTicketItemDto createTicketItemTraceDto) {
+        var ticketItem = validateTicketItem(
+                userId,
+                createTicketItemTraceDto
+        );
+
+        var trace = new TicketItemTrace();
+        trace.setTicketItem(TicketItem.builder().id(ticketItem.getId()).build());
+        trace.setIssuer(User.builder().id(userId).build());
+
+        if (ticketItem.getTraces().isEmpty()) {
+            trace.setEvent(TicketItemTraceEvent.CHECKED_IN);
+        } else {
+            var lastTrace = ticketItem.getTraces().get(ticketItem.getTraces().size() - 1);
+            if (lastTrace.getEvent() == TicketItemTraceEvent.CHECKED_IN) {
+                trace.setEvent(TicketItemTraceEvent.WENT_OUT);
+            } else {
+                trace.setEvent(TicketItemTraceEvent.CHECKED_IN);
+            }
+        }
+
+        ticketItemTraceRepository.save(trace);
+
+        CompletableFuture.runAsync(() -> {
+            socketIOServer.getNamespace("/ticket")
+                    .getRoomOperations(ticketItem.getId().toString())
+                    .sendEvent("traces_updated", Map.of(
+                            "ticket_item_id", ticketItem.getId()
+                    ));
+        });
+
+        return true;
     }
 }

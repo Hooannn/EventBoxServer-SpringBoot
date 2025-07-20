@@ -5,7 +5,6 @@ import com.ht.eventbox.config.Response;
 import com.ht.eventbox.constant.Constant;
 import com.ht.eventbox.entities.Organization;
 import com.ht.eventbox.enums.OrganizationRole;
-import com.ht.eventbox.modules.category.dtos.CreateBulkCategoriesDto;
 import com.ht.eventbox.modules.organization.dtos.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

@@ -6,7 +6,6 @@ import com.ht.eventbox.constant.Constant;
 import com.ht.eventbox.entities.Permission;
 import com.ht.eventbox.entities.Role;
 import com.ht.eventbox.entities.User;
-import com.ht.eventbox.modules.user.dtos.UpdateFCMTokensDto;
 import com.ht.eventbox.modules.user.dtos.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

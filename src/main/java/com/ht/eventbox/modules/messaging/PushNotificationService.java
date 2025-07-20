@@ -4,7 +4,6 @@ import com.google.firebase.messaging.*;
 import com.ht.eventbox.entities.FCMToken;
 import com.ht.eventbox.modules.user.FCMTokenRepository;
 import lombok.RequiredArgsConstructor;
-import com.google.firebase.messaging.Notification;
 import org.springframework.stereotype.Service;
 
 import java.util.*;

@@ -8,7 +8,6 @@ import com.ht.eventbox.config.Response;
 import com.ht.eventbox.constant.Constant;
 import com.ht.eventbox.entities.Order;
 import com.ht.eventbox.enums.OrderStatus;
-import com.ht.eventbox.modules.mail.MailService;
 import com.ht.eventbox.modules.order.dtos.CheckoutWebhookDto;
 import com.ht.eventbox.modules.order.dtos.CreatePaymentDto;
 import com.ht.eventbox.modules.order.dtos.CreateReservationDto;

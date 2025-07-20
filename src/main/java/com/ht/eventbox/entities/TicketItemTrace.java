@@ -2,12 +2,10 @@ package com.ht.eventbox.entities;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.ht.eventbox.enums.OrderStatus;
 import com.ht.eventbox.enums.TicketItemTraceEvent;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
 @Builder
 @Setter
