@@ -6,6 +6,8 @@ import com.ht.eventbox.config.HttpException;
 import com.ht.eventbox.constant.Constant;
 import com.ht.eventbox.entities.*;
 import com.ht.eventbox.enums.OrderStatus;
+import com.ht.eventbox.enums.OrganizationRole;
+import com.ht.eventbox.modules.event.EventRepository;
 import com.ht.eventbox.modules.mail.MailService;
 import com.ht.eventbox.modules.messaging.PushNotificationService;
 import com.ht.eventbox.modules.order.dtos.CreatePaymentDto;
@@ -34,6 +36,7 @@ import java.util.stream.IntStream;
 public class OrderService {
     private static final Logger logger = org.slf4j.LoggerFactory.getLogger(OrderService.class);
 
+    private final EventRepository eventRepository;
     private final TicketRepository ticketRepository;
     private final OrderRepository orderRepository;
     private final CurrencyConverterServiceV2 currencyConverterService;
@@ -217,6 +220,7 @@ public class OrderService {
                 .orElseThrow(() -> new HttpException(Constant.ErrorCode.ORDER_NOT_FOUND, HttpStatus.NOT_FOUND));
 
         order.setStatus(OrderStatus.FULFILLED);
+        order.setFulfilledAt(LocalDateTime.now());
 
         List<Ticket> tickets = ticketRepository.findAllByIdWithLocked(
                 order.getItems().stream()
@@ -292,5 +296,39 @@ public class OrderService {
                             "place_total", order.getPlaceTotal()
                     ));
         });
+    }
+
+    public List<Order> getByShowId(Long userId, Long showId, LocalDateTime from, LocalDateTime to) {
+        Event event = eventRepository.findByShowsId(showId)
+                .orElseThrow(() -> new HttpException(Constant.ErrorCode.EVENT_NOT_FOUND, HttpStatus.NOT_FOUND));
+
+        var members = event.getOrganization().getUserOrganizations();
+
+        if (members.stream().noneMatch(m -> m.getUser().getId().equals(userId) && List.of(OrganizationRole.MANAGER, OrganizationRole.OWNER).contains(m.getRole()))) {
+            throw new HttpException(Constant.ErrorCode.NOT_ALLOWED_OPERATION, HttpStatus.FORBIDDEN);
+        }
+
+        return orderRepository.findAllByItemsTicketEventShowIdAndStatusIsAndFulfilledAtBetween(
+                showId,
+                OrderStatus.FULFILLED,
+                from,
+                to
+        );
+    }
+
+    public List<Order> getByShowId(Long userId, Long showId) {
+        Event event = eventRepository.findByShowsId(showId)
+                .orElseThrow(() -> new HttpException(Constant.ErrorCode.EVENT_NOT_FOUND, HttpStatus.NOT_FOUND));
+
+        var members = event.getOrganization().getUserOrganizations();
+
+        if (members.stream().noneMatch(m -> m.getUser().getId().equals(userId) && List.of(OrganizationRole.MANAGER, OrganizationRole.OWNER).contains(m.getRole()))) {
+            throw new HttpException(Constant.ErrorCode.NOT_ALLOWED_OPERATION, HttpStatus.FORBIDDEN);
+        }
+
+        return orderRepository.findAllByItemsTicketEventShowIdAndStatusIs(
+                showId,
+                OrderStatus.FULFILLED
+        );
     }
 }

@@ -6,8 +6,10 @@ import com.ht.eventbox.config.HttpException;
 import com.ht.eventbox.constant.Constant;
 import com.ht.eventbox.entities.*;
 import com.ht.eventbox.enums.OrderStatus;
+import com.ht.eventbox.enums.OrganizationRole;
 import com.ht.eventbox.enums.TicketItemTraceEvent;
 import com.ht.eventbox.filter.JwtService;
+import com.ht.eventbox.modules.event.EventRepository;
 import com.ht.eventbox.modules.order.TicketItemRepository;
 import com.ht.eventbox.modules.organization.OrganizationRepository;
 import com.ht.eventbox.modules.ticket.dtos.ValidateTicketItemDto;
@@ -23,6 +25,7 @@ import java.util.concurrent.CompletableFuture;
 @Service
 @RequiredArgsConstructor
 public class TicketService {
+    private final EventRepository eventRepository;
     @Value("${application.security.jwt.qrcode-secret-key}")
     private String qrcodeSecretKey;
 
@@ -250,5 +253,18 @@ public class TicketService {
         });
 
         return true;
+    }
+
+    public List<TicketItem> getTicketItemByShowId(Long userId, Long showId) {
+        Event event = eventRepository.findByShowsId(showId)
+                .orElseThrow(() -> new HttpException(Constant.ErrorCode.EVENT_NOT_FOUND, HttpStatus.NOT_FOUND));
+
+        var members = event.getOrganization().getUserOrganizations();
+
+        if (members.stream().noneMatch(m -> m.getUser().getId().equals(userId) && List.of(OrganizationRole.MANAGER, OrganizationRole.OWNER).contains(m.getRole()))) {
+            throw new HttpException(Constant.ErrorCode.NOT_ALLOWED_OPERATION, HttpStatus.FORBIDDEN);
+        }
+
+        return ticketItemRepository.findAllByTicketEventShowId(showId, TicketItem.class);
     }
 }

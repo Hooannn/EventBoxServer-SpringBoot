@@ -4,6 +4,7 @@ import com.ht.eventbox.annotations.RequiredPermissions;
 import com.ht.eventbox.config.Response;
 import com.ht.eventbox.constant.Constant;
 import com.ht.eventbox.entities.Event;
+import com.ht.eventbox.entities.EventShow;
 import com.ht.eventbox.enums.EventStatus;
 import com.ht.eventbox.modules.event.dtos.CreateEventDto;
 import com.ht.eventbox.modules.event.dtos.UpdateEventDto;
@@ -177,6 +178,19 @@ public class EventController {
     @RequiredPermissions({"read:events"})
     public ResponseEntity<Response<Event>> getById(@PathVariable Long eventId) {
         var res = eventService.getByIdAndStatusIsNot(eventId, EventStatus.ARCHIVED);
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        HttpStatus.OK.getReasonPhrase(),
+                        res
+                )
+        );
+    }
+
+    @GetMapping("/{eventId}/shows")
+    @RequiredPermissions({"read:events"})
+    public ResponseEntity<Response<List<EventShow>>> getShowsById(@PathVariable Long eventId) {
+        var res = eventService.getShowsById(eventId);
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),

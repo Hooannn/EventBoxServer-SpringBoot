@@ -33,4 +33,6 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     boolean existsByOrganizationId(Long orgId);
 
     List<Event> findAllByOrganizationIdAndStatusIsOrderByIdAsc(Long organizationId, EventStatus status);
+
+    Optional<Event> findByShowsId(Long showId);
 }

@@ -41,6 +41,8 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class EventService {
+    private final EventShowRepository eventShowRepository;
+
     @Getter
     @Setter
     @Builder
@@ -66,6 +68,10 @@ public class EventService {
     private final AssetRepository assetRepository;
     private final JdbcTemplate jdbcTemplate;
     private final PushNotificationService pushNotificationService;
+
+    public List<EventShow> getShowsById(Long eventId) {
+        return eventShowRepository.findAllByEventIdOrderByIdAsc(eventId);
+    }
 
     public DiscoveryEvents getDiscovery() {
         Pageable pageable = PageRequest.of(0, 4, Sort.by("id").ascending());

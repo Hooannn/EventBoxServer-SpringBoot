@@ -2,6 +2,7 @@ package com.ht.eventbox.modules.ticket;
 
 import com.ht.eventbox.annotations.RequiredPermissions;
 import com.ht.eventbox.config.Response;
+import com.ht.eventbox.entities.TicketItem;
 import com.ht.eventbox.enums.OrderStatus;
 import com.ht.eventbox.modules.ticket.dtos.ValidateTicketItemDto;
 import jakarta.validation.Valid;
@@ -90,6 +91,22 @@ public class TicketController {
             @Valid @RequestBody ValidateTicketItemDto createTicketItemTraceDto)
     {
         var res = ticketService.createTicketItemTrace(Long.valueOf(sub), createTicketItemTraceDto);
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        HttpStatus.OK.getReasonPhrase(),
+                        res
+                )
+        );
+    }
+
+    @GetMapping("/shows/{showId}/items")
+    @RequiredPermissions({"read:orders"})
+    public ResponseEntity<Response<List<TicketItem>>> getTicketItemByShowId(
+            @RequestAttribute("sub") String sub,
+            @PathVariable Long showId)
+    {
+        var res = ticketService.getTicketItemByShowId(Long.valueOf(sub), showId);
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),

@@ -22,6 +22,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.List;
 
 
 @RestController
@@ -217,6 +219,40 @@ public class OrderController {
                 new Response<>(
                         HttpStatus.OK.value(),
                         Constant.SuccessCode.UPDATE_SUCCESSFULLY,
+                        res
+                )
+        );
+    }
+
+    @GetMapping("/shows/{showId}")
+    @RequiredPermissions({"read:orders"})
+    public ResponseEntity<Response<List<Order>>> getByShowId(
+            @RequestAttribute("sub") String sub,
+            @RequestParam(value = "from") LocalDateTime from,
+            @RequestParam(value = "to") LocalDateTime to,
+            @PathVariable Long showId)
+    {
+        var res = orderService.getByShowId(Long.valueOf(sub), showId, from, to);
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        HttpStatus.OK.getReasonPhrase(),
+                        res
+                )
+        );
+    }
+
+    @GetMapping("/shows/{showId}/all")
+    @RequiredPermissions({"read:orders"})
+    public ResponseEntity<Response<List<Order>>> getByShowId(
+            @RequestAttribute("sub") String sub,
+            @PathVariable Long showId)
+    {
+        var res = orderService.getByShowId(Long.valueOf(sub), showId);
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        HttpStatus.OK.getReasonPhrase(),
                         res
                 )
         );

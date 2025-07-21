@@ -16,6 +16,8 @@ public interface TicketItemRepository extends JpaRepository<TicketItem, Long> {
 
     List<TicketItem> findAllByOrderUserIdAndOrderStatusIsOrderByIdAsc(Long userId, OrderStatus status);
 
+    <T> List<T> findAllByTicketEventShowId(Long showId, Class<T> clazz);
+
     <T> List<T> findAllByOrderUserIdAndOrderStatusIsOrderByIdAsc(Long userId, OrderStatus status, Class<T> clazz);
 
     <T> Optional<T> findByIdAndOrderUserId(Long id, Long userId, Class<T> clazz);

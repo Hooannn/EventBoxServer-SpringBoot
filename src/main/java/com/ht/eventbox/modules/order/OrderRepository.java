@@ -10,6 +10,10 @@ import java.util.List;
 import java.util.Optional;
 
 public interface OrderRepository extends JpaRepository<Order, Long> {
+    List<Order> findAllByItemsTicketEventShowIdAndStatusIsAndFulfilledAtBetween(
+            Long eventShowId, OrderStatus status, LocalDateTime start, LocalDateTime end);
+
+    List<Order> findAllByItemsTicketEventShowIdAndStatusIs(Long eventShowId, OrderStatus status);
 
     long deleteAllByStatusInAndExpiredAtBefore(List<OrderStatus> statuses, LocalDateTime now);
 
