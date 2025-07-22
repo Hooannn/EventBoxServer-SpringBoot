@@ -13,6 +13,7 @@ import com.ht.eventbox.modules.asset.AssetRepository;
 import com.ht.eventbox.modules.category.CategoryRepository;
 import com.ht.eventbox.modules.event.dtos.CreateEventDto;
 import com.ht.eventbox.modules.event.dtos.UpdateEventDto;
+import com.ht.eventbox.modules.event.dtos.UpdateEventTagsDto;
 import com.ht.eventbox.modules.keyword.KeywordRepository;
 import com.ht.eventbox.modules.messaging.PushNotificationService;
 import com.ht.eventbox.modules.order.TicketItemRepository;
@@ -75,16 +76,44 @@ public class EventService {
 
     public DiscoveryEvents getDiscovery() {
         Pageable pageable = PageRequest.of(0, 4, Sort.by("id").ascending());
-        var featuredEvents = eventRepository.findByStatusIn(
-                List.of(EventStatus.PUBLISHED), pageable
+
+        var featuredEvents = eventRepository.findDistinctByStatusInAndFeaturedIsTrueAndShowsEndTimeAfter(
+                List.of(EventStatus.PUBLISHED), LocalDateTime.now(), pageable
         ).getContent();
 
-        // Mocking events
+        var trendingEvents = eventRepository.findDistinctByStatusInAndTrendingIsTrueAndShowsEndTimeAfter(
+                List.of(EventStatus.PUBLISHED), LocalDateTime.now(), pageable
+        ).getContent();
+
+        Pageable latestPageable = PageRequest.of(0, 4, Sort.by("publishedAt").descending());
+
+        var latestEvents = eventRepository.findDistinctByStatusInAndShowsEndTimeAfter(
+                List.of(EventStatus.PUBLISHED), LocalDateTime.now(), latestPageable
+        ).getContent();
+
         return DiscoveryEvents.builder()
                 .featuredEvents(featuredEvents)
-                .trendingEvents(featuredEvents)
-                .latestEvents(featuredEvents)
+                .trendingEvents(trendingEvents)
+                .latestEvents(latestEvents)
                 .build();
+    }
+
+    public List<Event> search(String query, String province, List<Long> categories) {
+        if (categories != null && categories.isEmpty()) {
+            categories = null;
+        }
+
+        if (province != null && !province.isBlank()) {
+            return eventRepository
+                    .searchEvents(
+                            query, province, categories, EventStatus.PUBLISHED, LocalDateTime.now()
+                    );
+        }
+
+        return eventRepository
+                .searchEvents(
+                        query, categories, EventStatus.PUBLISHED, LocalDateTime.now()
+                );
     }
 
     @Transactional
@@ -320,8 +349,23 @@ public class EventService {
 
     public List<Event> getAllByCategoriesIdAndStatusIs(Long categoryId, EventStatus status) {
         Pageable pageable = PageRequest.of(0, 4, Sort.by("id").ascending());
-        var events = eventRepository.findByCategoriesIdAndStatusIs(categoryId, status, pageable);
+        var events = eventRepository.findDistinctByCategoriesIdAndStatusIsAndShowsEndTimeAfter(categoryId, status, LocalDateTime.now(), pageable);
         return events.getContent();
+    }
+
+    public boolean updateTags(Long eventId, UpdateEventTagsDto updateEventTagsDto) {
+        var event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new HttpException(Constant.ErrorCode.EVENT_NOT_FOUND, HttpStatus.NOT_FOUND));
+
+        if (event.getStatus() != EventStatus.PUBLISHED) {
+            throw new HttpException(Constant.ErrorCode.NOT_ALLOWED_OPERATION, HttpStatus.BAD_REQUEST);
+        }
+
+        event.setFeatured(updateEventTagsDto.isFeatured());
+        event.setTrending(updateEventTagsDto.isTrending());
+        eventRepository.save(event);
+
+        return true;
     }
 
     public boolean publishByAdmin(Long eventId) {
@@ -333,6 +377,7 @@ public class EventService {
         }
 
         event.setStatus(EventStatus.PUBLISHED);
+        event.setPublishedAt(LocalDateTime.now());
         eventRepository.save(event);
 
         CompletableFuture.runAsync(() -> {

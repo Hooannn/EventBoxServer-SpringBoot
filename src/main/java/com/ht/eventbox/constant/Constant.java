@@ -71,6 +71,8 @@ public class Constant {
         public static final String TICKET_ITEM_INVALID = "ticket_item_invalid";
         public static final String SHOW_NOT_STARTED = "show_not_started";
         public static final String SHOW_ENDED = "show_ended";
+        public static final String CATEGORY_NOT_FOUND = "category_not_found";
+        public static final String CATEGORY_IN_USE = "category_in_use";
     }
 
     public static class SuccessCode {

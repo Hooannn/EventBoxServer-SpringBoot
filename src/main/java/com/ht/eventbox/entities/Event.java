@@ -84,6 +84,12 @@ public class Event {
     )
     private Set<Keyword> keywords = new HashSet<>();
 
+    @Column(name = "featured", nullable = false, columnDefinition = "boolean default false")
+    private boolean featured = false;
+
+    @Column(name = "trending", nullable = false, columnDefinition = "boolean default false")
+    private boolean trending = false;
+
     @CreationTimestamp
     @Column(name = "created_at")
     @JsonProperty("created_at")

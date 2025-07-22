@@ -8,6 +8,7 @@ import com.ht.eventbox.entities.EventShow;
 import com.ht.eventbox.enums.EventStatus;
 import com.ht.eventbox.modules.event.dtos.CreateEventDto;
 import com.ht.eventbox.modules.event.dtos.UpdateEventDto;
+import com.ht.eventbox.modules.event.dtos.UpdateEventTagsDto;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -58,6 +59,23 @@ public class EventController {
     public ResponseEntity<Response<Boolean>> archiveByAdmin(@PathVariable Long eventId)
     {
         var res = eventService.archiveByAdmin(eventId);
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        Constant.SuccessCode.UPDATE_SUCCESSFULLY,
+                        res
+                )
+        );
+    }
+
+    @PutMapping("/{eventId}/admin/tags")
+    @RequiredPermissions({"update:events", "access:admin"})
+    public ResponseEntity<Response<Boolean>> updateTags(
+            @RequestAttribute("sub") String sub,
+            @PathVariable Long eventId,
+            @Valid @RequestBody UpdateEventTagsDto updateEventTagsDto)
+    {
+        var res = eventService.updateTags(eventId, updateEventTagsDto);
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
@@ -217,6 +235,27 @@ public class EventController {
     @RequiredPermissions({"read:events"})
     public ResponseEntity<Response<EventService.DiscoveryEvents>> getDiscovery() {
         var res = eventService.getDiscovery();
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        HttpStatus.OK.getReasonPhrase(),
+                        res
+                )
+        );
+    }
+
+    @GetMapping("/search")
+    @RequiredPermissions({"read:events"})
+    public ResponseEntity<Response<List<Event>>> search(
+            @RequestParam(value = "q") String query,
+            @RequestParam(value = "province", required = false) String province,
+            @RequestParam(value = "categories", required = false) List<Long> categories
+    ) {
+        var res = eventService.search(
+                query,
+                province,
+                categories
+        );
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
