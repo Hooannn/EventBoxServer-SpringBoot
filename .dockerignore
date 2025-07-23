@@ -59,4 +59,6 @@ pom.xml.releaseBackup
 pom.xml.tag
 pom.xml.versionsBackup
 release.properties
+application.properties
+service-account-key.json
 replay_pid*

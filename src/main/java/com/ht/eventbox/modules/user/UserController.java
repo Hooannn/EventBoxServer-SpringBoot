@@ -180,6 +180,34 @@ public class UserController {
         );
     }
 
+    @PutMapping("/me/change-password")
+    public ResponseEntity<Response<Boolean>> changePassword(
+            @RequestAttribute("sub") String sub,
+            @Valid @RequestBody ChangePasswordDto changePasswordDto) {
+        var res = userService.changePassword(Long.valueOf(sub), changePasswordDto);
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        Constant.SuccessCode.UPDATE_SUCCESSFULLY,
+                        res
+                )
+        );
+    }
+
+    @PutMapping("/me/update")
+    public ResponseEntity<Response<Boolean>> updateInformation(
+            @RequestAttribute("sub") String sub,
+            @Valid @RequestBody UpdateInformationDto updateInformationDto) {
+        var res = userService.updateInformation(Long.valueOf(sub), updateInformationDto);
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        Constant.SuccessCode.UPDATE_SUCCESSFULLY,
+                        res
+                )
+        );
+    }
+
     @PostMapping
     @RequiredPermissions({"create:users"})
     public ResponseEntity<Response<Boolean>> create(

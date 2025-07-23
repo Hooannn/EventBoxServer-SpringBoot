@@ -42,3 +42,4 @@ build/
 ehthumbs.db
 
 application.properties
+service-account-key.json
