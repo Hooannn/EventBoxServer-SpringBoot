@@ -118,6 +118,7 @@ public class EventService {
 
     @Transactional
     public boolean create(Long userId, CreateEventDto createEventDto) {
+        // Lấy tổ chức theo ID và kiểm tra quyền sở hữu (chỉ người sở hữu tổ chức mới có thể tạo sự kiện)
         var org = organizationRepository.findByIdAndUserOrganizationsUserIdAndUserOrganizationsRoleIs(createEventDto.getOrganizationId(), userId, OrganizationRole.OWNER).orElseThrow(() ->
                 new HttpException(Constant.ErrorCode.ORGANIZATION_NOT_FOUND, HttpStatus.NOT_FOUND)
         );
@@ -129,9 +130,11 @@ public class EventService {
                 .address(createEventDto.getAddress())
                 .placeName(createEventDto.getPlaceName())
                 .assets(new HashSet<>())
+                // Gán categories theo danh sách ID từ CreateEventDto
                 .categories(new HashSet<>(categoryRepository.findAllById(createEventDto.getCategoryIds())))
                 .build();
 
+        // Tạo các EventShow từ danh sách showInputs trong CreateEventDto
         List<EventShow> eventShows = createEventDto.getShowInputs().stream()
                 .map(createShowDto -> {
                     var eventShow = EventShow.builder()
@@ -142,6 +145,7 @@ public class EventService {
                             .saleEndTime(createShowDto.getSaleEndTime())
                             .build();
 
+                    // Tạo các Ticket từ danh sách ticketTypeInputs trong CreateShowDto
                     List<Ticket> tickets = createShowDto.getTicketTypeInputs().stream()
                             .map(ticketTypeDto -> {
                                 var ticket = Ticket.builder()
@@ -164,6 +168,7 @@ public class EventService {
 
         event.setShows(eventShows);
 
+        // Gán keywords từ CreateEventDto
         if (createEventDto.getKeywords() != null && !createEventDto.getKeywords().isEmpty()) {
             Set<Keyword> keywords = createEventDto.getKeywords().stream()
                     .map(name -> keywordRepository.findById(name)
@@ -172,6 +177,7 @@ public class EventService {
             event.setKeywords(keywords);
         }
 
+        // Tải logo lên Cloudinary và lưu Asset
         Map logoUploadResult = null;
         try {
             logoUploadResult = cloudinaryService.uploadByBase64(
@@ -187,6 +193,7 @@ public class EventService {
 
         var logoAsset = Helper.getAssetFromUploadResult(logoUploadResult, AssetUsage.EVENT_LOGO);
 
+        // Tải background lên Cloudinary và lưu Asset
         Map backgroundUploadResult = null;
         try {
             backgroundUploadResult = cloudinaryService.uploadByBase64(
@@ -212,9 +219,11 @@ public class EventService {
 
     @Transactional
     public boolean update(Long userId, Long eventId, UpdateEventDto updateEventDto) {
+        // Lấy tổ chức theo ID và kiểm tra quyền sở hữu (chỉ người sở hữu tổ chức mới có thể tạo sự kiện)
         var event = eventRepository.findByIdAndOrganizationUserOrganizationsUserIdAndOrganizationUserOrganizationsRoleIs(eventId, userId, OrganizationRole.OWNER)
                 .orElseThrow(() -> new HttpException(Constant.ErrorCode.EVENT_NOT_FOUND, HttpStatus.NOT_FOUND));
 
+        // Chỉ được cập nhật sự kiện chưa được duyệt
         if (event.getStatus() != EventStatus.PENDING) {
             throw new HttpException(Constant.ErrorCode.NOT_ALLOWED_OPERATION, HttpStatus.BAD_REQUEST);
         }
@@ -268,6 +277,7 @@ public class EventService {
         }
 
         Set<Asset> assetsToRemove = new HashSet<>();
+        // nếu có logo mới thì xóa logo cũ và upload logo mới
         if (updateEventDto.getLogoBase64() != null && !updateEventDto.getLogoBase64().isEmpty()) {
             event.getAssets().stream().filter(asset -> asset.getUsage() == AssetUsage.EVENT_LOGO).forEach(asset -> {
                 try {
@@ -299,6 +309,7 @@ public class EventService {
             event.getAssets().add(logoAsset);
         }
 
+        // nếu có background mới thì xóa background cũ và upload background mới
         if (updateEventDto.getBackgroundBase64() != null && !updateEventDto.getBackgroundBase64().isEmpty()) {
             event.getAssets().stream().filter(asset -> asset.getUsage() == AssetUsage.EVENT_BANNER).forEach(asset -> {
                 try {
@@ -369,6 +380,7 @@ public class EventService {
     }
 
     public boolean publishByAdmin(Long eventId) {
+        // Lấy sự kiện theo ID
         var event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new HttpException(Constant.ErrorCode.EVENT_NOT_FOUND, HttpStatus.NOT_FOUND));
 
@@ -380,6 +392,8 @@ public class EventService {
         event.setPublishedAt(LocalDateTime.now());
         eventRepository.save(event);
 
+        // CompletableFuture để chạy task không đồng bộ (không block luồng chính)
+        // Gửi push notification cho tất cả người dùng đã đăng ký tổ chức
         CompletableFuture.runAsync(() -> {
             String sql = "SELECT user_id FROM subscriptions WHERE organization_id = ?";
             List<Long> subscribers = jdbcTemplate.queryForList(sql, Long.class, event.getOrganization().getId());
@@ -486,12 +500,15 @@ public class EventService {
 
         event.getShows().forEach(eventShow -> {
             eventShow.getTickets().forEach(ticket -> {
+                // Tính toán số lượng vé đã đặt nhưng chưa thanh toán
                 int reservedStock = (int) ticketItemRepository.
                         countAllByTicketIdAndOrderStatusInAndOrderExpiredAtIsAfter(
                                 ticket.getId(),
                                 List.of(OrderStatus.PENDING, OrderStatus.WAITING_FOR_PAYMENT),
                                 LocalDateTime.now()
                                 );
+
+                // Trả về số lượng vé thực tế còn lại
                 ticket.setStock(ticket.getStock() - reservedStock);
             });
         });
@@ -502,6 +519,7 @@ public class EventService {
     public List<Event> getAllByStatusIn(
             List<EventStatus> statuses
     ) {
+        // Lấy tất cả các sự kiện có trạng thái trong danh sách statuses và sắp xếp theo ID tăng dần
         return eventRepository.findAllByStatusInOrderByIdAsc(statuses);
     }
 }

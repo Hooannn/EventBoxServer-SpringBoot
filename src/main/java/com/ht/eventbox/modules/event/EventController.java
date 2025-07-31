@@ -25,6 +25,9 @@ import java.util.List;
 public class EventController {
     private final EventService eventService;
 
+    /*
+    API dùng để lấy tất cả các sự kiện đang chờ duyệt hoặc đã được phát hành, dùng cho admin web
+    */
     @GetMapping
     @RequiredPermissions({"read:events", "access:admin"})
     public ResponseEntity<Response<List<Event>>> getAll() {
@@ -40,6 +43,9 @@ public class EventController {
         );
     }
 
+    /*
+    API dùng để duyệt sự kiện (đồng ý phát hành), dùng cho admin web
+    */
     @PostMapping("/{eventId}/admin/publish")
     @RequiredPermissions({"update:events", "access:admin"})
     public ResponseEntity<Response<Boolean>> publishByAdmin(@PathVariable Long eventId)
@@ -54,6 +60,9 @@ public class EventController {
         );
     }
 
+    /*
+    API dùng để duyệt sự kiện (từ chối phát hành), dùng cho admin web
+    */
     @PostMapping("/{eventId}/admin/archive")
     @RequiredPermissions({"update:events", "access:admin"})
     public ResponseEntity<Response<Boolean>> archiveByAdmin(@PathVariable Long eventId)
@@ -68,6 +77,9 @@ public class EventController {
         );
     }
 
+    /*
+    API dùng để cập nhật tags cho sự kiện (nổi bật, xu hướng), dùng cho admin web
+    */
     @PutMapping("/{eventId}/admin/tags")
     @RequiredPermissions({"update:events", "access:admin"})
     public ResponseEntity<Response<Boolean>> updateTags(
@@ -85,6 +97,9 @@ public class EventController {
         );
     }
 
+    /*
+    API dùng để tạo sự kiện mới, dùng cho web ban tổ chức
+    */
     @PostMapping
     @RequiredPermissions({"create:events"})
     public ResponseEntity<Response<Boolean>> create(
@@ -101,6 +116,9 @@ public class EventController {
         );
     }
 
+    /*
+    API dùng để cập nhật sự kiện khi chưa được duyệt, dùng cho web ban tổ chức
+    */
     @PutMapping("/{eventId}")
     @RequiredPermissions({"update:events"})
     public ResponseEntity<Response<Boolean>> update(
@@ -118,6 +136,9 @@ public class EventController {
         );
     }
 
+    /*
+    API dùng để lưu trữ sự kiện khi chưa được duyệt, dùng cho web ban tổ chức
+    */
     @PostMapping("/{eventId}/archive")
     @RequiredPermissions({"update:events"})
     public ResponseEntity<Response<Boolean>> archive(
@@ -134,6 +155,9 @@ public class EventController {
         );
     }
 
+    /*
+    API dùng để tạm ẩn sự kiện khi sự kiện đã được duyệt, dùng cho web ban tổ chức
+    */
     @PostMapping("/{eventId}/inactive")
     @RequiredPermissions({"update:events"})
     public ResponseEntity<Response<Boolean>> inactive(
@@ -150,6 +174,9 @@ public class EventController {
         );
     }
 
+    /*
+    API dùng để bật lại sự kiện đang tạm ẩn khi sự kiện đã được duyệt, dùng cho web ban tổ chức
+    */
     @PostMapping("/{eventId}/active")
     @RequiredPermissions({"update:events"})
     public ResponseEntity<Response<Boolean>> active(
@@ -166,6 +193,9 @@ public class EventController {
         );
     }
 
+    /*
+    API dùng để lấy tất cả các sự kiện (trạng thái khác lưu trữ) của một tổ chức, dùng cho web ban tổ chức
+    */
     @GetMapping("/organization/{organizationId}")
     @RequiredPermissions({"read:events"})
     public ResponseEntity<Response<List<Event>>> getByOrganizationId(@PathVariable Long organizationId) {
@@ -179,6 +209,9 @@ public class EventController {
         );
     }
 
+    /*
+    API dùng để lấy tất cả các sự kiện được phát hành của một tổ chức, dùng cho mobile app giao diện của ban tổ chức
+    */
     @GetMapping("/organization/{organizationId}/published")
     @RequiredPermissions({"read:events"})
     public ResponseEntity<Response<List<Event>>> getPublishedByOrganizationId(@PathVariable Long organizationId) {
@@ -192,6 +225,10 @@ public class EventController {
         );
     }
 
+
+    /*
+    API dùng để lấy sự kiện theo ID (hiện tại không xài)
+    */
     @GetMapping("/{eventId}")
     @RequiredPermissions({"read:events"})
     public ResponseEntity<Response<Event>> getById(@PathVariable Long eventId) {
@@ -205,6 +242,9 @@ public class EventController {
         );
     }
 
+    /*
+    API dùng để lấy tất cả các chương trình của sự kiện theo ID, dùng cho web ban tổ chức
+    */
     @GetMapping("/{eventId}/shows")
     @RequiredPermissions({"read:events"})
     public ResponseEntity<Response<List<EventShow>>> getShowsById(@PathVariable Long eventId) {
@@ -218,6 +258,9 @@ public class EventController {
         );
     }
 
+    /*
+    API dùng để lấy sự kiện theo ID, dùng cho mobile app giao diện của người dùng
+    */
     @GetMapping("/public/{eventId}")
     @RequiredPermissions({"read:events"})
     public ResponseEntity<Response<Event>> getPublicById(@PathVariable Long eventId) {
@@ -231,6 +274,9 @@ public class EventController {
         );
     }
 
+    /*
+    API dùng để lấy các sự kiện nổi bật, xu hướng, mới phát hành, dùng cho mobile app giao diện của người dùng (trang chủ)
+    */
     @GetMapping("/discovery")
     @RequiredPermissions({"read:events"})
     public ResponseEntity<Response<EventService.DiscoveryEvents>> getDiscovery() {
@@ -244,6 +290,12 @@ public class EventController {
         );
     }
 
+    /*
+    API dùng để tìm kiếm các sự kiện theo từ khóa, tỉnh thành, và danh mục, dùng cho mobile app giao diện của người dùng
+    query: tìm theo title hoặc description
+    province: tìm theo tên thành phố (có thể là null)
+    categories: tìm theo danh sách id danh mục (có thể là null)
+    */
     @GetMapping("/search")
     @RequiredPermissions({"read:events"})
     public ResponseEntity<Response<List<Event>>> search(
@@ -265,6 +317,9 @@ public class EventController {
         );
     }
 
+    /*
+    API dùng để lấy tất cả các sự kiện theo id của danh mục, dùng cho mobile app giao diện của người dùng (trang chủ)
+    */
     @GetMapping("/categories/{categoryId}")
     @RequiredPermissions({"read:events"})
     public ResponseEntity<Response<List<Event>>> getByCategoryId(@PathVariable Long categoryId) {

@@ -151,6 +151,7 @@ public class TicketService {
             );
         }
 
+        // sử dụng jwt sinh token với sub là ticketItemId, thời hạn sử dụng 5 phút
         return jwtService.generateQrCode(ticketItem.getId());
     }
 
@@ -159,6 +160,7 @@ public class TicketService {
         String sub;
 
         try {
+            // kiểm tra token có hợp lệ không (đúng secret và còn hạn sử dụng)
             boolean isTokenValid = jwtService.isTokenValid(validateTicketItemDto.getToken(), qrcodeSecretKey);
             if (!isTokenValid) {
                 throw new HttpException(
@@ -167,6 +169,7 @@ public class TicketService {
                 );
             }
 
+            // extract lấy ticketItemId
             sub = jwtService.extractSub(validateTicketItemDto.getToken(), qrcodeSecretKey);
         } catch (Exception e) {
             throw new HttpException(
@@ -184,12 +187,14 @@ public class TicketService {
 
         long ticketItemId = Long.parseLong(sub);
 
+        // Kiểm tra ticketItemId đúng với userId và orderStatus là FULFILLED và đúng với eventShowId
         var ticketItem = ticketItemRepository.findByIdAndOrderStatusIsAndTicketEventShowId(ticketItemId, OrderStatus.FULFILLED, validateTicketItemDto.getEventShowId(), TicketItemDetails.class)
                 .orElseThrow(() -> new HttpException(
                         Constant.ErrorCode.TICKET_ITEM_NOT_FOUND,
                         HttpStatus.BAD_REQUEST
                 ));
 
+        // Kiểm tra xem chương trình đã bắt đầu chưa và đã kết thúc chưa
         if (ticketItem.getTicket().getEventShow().getStartTime().isAfter(LocalDateTime.now())) {
             throw new HttpException(
                     Constant.ErrorCode.SHOW_NOT_STARTED,
@@ -204,6 +209,7 @@ public class TicketService {
             );
         }
 
+        // Chỉ thành viên của tổ chức mới có thể xác thực vé
         long orgId = ticketItem.getTicket().getEventShow().getEvent().getOrganization().getId();
 
         boolean isMember = organizationRepository.existsByIdAndUserOrganizationsUserId(
@@ -222,6 +228,7 @@ public class TicketService {
     }
 
     public boolean createTicketItemTrace(Long userId, ValidateTicketItemDto createTicketItemTraceDto) {
+        // xác thực lại mã qr
         var ticketItem = validateTicketItem(
                 userId,
                 createTicketItemTraceDto
@@ -231,9 +238,11 @@ public class TicketService {
         trace.setTicketItem(TicketItem.builder().id(ticketItem.getId()).build());
         trace.setIssuer(User.builder().id(userId).build());
 
+        // nếu vé chưa có trace nào thì mặc định là CHECKED_IN
         if (ticketItem.getTraces().isEmpty()) {
             trace.setEvent(TicketItemTraceEvent.CHECKED_IN);
         } else {
+            // nếu vé đã có trace thì kiểm tra trace cuối cùng
             var lastTrace = ticketItem.getTraces().get(ticketItem.getTraces().size() - 1);
             if (lastTrace.getEvent() == TicketItemTraceEvent.CHECKED_IN) {
                 trace.setEvent(TicketItemTraceEvent.WENT_OUT);
@@ -244,6 +253,7 @@ public class TicketService {
 
         ticketItemTraceRepository.save(trace);
 
+        // gửi sự kiện đến client qua socketio để cập nhật trạng thái vé
         CompletableFuture.runAsync(() -> {
             socketIOServer.getNamespace("/ticket")
                     .getRoomOperations(ticketItem.getId().toString())

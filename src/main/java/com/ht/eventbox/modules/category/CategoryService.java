@@ -24,6 +24,7 @@ public class CategoryService {
     private final EventRepository eventRepository;
 
     public List<Category> getAll() {
+        // Lấy tất cả các category từ database và sắp xếp theo id tăng dần
         return categoryRepository.findAllByOrderByIdAsc();
     }
 
@@ -41,10 +42,12 @@ public class CategoryService {
     }
 
     public List<Category> getAllFeatured() {
+        // Lấy tất cả các category có featured = true và sắp xếp theo id tăng dần
         return categoryRepository.findAllByFeaturedTrueOrderByIdAsc();
     }
 
     public boolean create(CreateCategoryDto createCategoryDto) {
+        // Tạo với slug là một UUID ngẫu nhiên (không sử dụng)
         Category category = Category.builder()
                 .slug(UUID.randomUUID().toString())
                 .nameVi(createCategoryDto.getNameVi())
@@ -57,6 +60,7 @@ public class CategoryService {
     }
 
     public boolean update(Long categoryId, CreateCategoryDto createCategoryDto) {
+        // Kiểm tra xem category có tồn tại không
         Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new HttpException(
                         Constant.ErrorCode.CATEGORY_NOT_FOUND,
@@ -73,6 +77,7 @@ public class CategoryService {
 
     @Transactional
     public boolean delete(Long id) {
+        // Kiểm tra xem category có tồn tại không
         if (!categoryRepository.existsById(id)) {
             throw new HttpException(
                     Constant.ErrorCode.CATEGORY_NOT_FOUND,
@@ -80,6 +85,7 @@ public class CategoryService {
             );
         }
 
+        // Kiểm tra xem category có đang được sử dụng trong event không
         if (eventRepository.existsByCategoriesId(id)) {
             throw new HttpException(
                     Constant.ErrorCode.CATEGORY_IN_USE,

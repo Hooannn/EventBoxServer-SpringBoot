@@ -107,6 +107,7 @@ public class OrganizationService {
 
     @Transactional
     public boolean update(Long userId, Long orgId, UpdateOrganizationDto updateOrganizationDto) {
+        // Lấy tổ chức theo ID và kiểm tra quyền sở hữu (chỉ người sở hữu tổ chức mới có thể cập nhật)
         var org = organizationRepository.findByIdAndUserOrganizationsUserIdAndUserOrganizationsRoleIs(orgId, userId, OrganizationRole.OWNER).orElseThrow(() ->
                 new HttpException(Constant.ErrorCode.ORGANIZATION_NOT_FOUND, HttpStatus.NOT_FOUND)
         );
@@ -119,6 +120,7 @@ public class OrganizationService {
         org.setWebsite(updateOrganizationDto.getWebsite());
 
         Set<Asset> assetsToRemove = null;
+        // xoá logo cũ nếu body truyền vào có trường isRemoveLogo là true
         if (updateOrganizationDto.isRemoveLogo()) {
             org.getAssets().forEach(asset -> {
                 try {
@@ -130,6 +132,7 @@ public class OrganizationService {
             });
             assetsToRemove = new HashSet<>(org.getAssets());
             org.getAssets().clear();
+        // nếu có logo mới thì upload logo mới và xoá logo cũ
         } else if (updateOrganizationDto.getLogoBase64() != null && !updateOrganizationDto.getLogoBase64().isEmpty()) {
             org.getAssets().forEach(asset -> {
                 try {
@@ -168,10 +171,12 @@ public class OrganizationService {
 
     @Transactional
     public boolean deleteById(Long userId, Long orgId) {
+        // Lấy tổ chức theo ID và kiểm tra quyền sở hữu (chỉ người sở hữu tổ chức mới có thể xoá)
         var org = organizationRepository.findByIdAndUserOrganizationsUserIdAndUserOrganizationsRoleIs(orgId, userId, OrganizationRole.OWNER).orElseThrow(() ->
                 new HttpException(Constant.ErrorCode.ORGANIZATION_NOT_FOUND, HttpStatus.NOT_FOUND)
         );
 
+        // Kiểm tra xem tổ chức có sự kiện nào không, nếu có thì không cho xoá
         if (eventRepository.existsByOrganizationId(org.getId())) {
             throw new HttpException(Constant.ErrorCode.ORGANIZATION_HAS_EVENTS, HttpStatus.BAD_REQUEST);
         }
@@ -193,6 +198,7 @@ public class OrganizationService {
 
     @Transactional
     public boolean addMember(Long userId, Long orgId, AddMemberDto addMemberDto) {
+        // Lấy tổ chức theo ID và kiểm tra quyền sở hữu (chỉ người sở hữu tổ chức mới có thể cập nhật)
         var org = organizationRepository.findByIdAndUserOrganizationsUserIdAndUserOrganizationsRoleIs(orgId, userId, OrganizationRole.OWNER).orElseThrow(() ->
                 new HttpException(Constant.ErrorCode.ORGANIZATION_NOT_FOUND, HttpStatus.NOT_FOUND)
         );
@@ -238,6 +244,7 @@ public class OrganizationService {
 
     @Transactional
     public boolean updateMember(Long userId, Long orgId, UpdateMemberDto updateMemberDto) {
+        // Lấy tổ chức theo ID và kiểm tra quyền sở hữu (chỉ người sở hữu tổ chức mới có thể cập nhật)
         var org = organizationRepository.findByIdAndUserOrganizationsUserIdAndUserOrganizationsRoleIs(orgId, userId, OrganizationRole.OWNER).orElseThrow(() ->
                 new HttpException(Constant.ErrorCode.ORGANIZATION_NOT_FOUND, HttpStatus.NOT_FOUND)
         );
@@ -257,6 +264,7 @@ public class OrganizationService {
 
     @Transactional
     public boolean removeMember(Long userId, Long orgId, RemoveMemberDto removeMemberDto) {
+        // Lấy tổ chức theo ID và kiểm tra quyền sở hữu (chỉ người sở hữu tổ chức mới có thể cập nhật)
         var org = organizationRepository.findByIdAndUserOrganizationsUserIdAndUserOrganizationsRoleIs(orgId, userId, OrganizationRole.OWNER).orElseThrow(() ->
                 new HttpException(Constant.ErrorCode.ORGANIZATION_NOT_FOUND, HttpStatus.NOT_FOUND)
         );

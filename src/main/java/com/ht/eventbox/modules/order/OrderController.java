@@ -224,6 +224,9 @@ public class OrderController {
         );
     }
 
+    /*
+    API dùng để lấy tất cả đơn hàng theo mã chương trình showId trong khoảng thời gian từ "from" đến "to", dùng cho web ban tổ chức khi xem báo cáo
+    */
     @GetMapping("/shows/{showId}")
     @RequiredPermissions({"read:orders"})
     public ResponseEntity<Response<List<Order>>> getByShowId(
@@ -242,6 +245,9 @@ public class OrderController {
         );
     }
 
+    /*
+    API dùng để lấy tất cả đơn hàng theo mã chương trình showId, dùng cho web ban tổ chức khi xem báo cáo
+    */
     @GetMapping("/shows/{showId}/all")
     @RequiredPermissions({"read:orders"})
     public ResponseEntity<Response<List<Order>>> getByShowId(

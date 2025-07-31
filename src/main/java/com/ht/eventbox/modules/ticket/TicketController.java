@@ -24,6 +24,9 @@ public class TicketController {
 
     private final TicketService ticketService;
 
+    /*
+    API dùng để lấy tất cả các vé của người dùng hiện tại với trạng thái đã thanh toán (FULFILLED), dùng cho mobile app giao diện người dùng (vé của tôi)
+    */
     @GetMapping("/items/me")
     @RequiredPermissions({"read:orders"})
     public ResponseEntity<Response<List<TicketService.TicketItemDetails>>> getMyTicketItems(
@@ -39,6 +42,9 @@ public class TicketController {
         );
     }
 
+    /*
+    API dùng để lấy thông tin chi tiết của một vé theo ID, dùng cho mobile app giao diện người dùng (vé của tôi)
+    */
     @GetMapping("/items/{ticketItemId}")
     @RequiredPermissions({"read:orders"})
     public ResponseEntity<Response<TicketService.TicketItemDetails>> getTicketItemById(
@@ -54,6 +60,9 @@ public class TicketController {
         );
     }
 
+    /*
+    API dùng để sinh mã QR cho vé theo ID, dùng cho mobile app giao diện người dùng (vé của tôi)
+    */
     @GetMapping("/items/{ticketItemId}/qrcode")
     @RequiredPermissions({"read:orders"})
     public ResponseEntity<Response<String>> getTicketItemQrCode(
@@ -70,6 +79,9 @@ public class TicketController {
         );
     }
 
+    /*
+    API dùng để xác thực vé, dùng cho mobile app giao diện ban tổ chức (quét vé)
+    */
     @PostMapping("/validate")
     public ResponseEntity<Response<TicketService.TicketItemDetails>> validateTicketItem(
             @RequestAttribute("sub") String sub,
@@ -85,6 +97,9 @@ public class TicketController {
         );
     }
 
+    /*
+    API dùng để tạo một trace cho vé (check-in hoặc ra ngoài tuỳ vào trace cuối cùng), dùng cho mobile app giao diện ban tổ chức (quét vé)
+    */
     @PostMapping("/traces")
     public ResponseEntity<Response<Boolean>> createTicketItemTrace(
             @RequestAttribute("sub") String sub,
@@ -100,6 +115,9 @@ public class TicketController {
         );
     }
 
+    /*
+    API dùng để lấy tất cả các vé của một chương trình theo ID, dùng cho web ban tổ chức khi xem báo cáo
+    */
     @GetMapping("/shows/{showId}/items")
     @RequiredPermissions({"read:orders"})
     public ResponseEntity<Response<List<TicketItem>>> getTicketItemByShowId(

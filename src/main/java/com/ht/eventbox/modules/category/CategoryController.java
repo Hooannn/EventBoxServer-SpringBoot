@@ -21,6 +21,9 @@ import java.util.List;
 public class CategoryController {
     private final CategoryService categoryService;
 
+    /*
+    API dùng để lấy tất cả category, dùng cho admin web
+    */
     @GetMapping
     @RequiredPermissions({"read:categories"})
     public ResponseEntity<Response<List<Category>>> getAll() {
@@ -34,6 +37,9 @@ public class CategoryController {
         );
     }
 
+    /*
+    API dùng để tạo mới một category, tạo mới category từ body CreateCategoryDto, dùng cho admin web
+    */
     @PostMapping
     @RequiredPermissions({"create:categories"})
     public ResponseEntity<Response<Boolean>> create(@Valid @RequestBody CreateCategoryDto createCategoryDto) {
@@ -47,6 +53,9 @@ public class CategoryController {
         );
     }
 
+    /*
+    API dùng để cập nhật một category, cập nhật category từ body CreateCategoryDto, id là id của category cần cập nhật, dùng cho admin web
+    */
     @PutMapping("/{id}")
     @RequiredPermissions({"update:categories"})
     public ResponseEntity<Response<Boolean>> update(@PathVariable Long id,
@@ -61,6 +70,9 @@ public class CategoryController {
         );
     }
 
+    /*
+    API dùng để xóa một category, id là id của category cần xóa, dùng cho admin web
+     */
     @DeleteMapping("/{id}")
     @RequiredPermissions({"delete:categories"})
     public ResponseEntity<Response<Boolean>> delete(@PathVariable Long id) {
@@ -74,6 +86,9 @@ public class CategoryController {
         );
     }
 
+    /*
+    API dùng để lấy tất cả category có featured = true, sắp xếp theo id tăng dần, dùng để hiện trên app mobile
+     */
     @GetMapping("/featured")
     @RequiredPermissions({"read:categories"})
     public ResponseEntity<Response<List<Category>>> getAllFeatured() {
@@ -87,6 +102,9 @@ public class CategoryController {
         );
     }
 
+    /*
+    API dùng để tạo mới nhiều category cùng lúc, từ body CreateBulkCategoriesDto (hiện không sử dụng trong app)
+     */
     @PostMapping("/bulk")
     @RequiredPermissions({"create:categories"})
     public ResponseEntity<Response<Boolean>> createBulk(@Valid @RequestBody CreateBulkCategoriesDto createBulkCategoriesDto) {

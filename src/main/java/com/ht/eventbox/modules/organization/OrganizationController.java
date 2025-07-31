@@ -21,6 +21,9 @@ import java.util.List;
 public class OrganizationController {
     private final OrganizationService organizationService;
 
+    /*
+    API dùng để lấy tất cả các tổ chức (không xài)
+    */
     @GetMapping
     @RequiredPermissions({"read:organizations"})
     public ResponseEntity<Response<List<Organization>>> getAll() {
@@ -34,6 +37,9 @@ public class OrganizationController {
         );
     }
 
+    /*
+    API dùng để lấy tất cả các tổ chức của người dùng hiện tại với vai trò là OWNER (không xài)
+    */
     @GetMapping("/me")
     @RequiredPermissions({"read:organizations"})
     public ResponseEntity<Response<List<Organization>>> getMyOwn(
@@ -49,6 +55,9 @@ public class OrganizationController {
         );
     }
 
+    /*
+    API dùng để lấy tất cả các tổ chức của người dùng hiện tại đang tham gia, dùng cho web ban tổ chức và mobile app giao diện ban tổ chức
+    */
     @GetMapping("/me/member")
     @RequiredPermissions({"read:organizations"})
     public ResponseEntity<Response<List<Organization>>> getMy(
@@ -64,6 +73,9 @@ public class OrganizationController {
         );
     }
 
+    /*
+    API dùng để lấy thông tin của một tổ chức theo ID, dùng cho web ban tổ chức
+    */
     @GetMapping("/{id}")
     @RequiredPermissions({"read:organizations"})
     public ResponseEntity<Response<Organization>> getById(
@@ -79,6 +91,9 @@ public class OrganizationController {
         );
     }
 
+    /*
+    API dùng để cập nhật thông tin của một tổ chức theo ID, dùng cho web ban tổ chức
+    */
     @PutMapping("/{id}")
     @RequiredPermissions({"update:organizations"})
     public ResponseEntity<Response<Boolean>> updateById(
@@ -95,6 +110,9 @@ public class OrganizationController {
         );
     }
 
+    /*
+    API dùng để xóa một tổ chức theo ID, dùng cho web ban tổ chức
+    */
     @DeleteMapping("/{id}")
     @RequiredPermissions({"delete:organizations"})
     public ResponseEntity<Response<Boolean>> deleteById(
@@ -110,6 +128,9 @@ public class OrganizationController {
         );
     }
 
+    /*
+    API dùng để tạo một tổ chức mới, dùng cho web ban tổ chức
+    */
     @PostMapping
     @RequiredPermissions({"create:organizations"})
     public ResponseEntity<Response<Boolean>> create(@RequestAttribute("sub") String sub,
@@ -124,6 +145,9 @@ public class OrganizationController {
         );
     }
 
+    /*
+    API dùng để thêm thành viên vào tổ chức, dùng cho web ban tổ chức
+    */
     @PostMapping("/{id}/members")
     @RequiredPermissions({"update:organizations"})
     public ResponseEntity<Response<Boolean>> addMember(
@@ -140,6 +164,9 @@ public class OrganizationController {
         );
     }
 
+    /*
+    API dùng để cập nhật vai trò của thành viên trong tổ chức, dùng cho web ban tổ chức
+    */
     @PutMapping("/{id}/members")
     @RequiredPermissions({"update:organizations"})
     public ResponseEntity<Response<Boolean>> updateMember(
@@ -156,6 +183,9 @@ public class OrganizationController {
         );
     }
 
+    /*
+    API dùng để xóa thành viên khỏi tổ chức, dùng cho web ban tổ chức
+    */
     @PostMapping("/{id}/members/remove")
     @RequiredPermissions({"update:organizations"})
     public ResponseEntity<Response<Boolean>> removeMember(
@@ -172,6 +202,9 @@ public class OrganizationController {
         );
     }
 
+    /*
+    API dùng để người dùng đăng ký theo dõi tổ chức (nhận thông báo khi tổ chức phát hành sự kiện mới), dùng cho mobile app giao diện người dùng
+    */
     @PostMapping("/{id}/subscribe")
     public ResponseEntity<Response<Boolean>> subscribe(
             @RequestAttribute("sub") String sub,
