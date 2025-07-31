@@ -15,6 +15,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     List<Order> findAllByItemsTicketEventShowIdAndStatusIs(Long eventShowId, OrderStatus status);
 
+    List<Order> findAllByItemsTicketEventShowIdAndStatusIsOrderByIdAsc(Long showId, OrderStatus orderStatus);
+
     long deleteAllByStatusInAndExpiredAtBefore(List<OrderStatus> statuses, LocalDateTime now);
 
     long deleteAllByUserIdAndStatusIs(Long userId, OrderStatus orderStatus);
@@ -26,4 +28,5 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     Optional<Order> findByIdAndUserIdAndStatusIn(Long orderId, Long userId, List<OrderStatus> statuses);
 
     Optional<Order> findByIdAndUserIdAndStatusInAndExpiredAtAfter(Long id, Long userId, Collection<OrderStatus> statuses, LocalDateTime expiredAt);
+
 }

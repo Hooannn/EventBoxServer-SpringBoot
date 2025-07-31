@@ -326,7 +326,7 @@ public class OrderService {
             throw new HttpException(Constant.ErrorCode.NOT_ALLOWED_OPERATION, HttpStatus.FORBIDDEN);
         }
 
-        return orderRepository.findAllByItemsTicketEventShowIdAndStatusIs(
+        return orderRepository.findAllByItemsTicketEventShowIdAndStatusIsOrderByIdAsc(
                 showId,
                 OrderStatus.FULFILLED
         );
