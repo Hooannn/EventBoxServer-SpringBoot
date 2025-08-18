@@ -33,6 +33,9 @@ public class TicketItem {
     @JoinColumn(name = "ticket_id", nullable = false)
     private Ticket ticket;
 
+    @Column(name = "feedback", columnDefinition = "TEXT")
+    private String feedback;
+
     @Column(name = "place_total", nullable = false)
     @JsonProperty("place_total")
     private Double placeTotal;

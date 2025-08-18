@@ -16,6 +16,8 @@ import com.ht.eventbox.modules.event.dtos.UpdateEventDto;
 import com.ht.eventbox.modules.event.dtos.UpdateEventTagsDto;
 import com.ht.eventbox.modules.keyword.KeywordRepository;
 import com.ht.eventbox.modules.messaging.PushNotificationService;
+import com.ht.eventbox.modules.order.CurrencyConverterServiceV2;
+import com.ht.eventbox.modules.order.PayPalService;
 import com.ht.eventbox.modules.order.TicketItemRepository;
 import com.ht.eventbox.modules.organization.OrganizationRepository;
 import com.ht.eventbox.modules.storage.CloudinaryService;
@@ -69,6 +71,8 @@ public class EventService {
     private final AssetRepository assetRepository;
     private final JdbcTemplate jdbcTemplate;
     private final PushNotificationService pushNotificationService;
+    private final PayPalService payPalService;
+    private final CurrencyConverterServiceV2 currencyConverterService;
 
     public List<EventShow> getShowsById(Long eventId) {
         return eventShowRepository.findAllByEventIdOrderByIdAsc(eventId);
@@ -521,5 +525,66 @@ public class EventService {
     ) {
         // Lấy tất cả các sự kiện có trạng thái trong danh sách statuses và sắp xếp theo ID tăng dần
         return eventRepository.findAllByStatusInOrderByIdAsc(statuses);
+    }
+
+    public boolean eventPayout(Long userId, Long eventId) {
+        var event = eventRepository.findByIdAndStatusIs(eventId, EventStatus.PUBLISHED)
+                .orElseThrow(() -> new HttpException(Constant.ErrorCode.EVENT_NOT_FOUND, HttpStatus.NOT_FOUND));
+
+        // Kiểm tra sự kiện đã được rút tiền hay chưa
+        if (event.getPayoutAt() != null) {
+            throw new HttpException(Constant.ErrorCode.EVENT_ALREADY_PAID, HttpStatus.BAD_REQUEST);
+        }
+
+        // Kiểm tra xem sự kiện đã kết thúc hay chưa, tất cả các show phải kết thúc
+        boolean isEnded = event.getShows().stream()
+                .allMatch(show -> show.getEndTime().isBefore(LocalDateTime.now()));
+
+        if (!isEnded) {
+            throw new HttpException(Constant.ErrorCode.EVENT_NOT_ENDED, HttpStatus.BAD_REQUEST);
+        }
+
+        // Kiểm tra quyền, chỉ người sở hữu tổ chức mới có thể thực hiện rút tiền
+        boolean isOwner = event.getOrganization().getUserOrganizations().stream()
+                .anyMatch(orgUser -> orgUser.getUser().getId().equals(userId) && orgUser.getRole() == OrganizationRole.OWNER);
+
+        if (!isOwner) {
+            throw new HttpException(Constant.ErrorCode.NOT_ALLOWED_OPERATION, HttpStatus.FORBIDDEN);
+        }
+
+        double totalAmount = event.getShows().stream()
+                .flatMap(show -> show.getTickets().stream())
+                .mapToDouble(ticket -> ticket.getPrice() * (ticket.getInitialStock() - ticket.getStock()))
+                .sum();
+
+        if (totalAmount <= 0) {
+            event.setPayoutAt(LocalDateTime.now());
+            eventRepository.save(event);
+            return true;
+        }
+
+        // Chuyển đổi tiền tệ sang USD
+        double sgdAmount;
+        try {
+            sgdAmount = currencyConverterService.convertVndToSgd(totalAmount);
+        } catch (Exception e) {
+            throw new HttpException(Constant.ErrorCode.INTERNAL_SERVER_ERROR, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+        boolean success = payPalService.sendPayout(
+                event.getOrganization().getPaypalAccount(),
+                sgdAmount,
+                "SGD",
+                "Payout for event: " + event.getTitle()
+        );
+
+        if (!success) {
+            throw new HttpException(Constant.ErrorCode.PAYOUT_FAILED, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+        // Cập nhật thời gian rút tiền
+        event.setPayoutAt(LocalDateTime.now());
+        eventRepository.save(event);
+        return true;
     }
 }

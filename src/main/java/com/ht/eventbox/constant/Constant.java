@@ -73,6 +73,11 @@ public class Constant {
         public static final String SHOW_ENDED = "show_ended";
         public static final String CATEGORY_NOT_FOUND = "category_not_found";
         public static final String CATEGORY_IN_USE = "category_in_use";
+        public static final String EVENT_ALREADY_PAID = "event_already_paid";
+        public static final String EVENT_NOT_ENDED = "event_not_ended";
+        public static final String PAYOUT_FAILED = "payout_failed";
+        public static final String TICKET_NOT_SOLD = "ticket_not_sold";
+        public static final String SHOW_NOT_ENDED = "show_not_ended";
     }
 
     public static class SuccessCode {
@@ -87,6 +92,7 @@ public class Constant {
         public static final String UPDATED = "updated";
         public static final String UPDATE_SUCCESSFULLY = "UPDATE_SUCCESSFULLY";
         public static final String DELETE_SUCCESSFULLY = "DELETE_SUCCESSFULLY";
+        public static final String REQUEST_FOR_PAYOUT_SUCCESSFULLY = "REQUEST_FOR_PAYOUT_SUCCESSFULLY";
     }
 
     public static class ContextKey {

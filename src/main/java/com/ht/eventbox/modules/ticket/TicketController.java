@@ -2,8 +2,10 @@ package com.ht.eventbox.modules.ticket;
 
 import com.ht.eventbox.annotations.RequiredPermissions;
 import com.ht.eventbox.config.Response;
+import com.ht.eventbox.constant.Constant;
 import com.ht.eventbox.entities.TicketItem;
 import com.ht.eventbox.enums.OrderStatus;
+import com.ht.eventbox.modules.ticket.dtos.FeedbackTicketItemDto;
 import com.ht.eventbox.modules.ticket.dtos.ValidateTicketItemDto;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -129,6 +131,26 @@ public class TicketController {
                 new Response<>(
                         HttpStatus.OK.value(),
                         HttpStatus.OK.getReasonPhrase(),
+                        res
+                )
+        );
+    }
+
+    /*
+    API dùng để gửi phản hồi cho vé (khi sự kiện đã kết thúc), dùng cho mobile app giao diện người dùng (vé của tôi)
+    */
+    @PostMapping("/items/{ticketItemId}/feedback")
+    @RequiredPermissions({"create:orders"})
+    public ResponseEntity<Response<Boolean>> createTicketItemFeedback(
+            @RequestAttribute("sub") String sub,
+            @Valid @RequestBody FeedbackTicketItemDto feedbackTicketItemDto,
+            @PathVariable String ticketItemId)
+    {
+        var res = ticketService.createTicketItemFeedback(Long.valueOf(sub), Long.valueOf(ticketItemId), feedbackTicketItemDto);
+        return ResponseEntity.created(null).body(
+                new Response<>(
+                        HttpStatus.CREATED.value(),
+                        Constant.SuccessCode.UPDATE_SUCCESSFULLY,
                         res
                 )
         );

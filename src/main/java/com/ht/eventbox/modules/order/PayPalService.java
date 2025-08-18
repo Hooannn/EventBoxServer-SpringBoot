@@ -16,7 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -156,5 +156,52 @@ public class PayPalService {
         GetOrderInput getOrderInput = new GetOrderInput.Builder(orderId).build();
 
         return ordersController.getOrder(getOrderInput);
+    }
+
+    public boolean sendPayout(String email, double amount, String currency, String note) {
+        String url = PAYPAL_API + "/v1/payments/payouts";
+        String accessToken = null;
+        try {
+            accessToken = paypalServerSdkClient.getClientCredentialsAuth().fetchToken().getAccessToken();
+        } catch (ApiException | IOException e) {
+            logger.error("Error retrieving PayPal access token: {}", e.getMessage());
+        }
+        if (accessToken == null) return false;
+        logger.info("Access token retrieved: {}", accessToken);
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("PayPal-Request-Id", UUID.randomUUID().toString());
+        headers.setBearerAuth(accessToken);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        Map<String, Object> senderBatchHeader = new HashMap<>();
+        senderBatchHeader.put("sender_batch_id", String.format("Payouts_%d", System.currentTimeMillis()));
+        senderBatchHeader.put("email_subject", "You have a payout!");
+        senderBatchHeader.put("email_message", note);
+
+        Map<String, Object> amountMap = new HashMap<>();
+        amountMap.put("value", String.format("%.2f", amount));
+        amountMap.put("currency", currency);
+
+        Map<String, Object> item = new HashMap<>();
+        item.put("recipient_type", "EMAIL");
+        item.put("amount", amountMap);
+        item.put("receiver", email);
+        item.put("note", note);
+        item.put("notification_language", "en-US");
+        item.put("sender_item_id", System.currentTimeMillis());
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("sender_batch_header", senderBatchHeader);
+        body.put("items", Collections.singletonList(item));
+
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
+
+        try {
+            ResponseEntity<Map> response = restTemplate.postForEntity(url, entity, Map.class);
+            return response.getStatusCode() == HttpStatus.CREATED;
+        } catch (Exception e) {
+            return false;
+        }
     }
 }

@@ -12,6 +12,7 @@ import com.ht.eventbox.filter.JwtService;
 import com.ht.eventbox.modules.event.EventRepository;
 import com.ht.eventbox.modules.order.TicketItemRepository;
 import com.ht.eventbox.modules.organization.OrganizationRepository;
+import com.ht.eventbox.modules.ticket.dtos.FeedbackTicketItemDto;
 import com.ht.eventbox.modules.ticket.dtos.ValidateTicketItemDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -94,6 +95,8 @@ public class TicketService {
         Double getPlaceTotal();
 
         TicketView getTicket();
+
+        String getFeedback();
 
         OrderView getOrder();
 
@@ -276,5 +279,39 @@ public class TicketService {
         }
 
         return ticketItemRepository.findAllByTicketEventShowId(showId, TicketItem.class);
+    }
+
+    public boolean createTicketItemFeedback(Long userId, Long ticketItemId, FeedbackTicketItemDto feedbackTicketItemDto) {
+        // kiểm tra ticketItemId đúng với userId và orderStatus là FULFILLED
+        var ticketItem = ticketItemRepository.findByIdAndOrderUserIdAndOrderStatusIs(ticketItemId, userId, OrderStatus.FULFILLED, TicketItem.class)
+                .orElseThrow(() -> new HttpException(
+                        Constant.ErrorCode.TICKET_ITEM_NOT_FOUND,
+                        HttpStatus.BAD_REQUEST
+                ));
+
+        var eventShow = ticketItem.getTicket().getEventShow();
+
+        // Kiểm tra xem chương trình đã kết thúc chưa
+        var isEnded = eventShow.getEndTime().isBefore(LocalDateTime.now());
+
+        if (!isEnded) {
+            throw new HttpException(
+                    Constant.ErrorCode.SHOW_NOT_ENDED,
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        // Kiểm tra xem người dùng đã gửi phản hồi cho vé này chưa
+        if (ticketItem.getFeedback() != null) {
+            throw new HttpException(
+                    Constant.ErrorCode.NOT_ALLOWED_OPERATION,
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        ticketItem.setFeedback(feedbackTicketItemDto.getFeedback());
+        ticketItemRepository.save(ticketItem);
+
+        return true;
     }
 }

@@ -335,4 +335,25 @@ public class EventController {
                 )
         );
     }
+
+    /*
+    API dùng để rút tiền sự kiện theo eventId về ví PayPal của ban tổ chức, dùng cho web ban tổ chức
+    */
+    @PostMapping("/{eventId}/payout/request")
+    @RequiredPermissions({"create:organizations"})
+    public ResponseEntity<Response<Boolean>> eventPayout(
+            @PathVariable Long eventId,
+            @RequestAttribute("sub") String sub) {
+        var res = eventService.eventPayout(
+                Long.valueOf(sub),
+                eventId
+        );
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        Constant.SuccessCode.REQUEST_FOR_PAYOUT_SUCCESSFULLY,
+                        res
+                )
+        );
+    }
 }

@@ -25,6 +25,8 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 
     Optional<Event> findByIdAndStatusIsNot(Long eventId, EventStatus eventStatus);
 
+    Optional<Event> findByIdAndStatusIs(Long eventId, EventStatus eventStatus);
+
     List<Event> findAllByStatusInOrderByIdAsc(Collection<EventStatus> status);
 
     Page<Event> findByStatusIn(Collection<EventStatus> status, Pageable pageable);
