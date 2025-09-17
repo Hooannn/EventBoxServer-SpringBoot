@@ -37,6 +37,20 @@ public class EventShow {
     @JsonBackReference
     private Event event;
 
+    @Column(name = "title", nullable = false)
+    private String title;
+
+    @JsonProperty("enabled_seatmap")
+    @Column(name = "enabled_seatmap", nullable = false, columnDefinition = "boolean default false")
+    private boolean enabledSeatmap = false;
+
+    @Column(name = "seatmap", columnDefinition = "TEXT")
+    private String seatmap;
+
+    @JsonProperty("seatmap_svg")
+    @Column(name = "seatmap_svg", columnDefinition = "TEXT")
+    private String seatmapSvg;
+
     @Column(name = "start_time", nullable = false)
     @JsonProperty("start_time")
     private java.time.LocalDateTime startTime;
