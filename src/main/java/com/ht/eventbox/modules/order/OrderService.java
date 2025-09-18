@@ -215,6 +215,41 @@ public class OrderService {
     }
 
     @Transactional
+    public Order fulfill(Order order) {
+        order.setStatus(OrderStatus.FULFILLED);
+        order.setFulfilledAt(LocalDateTime.now());
+
+        List<Ticket> tickets = ticketRepository.findAllByIdWithLocked(
+                order.getItems().stream()
+                        .map(TicketItem::getTicket)
+                        .map(Ticket::getId)
+                        .distinct()
+                        .toList()
+        );
+
+        tickets.forEach(ticket -> {
+            long reservedCount = order.getItems().stream()
+                    .filter(item -> item.getTicket().getId().equals(ticket.getId()))
+                    .count();
+
+            ticket.setStock((int) ((long) ticket.getStock() - reservedCount));
+        });
+
+        ticketRepository.saveAll(tickets);
+
+        var savedOrder = orderRepository.save(order);
+
+        if (!tickets.isEmpty()) {
+            onStockUpdated(
+                    tickets.get(0).getEventShow().getEvent().getId()
+            );
+        }
+
+        return savedOrder;
+    }
+
+    /* DEPRECATED */
+    @Transactional
     public Order fulfill(long orderId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new HttpException(Constant.ErrorCode.ORDER_NOT_FOUND, HttpStatus.NOT_FOUND));
@@ -250,7 +285,6 @@ public class OrderService {
 
         return savedOrder;
     }
-
 
     public void onOrderFulfilled(Order order) {
         CompletableFuture.runAsync(() -> {

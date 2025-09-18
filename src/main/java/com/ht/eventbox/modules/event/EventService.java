@@ -347,7 +347,7 @@ public class EventService {
             Map uploadResult = null;
             try {
                 uploadResult = cloudinaryService.uploadByBase64(
-                        updateEventDto.getLogoBase64(),
+                        updateEventDto.getBackgroundBase64(),
                         Constant.StorageFolder.EVENT_ASSETS
                 );
                 logger.info("Uploaded image: {}", uploadResult);
