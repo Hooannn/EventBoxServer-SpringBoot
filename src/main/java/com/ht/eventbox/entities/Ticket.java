@@ -36,6 +36,10 @@ public class Ticket {
     @Column(name = "name", nullable = false)
     private String name;
 
+    @JsonProperty("seatmap_block_id")
+    @Column(name = "seatmap_block_id")
+    private String seatmapBlockId;
+
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 

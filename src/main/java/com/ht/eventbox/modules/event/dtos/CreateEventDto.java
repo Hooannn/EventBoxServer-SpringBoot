@@ -25,6 +25,10 @@ public class CreateEventDto {
         @Data
         @Builder
         public static class CreateTicketTypeDto {
+            @JsonProperty("seatmap_block_id")
+            @NotBlank
+            private String seatmapBlockId;
+
             @NotBlank
             private String name;
 
@@ -57,6 +61,18 @@ public class CreateEventDto {
         @NotEmpty
         @JsonProperty("ticket_type_inputs")
         private List<CreateTicketTypeDto> ticketTypeInputs = new ArrayList<>();
+
+        @NotBlank
+        private String title;
+
+        @JsonProperty("enabled_seatmap")
+        @NotNull
+        private boolean enabledSeatmap;
+
+        private String seatmap;
+
+        @JsonProperty("seatmap_svg")
+        private String seatmapSvg;
     }
 
     @NotNull

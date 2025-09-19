@@ -93,9 +93,9 @@ public class OrderController {
 
                 var payPalorder = captureResponse.getResult();
                 paymentService.createFromOrderAndPaypalOrder(order, payPalorder);
-                if (order.getStatus() == OrderStatus.PENDING)
-                    order.setStatus(OrderStatus.APPROVED);
-                orderService.save(order);
+
+                var updatedOrder = orderService.fulfill(order);
+                orderService.onOrderFulfilled(updatedOrder);
             } catch (IOException | ApiException e) {
                 throw new HttpException("Lỗi khi capture đơn hàng PayPal: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
             }
@@ -159,9 +159,6 @@ public class OrderController {
 
                 var paypalOrder = paypalOrderRes.getResult();
                 paymentService.fulfillPaymentFromPaypalOrder(paymentWebhookDto, paypalOrder);
-                var customId = paypalOrder.getPurchaseUnits().get(0).getCustomId();
-                var order = orderService.fulfill(Long.parseLong(customId));
-                orderService.onOrderFulfilled(order);
             } catch (IOException | ApiException e) {
                 throw new HttpException("Error getting PayPal order: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
             }

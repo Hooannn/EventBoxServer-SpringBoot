@@ -147,7 +147,14 @@ public class EventService {
                             .endTime(createShowDto.getEndTime())
                             .saleStartTime(createShowDto.getSaleStartTime())
                             .saleEndTime(createShowDto.getSaleEndTime())
+                            .title(createShowDto.getTitle())
+                            .enabledSeatmap(createShowDto.isEnabledSeatmap())
                             .build();
+
+                    if (createShowDto.isEnabledSeatmap()) {
+                        eventShow.setSeatmap(createShowDto.getSeatmap());
+                        eventShow.setSeatmapSvg(createShowDto.getSeatmapSvg());
+                    }
 
                     // Tạo các Ticket từ danh sách ticketTypeInputs trong CreateShowDto
                     List<Ticket> tickets = createShowDto.getTicketTypeInputs().stream()
@@ -155,6 +162,7 @@ public class EventService {
                                 var ticket = Ticket.builder()
                                         .eventShow(eventShow)
                                         .available(true)
+                                        .seatmapBlockId(ticketTypeDto.getSeatmapBlockId())
                                         .name(ticketTypeDto.getName())
                                         .description(ticketTypeDto.getDescription())
                                         .price(ticketTypeDto.getPrice())
@@ -246,13 +254,21 @@ public class EventService {
                             .endTime(createShowDto.getEndTime())
                             .saleStartTime(createShowDto.getSaleStartTime())
                             .saleEndTime(createShowDto.getSaleEndTime())
+                            .title(createShowDto.getTitle())
+                            .enabledSeatmap(createShowDto.isEnabledSeatmap())
                             .build();
+
+                    if (createShowDto.isEnabledSeatmap()) {
+                        eventShow.setSeatmap(createShowDto.getSeatmap());
+                        eventShow.setSeatmapSvg(createShowDto.getSeatmapSvg());
+                    }
 
                     List<Ticket> tickets = createShowDto.getTicketTypeInputs().stream()
                             .map(ticketTypeDto -> {
                                 var ticket = Ticket.builder()
                                         .eventShow(eventShow)
                                         .available(true)
+                                        .seatmapBlockId(ticketTypeDto.getSeatmapBlockId())
                                         .name(ticketTypeDto.getName())
                                         .description(ticketTypeDto.getDescription())
                                         .price(ticketTypeDto.getPrice())
@@ -331,7 +347,7 @@ public class EventService {
             Map uploadResult = null;
             try {
                 uploadResult = cloudinaryService.uploadByBase64(
-                        updateEventDto.getLogoBase64(),
+                        updateEventDto.getBackgroundBase64(),
                         Constant.StorageFolder.EVENT_ASSETS
                 );
                 logger.info("Uploaded image: {}", uploadResult);

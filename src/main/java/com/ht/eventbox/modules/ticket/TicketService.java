@@ -265,6 +265,15 @@ public class TicketService {
                     ));
         });
 
+        // gửi sự kiện đến client qua socketio để cập nhật dashboard
+        CompletableFuture.runAsync(() -> {
+            socketIOServer.getNamespace("/event")
+                    .getRoomOperations(ticketItem.getTicket().getEventShow().getEvent().getId().toString())
+                    .sendEvent("traces_updated", Map.of(
+                            "ticket_item_id", ticketItem.getId()
+                    ));
+        });
+
         return true;
     }
 
