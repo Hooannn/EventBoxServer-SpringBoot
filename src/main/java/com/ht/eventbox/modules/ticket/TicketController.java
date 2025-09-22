@@ -6,6 +6,7 @@ import com.ht.eventbox.constant.Constant;
 import com.ht.eventbox.entities.TicketItem;
 import com.ht.eventbox.enums.OrderStatus;
 import com.ht.eventbox.modules.ticket.dtos.FeedbackTicketItemDto;
+import com.ht.eventbox.modules.ticket.dtos.GiveawayTicketItemDto;
 import com.ht.eventbox.modules.ticket.dtos.ValidateTicketItemDto;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -150,6 +151,26 @@ public class TicketController {
         return ResponseEntity.created(null).body(
                 new Response<>(
                         HttpStatus.CREATED.value(),
+                        Constant.SuccessCode.UPDATE_SUCCESSFULLY,
+                        res
+                )
+        );
+    }
+
+    /*
+    API dùng để tặng vé cho người khác, dùng cho mobile app giao diện người dùng (vé của tôi)
+    */
+    @PostMapping("/items/{ticketItemId}/giveaway")
+    @RequiredPermissions({"create:orders"})
+    public ResponseEntity<Response<Boolean>> giveawayTicketItem(
+            @RequestAttribute("sub") String sub,
+            @Valid @RequestBody GiveawayTicketItemDto giveawayTicketItemDto,
+            @PathVariable String ticketItemId)
+    {
+        var res = ticketService.giveawayTicketItem(Long.valueOf(sub), Long.valueOf(ticketItemId), giveawayTicketItemDto);
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
                         Constant.SuccessCode.UPDATE_SUCCESSFULLY,
                         res
                 )

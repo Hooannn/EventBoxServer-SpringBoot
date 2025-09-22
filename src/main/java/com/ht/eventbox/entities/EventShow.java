@@ -19,7 +19,10 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "event_shows")
+@Table(name = "event_shows", indexes = {
+        @Index(name = "idx_event_show_event_id", columnList = "event_id"),
+        @Index(name = "idx_event_show_start_time", columnList = "start_time")
+})
 @Checks({
         @Check(constraints = "start_time < end_time"),
         @Check(constraints = "sale_start_time < sale_end_time"),

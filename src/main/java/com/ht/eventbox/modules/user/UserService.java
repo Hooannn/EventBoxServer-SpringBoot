@@ -34,6 +34,15 @@ public class UserService {
     private final AssetRepository assetRepository;
     private final CloudinaryService cloudinaryService;
 
+    public boolean existsByEmail(String email) {
+        return userRepository.existsByEmail(email);
+    }
+
+    public User getByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new HttpException(Constant.ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND));
+    }
+
     public User getById(Long id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new HttpException(Constant.ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND));

@@ -178,6 +178,12 @@ public class AuthService {
         return true;
     }
 
+    public boolean isPasswordMatch(Long userId, String password) {
+        var user = userRepository.findById(userId)
+                .orElseThrow(() -> new HttpException(Constant.ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND));
+        return passwordEncoder.matches(password, user.getPassword());
+    }
+
     public AuthenticationResponse authenticate(AuthenticateDto authenticateDto) {
         var user = userRepository.findByEmail(authenticateDto.getUsername())
                 .orElseThrow(() -> new HttpException(Constant.ErrorCode.INVALID_CREDENTIALS, HttpStatus.BAD_REQUEST));

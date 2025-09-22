@@ -12,6 +12,10 @@ import java.util.Optional;
 public interface TicketItemRepository extends JpaRepository<TicketItem, Long> {
     long countAllByTicketIdAndOrderStatusIn(Long ticketId, Collection<OrderStatus> statuses);
 
+    List<TicketItem> findAllByOrderStatusIsAndRemindedIsFalseAndTicketEventShowStartTimeBefore(OrderStatus status, LocalDateTime time);
+
+    List<TicketItem> findAllByOrderStatusIsAndRemindedIsFalseAndTicketEventShowStartTimeBetween(OrderStatus status, LocalDateTime startTime, LocalDateTime endTime);
+
     List<TicketItem> findAllByOrderUserIdAndOrderStatusIs(Long userId, OrderStatus status);
 
     List<TicketItem> findAllByOrderUserIdAndOrderStatusIsOrderByIdAsc(Long userId, OrderStatus status);

@@ -15,7 +15,9 @@ import org.hibernate.annotations.UpdateTimestamp;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "tickets")
+@Table(name = "tickets", indexes = {
+        @Index(name = "idx_ticket_event_show_id", columnList = "event_show_id")
+})
 @Checks({
         @Check(constraints = "price >= 0"),
         @Check(constraints = "initial_stock >= 0"),

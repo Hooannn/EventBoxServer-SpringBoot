@@ -15,6 +15,8 @@ public class Constant {
         public static final String MEMBER_ADDED = "EventBox - You have been added to an organization";
         public static final String MEMBER_REMOVED = "EventBox - You have been removed from an organization";
         public static final String ORDER_PAID = "EventBox - Your order has been paid successfully";
+        public static final String UPCOMING_EVENT = "EventBox - Upcoming event reminder";
+        public static final String GIVEAWAY_TICKET = "EventBox - You have received a giveaway ticket";
     }
 
     public static class MailTemplate {
@@ -23,6 +25,8 @@ public class Constant {
         public static final String MEMBER_ADDED = "member-added";
         public static final String MEMBER_REMOVED = "member-removed";
         public static final String ORDER_PAID = "order-paid";
+        public static final String UPCOMING_EVENT = "upcoming-event";
+        public static final String GIVEAWAY_TICKET = "giveaway-ticket";
     }
 
     public static class ValidationCode {
@@ -78,6 +82,7 @@ public class Constant {
         public static final String PAYOUT_FAILED = "payout_failed";
         public static final String TICKET_NOT_SOLD = "ticket_not_sold";
         public static final String SHOW_NOT_ENDED = "show_not_ended";
+        public static final String TICKET_ITEM_ALREADY_USED = "ticket_item_already_used";
     }
 
     public static class SuccessCode {

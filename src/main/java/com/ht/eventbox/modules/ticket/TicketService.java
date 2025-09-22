@@ -2,31 +2,45 @@ package com.ht.eventbox.modules.ticket;
 
 import com.corundumstudio.socketio.SocketIOServer;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.firebase.messaging.Notification;
 import com.ht.eventbox.config.HttpException;
 import com.ht.eventbox.constant.Constant;
 import com.ht.eventbox.entities.*;
+import com.ht.eventbox.enums.AssetUsage;
 import com.ht.eventbox.enums.OrderStatus;
 import com.ht.eventbox.enums.OrganizationRole;
 import com.ht.eventbox.enums.TicketItemTraceEvent;
 import com.ht.eventbox.filter.JwtService;
+import com.ht.eventbox.modules.auth.AuthService;
 import com.ht.eventbox.modules.event.EventRepository;
+import com.ht.eventbox.modules.mail.MailService;
+import com.ht.eventbox.modules.messaging.PushNotificationService;
+import com.ht.eventbox.modules.order.OrderRepository;
 import com.ht.eventbox.modules.order.TicketItemRepository;
 import com.ht.eventbox.modules.organization.OrganizationRepository;
 import com.ht.eventbox.modules.ticket.dtos.FeedbackTicketItemDto;
+import com.ht.eventbox.modules.ticket.dtos.GiveawayTicketItemDto;
 import com.ht.eventbox.modules.ticket.dtos.ValidateTicketItemDto;
+import com.ht.eventbox.modules.user.UserService;
+import com.ht.eventbox.utils.Helper;
+import jakarta.mail.MessagingException;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 @Service
 @RequiredArgsConstructor
 public class TicketService {
-    private final EventRepository eventRepository;
+    private static final Logger logger = org.slf4j.LoggerFactory.getLogger(TicketService.class);
+
     @Value("${application.security.jwt.qrcode-secret-key}")
     private String qrcodeSecretKey;
 
@@ -109,11 +123,17 @@ public class TicketService {
         java.time.LocalDateTime getUpdatedAt();
     }
 
+    private final EventRepository eventRepository;
+    private final OrderRepository orderRepository;
+    private final UserService userService;
+    private final AuthService authService;
     private final TicketItemRepository ticketItemRepository;
     private final JwtService jwtService;
     private final OrganizationRepository organizationRepository;
     private final TicketItemTraceRepository ticketItemTraceRepository;
     private final SocketIOServer socketIOServer;
+    private final MailService mailService;
+    private final PushNotificationService pushNotificationService;
 
     public List<TicketItemDetails> getTicketItemsByUserIdAndOrderStatusIs(Long userId, OrderStatus status) {
         return ticketItemRepository.findAllByOrderUserIdAndOrderStatusIsOrderByIdAsc(
@@ -320,6 +340,154 @@ public class TicketService {
 
         ticketItem.setFeedback(feedbackTicketItemDto.getFeedback());
         ticketItemRepository.save(ticketItem);
+
+        return true;
+    }
+
+    public void remindUpcomingEvents() {
+        var startOfDay = LocalDateTime.of(
+                LocalDate.now(),
+                LocalTime.MIN
+        );
+        var endOfDay = LocalDateTime.of(
+                LocalDate.now(),
+                LocalTime.MAX
+        );
+        var ticketItems = ticketItemRepository.findAllByOrderStatusIsAndRemindedIsFalseAndTicketEventShowStartTimeBetween(
+                OrderStatus.FULFILLED,
+                startOfDay,
+                endOfDay
+        );
+
+        ticketItems.forEach(
+                ticketItem -> {
+                    var order = ticketItem.getOrder();
+                    var user = order.getUser();
+                    var eventShow = ticketItem.getTicket().getEventShow();
+                    var event = eventShow.getEvent();
+
+                    try {
+                        mailService.sendReminderEmail(
+                                user.getEmail(),
+                                event,
+                                eventShow
+                        );
+                    } catch (MessagingException e) {
+                        logger.error("Error when send reminder email for userId {}: {}", user.getId(), e.getMessage());
+                    }
+
+                    var notification = Notification.builder()
+                                    .setTitle("Nhắc nhở: Sự kiện sắp diễn ra - " + event.getTitle())
+                                    .setBody("Chương trình \"" + eventShow.getTitle() + "\" sẽ diễn ra vào " + Helper.formatDateToString(eventShow.getStartTime()) + ". Đừng quên tham gia nhé!")
+                                    .setImage(event.getAssets().stream()
+                                            .filter(asset -> asset.getUsage() == AssetUsage.EVENT_LOGO)
+                                            .findFirst()
+                                            .map(Asset::getSecureUrl)
+                                            .orElse(null))
+                                    .build();
+
+                    try {
+                        pushNotificationService.push(
+                                ticketItem.getOrder().getUser().getId(),
+                                notification,
+                                Map.of(
+                                        "type", "upcoming_event",
+                                        "event_id", event.getId().toString(),
+                                        "event_show_id", eventShow.getId().toString()
+                                )
+                        );
+                    } catch (Exception e) {
+                        logger.error("Error when push notification for userId {}: {}", user.getId(), e.getMessage());
+                    }
+
+                    ticketItem.setReminded(true);
+                }
+        );
+
+        ticketItemRepository.saveAll(ticketItems);
+    }
+
+    public boolean giveawayTicketItem(Long userId, Long ticketItemId, GiveawayTicketItemDto giveawayTicketItemDto) {
+        // kiểm tra ticketItemId đúng với userId và orderStatus là FULFILLED
+        var ticketItem = ticketItemRepository.findByIdAndOrderUserIdAndOrderStatusIs(ticketItemId, userId, OrderStatus.FULFILLED, TicketItem.class)
+                .orElseThrow(() -> new HttpException(
+                        Constant.ErrorCode.TICKET_ITEM_NOT_FOUND,
+                        HttpStatus.BAD_REQUEST
+                ));
+
+        // kiểm tra xem người dùng có đang tặng vé cho chính mình không
+        if (ticketItem.getOrder().getUser().getEmail().equals(giveawayTicketItemDto.getRecipientEmail())) {
+            throw new HttpException(
+                    Constant.ErrorCode.NOT_ALLOWED_OPERATION,
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        // kiểm tra xem vé đã được sử dụng chưa (có trace chưa)
+        if (!ticketItem.getTraces().isEmpty()) {
+            throw new HttpException(
+                    Constant.ErrorCode.TICKET_ITEM_ALREADY_USED,
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        // kiểm tra xem chương trình đã kết thúc chưa
+        var isEnded = ticketItem.getTicket().getEventShow().getEndTime().isBefore(LocalDateTime.now());
+        if (isEnded) {
+            throw new HttpException(
+                    Constant.ErrorCode.SHOW_ENDED,
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        // kiểm tra xem recipientEmail có tồn tại trong hệ thống không
+        var recipient = userService.getByEmail(giveawayTicketItemDto.getRecipientEmail());
+
+        var isPasswordMatch = authService.isPasswordMatch(
+                userId, giveawayTicketItemDto.getPassword()
+        );
+
+        if (!isPasswordMatch) {
+            throw new HttpException(
+                    Constant.ErrorCode.NOT_ALLOWED_OPERATION,
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        String fromEmail = ticketItem.getOrder().getUser().getEmail();
+        var order = ticketItem.getOrder();
+
+        if (order.getItems().size() == 1) {
+            // cập nhật lại userId của order
+            order.setUser(recipient);
+        } else {
+            // tạo order mới cho người nhận
+            var newOrder = new Order();
+            newOrder.setUser(recipient);
+            newOrder.setPlaceTotal(ticketItem.getPlaceTotal());
+            newOrder.setStatus(OrderStatus.FULFILLED);
+            newOrder.setFulfilledAt(LocalDateTime.now());
+            newOrder.setExpiredAt(LocalDateTime.now());
+            var savedOrder = orderRepository.save(newOrder);
+
+            // cập nhật lại ticketItem sang order mới
+            ticketItem.setOrder(savedOrder);
+        }
+        ticketItemRepository.save(ticketItem);
+
+        // gửi email thông báo tặng vé thành công
+        CompletableFuture.runAsync(() -> {
+            try {
+                mailService.sendGiveawayNotificationEmail(
+                        recipient.getEmail(),
+                        ticketItem.getTicket().getEventShow().getEvent(),
+                        ticketItem.getTicket().getEventShow(),
+                        fromEmail
+                );
+            } catch (MessagingException e) {
+                logger.error("Error when send giveaway notification email to userId {}: {}", recipient.getId(), e.getMessage());
+            }
+        });
 
         return true;
     }

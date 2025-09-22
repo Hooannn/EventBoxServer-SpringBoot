@@ -1,6 +1,12 @@
 package com.ht.eventbox.modules.mail;
 
 import com.ht.eventbox.constant.Constant;
+import com.ht.eventbox.entities.Asset;
+import com.ht.eventbox.entities.Event;
+import com.ht.eventbox.entities.EventShow;
+import com.ht.eventbox.entities.Ticket;
+import com.ht.eventbox.enums.AssetUsage;
+import com.ht.eventbox.utils.Helper;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
@@ -120,6 +126,57 @@ public class MailService {
 
         helper.setTo(to);
         helper.setSubject(Constant.MailSubject.ORDER_PAID);
+        helper.setText(htmlContent, true);
+
+        javaMailSender.send(mimeMessage);
+    }
+
+    public void sendReminderEmail(String to, Event event, EventShow eventShow) throws MessagingException {
+        MimeMessage mimeMessage = javaMailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+        Context context = new Context();
+
+        var eventImageUrl = event.getAssets().stream()
+                .filter(asset -> asset.getUsage() == AssetUsage.EVENT_LOGO)
+                .findFirst()
+                .map(Asset::getSecureUrl)
+                .orElse(null);
+
+        context.setVariable("eventName", event.getTitle());
+        context.setVariable("eventImageUrl", eventImageUrl);
+        context.setVariable("eventShowName", eventShow.getTitle());
+        context.setVariable("eventShowStartTime", Helper.formatDateToString(eventShow.getStartTime()));
+
+        String htmlContent = templateEngine.process(Constant.MailTemplate.UPCOMING_EVENT, context);
+
+        helper.setTo(to);
+        helper.setSubject(Constant.MailSubject.UPCOMING_EVENT + " - " + event.getTitle());
+        helper.setText(htmlContent, true);
+
+        javaMailSender.send(mimeMessage);
+    }
+
+    public void sendGiveawayNotificationEmail(String to, Event event, EventShow eventShow, String from) throws MessagingException {
+        MimeMessage mimeMessage = javaMailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+        Context context = new Context();
+
+        var eventImageUrl = event.getAssets().stream()
+                .filter(asset -> asset.getUsage() == AssetUsage.EVENT_LOGO)
+                .findFirst()
+                .map(Asset::getSecureUrl)
+                .orElse(null);
+
+        context.setVariable("senderName", from);
+        context.setVariable("eventName", event.getTitle());
+        context.setVariable("eventImageUrl", eventImageUrl);
+        context.setVariable("eventShowName", eventShow.getTitle());
+        context.setVariable("eventShowStartTime", Helper.formatDateToString(eventShow.getStartTime()));
+
+        String htmlContent = templateEngine.process(Constant.MailTemplate.GIVEAWAY_TICKET, context);
+
+        helper.setTo(to);
+        helper.setSubject(Constant.MailSubject.GIVEAWAY_TICKET + " - " + event.getTitle());
         helper.setText(htmlContent, true);
 
         javaMailSender.send(mimeMessage);

@@ -2,6 +2,7 @@ package com.ht.eventbox.modules.cronjobs;
 
 import com.corundumstudio.socketio.SocketIOServer;
 import com.ht.eventbox.modules.order.OrderService;
+import com.ht.eventbox.modules.ticket.TicketService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -13,12 +14,14 @@ import java.util.Map;
 public class Scheduler {
     private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(Scheduler.class);
     private final OrderService orderService;
+    private final TicketService ticketService;
     private final SocketIOServer socketIOServer;
 
-    //Run at 00:05 every day
-    @Scheduled(cron = "0 5 0 * * ?")
-    public void log() {
-        logger.info("Scheduler is running at 00:05 every day");
+    //Run at 00:01 every day
+    @Scheduled(cron = "0 1 0 * * ?")
+    public void remindUpcomingEvents() {
+        logger.info("Reminding upcoming events");
+        ticketService.remindUpcomingEvents();
     }
 
     //Run every 5 minutes

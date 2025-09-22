@@ -17,7 +17,10 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "ticket_items")
+@Table(name = "ticket_items", indexes = {
+        @Index(name = "idx_ticket_item_order_id", columnList = "order_id"),
+        @Index(name = "idx_ticket_item_ticket_id", columnList = "ticket_id")
+})
 public class TicketItem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -35,6 +38,9 @@ public class TicketItem {
 
     @Column(name = "feedback", columnDefinition = "TEXT")
     private String feedback;
+
+    @Column(name = "reminded", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private boolean reminded = false;
 
     @Column(name = "place_total", nullable = false)
     @JsonProperty("place_total")
