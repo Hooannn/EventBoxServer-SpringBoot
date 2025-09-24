@@ -74,6 +74,24 @@ public class OrganizationController {
     }
 
     /*
+    API dùng để lấy thông tin của một tổ chức theo ID, dùng cho mobile app giao diện người dùng
+    */
+    @GetMapping("/{id}/details")
+    @RequiredPermissions({"read:organizations"})
+    public ResponseEntity<Response<OrganizationService.OrganizationDetails>> getDetailsById(
+            @RequestAttribute("sub") String sub,
+            @PathVariable Long id) {
+        var res = organizationService.getDetailsById(id);
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        HttpStatus.OK.getReasonPhrase(),
+                        res
+                )
+        );
+    }
+
+    /*
     API dùng để lấy thông tin của một tổ chức theo ID, dùng cho web ban tổ chức
     */
     @GetMapping("/{id}")

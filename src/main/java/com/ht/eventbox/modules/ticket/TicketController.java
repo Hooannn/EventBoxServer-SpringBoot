@@ -176,4 +176,23 @@ public class TicketController {
                 )
         );
     }
+
+    /*
+    API dùng để lấy 20 vé gần nhất được phản hồi theo id ban tổ chức, dùng trong mobile app giao diện người dùng xem thông tin ban tổ chức
+    */
+    @GetMapping("/items/feedback/organizations/{organizationId}")
+    @RequiredPermissions({"read:organizations"})
+    public ResponseEntity<Response<List<TicketService.TicketItemDetails>>> getLatestTicketItemFeedbackByOrganization(
+            @RequestAttribute("sub") String sub,
+            @PathVariable String organizationId)
+    {
+        var res = ticketService.getLatestTicketItemFeedbackByOrganizationId(Long.valueOf(organizationId));
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        HttpStatus.OK.getReasonPhrase(),
+                        res
+                )
+        );
+    }
 }

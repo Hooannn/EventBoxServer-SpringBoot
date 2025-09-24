@@ -2,6 +2,7 @@ package com.ht.eventbox.modules.order;
 
 import com.ht.eventbox.entities.TicketItem;
 import com.ht.eventbox.enums.OrderStatus;
+import com.ht.eventbox.modules.ticket.TicketService;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDateTime;
@@ -35,4 +36,6 @@ public interface TicketItemRepository extends JpaRepository<TicketItem, Long> {
     <T> Optional<T> findByIdAndOrderStatusIs(long ticketItemId, OrderStatus orderStatus, Class<T> clazz);
 
     <T> Optional<T> findByIdAndOrderStatusIsAndTicketEventShowId(Long id, OrderStatus orderStatus, Long eventShowId, Class<T> clazz);
+
+    <T> List<T> findTop20ByTicketEventShowEventOrganizationIdAndFeedbackIsNotNullOrderByFeedbackAtDesc(Long organizationId, Class<T> clazz);
 }

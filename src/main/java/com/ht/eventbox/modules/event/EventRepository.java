@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.Optional;
 
 public interface EventRepository extends JpaRepository<Event, Long> {
+    long countAllByOrganizationIdAndStatusIs(Long organizationId, EventStatus status);
+
     List<Event> findAllByOrganizationId(Long organizationId);
 
     Optional<Event> findByIdAndOrganizationUserOrganizationsUserIdAndOrganizationUserOrganizationsRoleIs(Long id, Long userId, OrganizationRole organizationRole);

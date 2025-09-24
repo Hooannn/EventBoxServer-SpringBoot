@@ -1,9 +1,11 @@
 package com.ht.eventbox.modules.organization;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ht.eventbox.config.HttpException;
 import com.ht.eventbox.constant.Constant;
 import com.ht.eventbox.entities.*;
 import com.ht.eventbox.enums.AssetUsage;
+import com.ht.eventbox.enums.EventStatus;
 import com.ht.eventbox.enums.OrganizationRole;
 import com.ht.eventbox.modules.asset.AssetRepository;
 import com.ht.eventbox.modules.event.EventRepository;
@@ -13,9 +15,11 @@ import com.ht.eventbox.modules.storage.CloudinaryService;
 import com.ht.eventbox.modules.user.UserRepository;
 import com.ht.eventbox.utils.Helper;
 import jakarta.mail.MessagingException;
+import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.springframework.http.HttpStatus;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +30,17 @@ import java.util.concurrent.CompletableFuture;
 @Service
 @RequiredArgsConstructor
 public class OrganizationService {
+    @Builder
+    public static class OrganizationDetails {
+        public Organization organization;
+
+        @JsonProperty("subscribers_count")
+        public long subscribersCount;
+
+        @JsonProperty("events_count")
+        public long eventsCount;
+    }
+
     private static final Logger logger = org.slf4j.LoggerFactory.getLogger(OrganizationService.class);
 
     private final OrganizationRepository organizationRepository;
@@ -34,6 +49,7 @@ public class OrganizationService {
     private final UserRepository userRepository;
     private final MailService mailService;
     private final EventRepository eventRepository;
+    private final JdbcTemplate jdbcTemplate;
 
     public List<Organization> getAll() {
         return organizationRepository.findAll();
@@ -51,6 +67,22 @@ public class OrganizationService {
         return organizationRepository.findById(id).orElseThrow(() ->
                 new HttpException(Constant.ErrorCode.ORGANIZATION_NOT_FOUND, HttpStatus.NOT_FOUND)
         );
+    }
+
+    public OrganizationDetails getDetailsById(Long id) {
+        var org = organizationRepository.findById(id).orElseThrow(() ->
+                new HttpException(Constant.ErrorCode.ORGANIZATION_NOT_FOUND, HttpStatus.NOT_FOUND)
+        );
+
+        String sql = "SELECT COUNT(user_id) FROM subscriptions WHERE organization_id = ?";
+        long subscribersCount = jdbcTemplate.queryForObject(sql, Long.class, org.getId());
+        var eventsCount = eventRepository.countAllByOrganizationIdAndStatusIs(org.getId(), EventStatus.PUBLISHED);
+
+        return OrganizationDetails.builder()
+                .organization(org)
+                .subscribersCount(subscribersCount)
+                .eventsCount(eventsCount)
+                .build();
     }
 
     @Transactional

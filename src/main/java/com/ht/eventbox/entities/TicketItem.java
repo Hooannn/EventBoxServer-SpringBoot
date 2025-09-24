@@ -51,6 +51,10 @@ public class TicketItem {
     @OrderBy("id ASC")
     private List<TicketItemTrace> traces = new ArrayList<>();
 
+    @Column(name = "feedback_at")
+    @JsonProperty("feedback_at")
+    private java.time.LocalDateTime feedbackAt;
+
     @CreationTimestamp
     @Column(name = "created_at")
     @JsonProperty("created_at")

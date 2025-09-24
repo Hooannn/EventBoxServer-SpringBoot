@@ -43,6 +43,7 @@ public class Constant {
     }
 
     public static class ErrorCode {
+        public static final String TICKET_ITEM_NOT_USED = "ticket_item_not_used";
         public static final String NOT_ALLOWED_OPERATION = "not_allowed_operation";
         public static final String USER_NOT_FOUND = "user_not_found";
         public static final String USER_ALREADY_EXISTS = "user_already_exists";

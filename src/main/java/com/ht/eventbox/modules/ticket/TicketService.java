@@ -65,6 +65,8 @@ public class TicketService {
     public interface EventShowView {
         Long getId();
 
+        String getTitle();
+
         EventView getEvent();
 
         @JsonProperty("start_time")
@@ -85,12 +87,27 @@ public class TicketService {
         EventShowView getEventShow();
     }
 
+    public interface UserView {
+        Long getId();
+
+        @JsonProperty("first_name")
+        String getFirstName();
+
+        @JsonProperty("last_name")
+        String getLastName();
+
+        @JsonProperty("assets")
+        Set<Asset> getAssets();
+    }
+
     public interface OrderView {
         Long getId();
 
         OrderStatus getStatus();
 
         List<Payment> getPayments();
+
+        UserView getUser();
 
         @JsonProperty("place_total")
         Double getPlaceTotal();
@@ -115,6 +132,9 @@ public class TicketService {
         OrderView getOrder();
 
         List<TicketItemTrace> getTraces();
+
+        @JsonProperty("feedback_at")
+        java.time.LocalDateTime getFeedbackAt();
 
         @JsonProperty("created_at")
         java.time.LocalDateTime getCreatedAt();
@@ -318,6 +338,13 @@ public class TicketService {
                         HttpStatus.BAD_REQUEST
                 ));
 
+        if (ticketItem.getTraces().isEmpty()) {
+            throw new HttpException(
+                    Constant.ErrorCode.TICKET_ITEM_NOT_USED,
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
         var eventShow = ticketItem.getTicket().getEventShow();
 
         // Kiểm tra xem chương trình đã kết thúc chưa
@@ -339,6 +366,7 @@ public class TicketService {
         }
 
         ticketItem.setFeedback(feedbackTicketItemDto.getFeedback());
+        ticketItem.setFeedbackAt(LocalDateTime.now());
         ticketItemRepository.save(ticketItem);
 
         return true;
@@ -491,4 +519,19 @@ public class TicketService {
 
         return true;
     }
+
+    public List<TicketItemDetails> getLatestTicketItemFeedbackByOrganizationId(Long organizationId) {
+        // kiểm tra tổ chức có tồn tại không
+        var organization = organizationRepository.findById(organizationId)
+                .orElseThrow(() -> new HttpException(
+                        Constant.ErrorCode.ORGANIZATION_NOT_FOUND,
+                        HttpStatus.NOT_FOUND
+                ));
+
+        return ticketItemRepository.findTop20ByTicketEventShowEventOrganizationIdAndFeedbackIsNotNullOrderByFeedbackAtDesc(
+                organization.getId(),
+                TicketItemDetails.class
+        );
+    }
+
 }
