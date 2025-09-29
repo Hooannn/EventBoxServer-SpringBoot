@@ -78,6 +78,11 @@ public class EventService {
         return eventShowRepository.findAllByEventIdOrderByIdAsc(eventId);
     }
 
+    public Event getById(Long eventId) {
+        return eventRepository.findById(eventId)
+                .orElseThrow(() -> new HttpException(Constant.ErrorCode.EVENT_NOT_FOUND, HttpStatus.NOT_FOUND));
+    }
+
     public DiscoveryEvents getDiscovery() {
         Pageable pageable = PageRequest.of(0, 4, Sort.by("id").ascending());
 
@@ -602,5 +607,13 @@ public class EventService {
         event.setPayoutAt(LocalDateTime.now());
         eventRepository.save(event);
         return true;
+    }
+
+    public boolean isMember(Long userId, Long eventId, List<OrganizationRole> roles) {
+        var event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new HttpException(Constant.ErrorCode.EVENT_NOT_FOUND, HttpStatus.NOT_FOUND));
+
+        return event.getOrganization().getUserOrganizations().stream()
+                .anyMatch(orgUser -> orgUser.getUser().getId().equals(userId) && roles.contains(orgUser.getRole()));
     }
 }

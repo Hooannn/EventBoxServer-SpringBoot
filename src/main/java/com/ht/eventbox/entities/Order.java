@@ -28,6 +28,10 @@ public class Order {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @ManyToOne
+    @JoinColumn(name = "voucher_id")
+    private Voucher voucher;
+
     @Column(nullable = false, length = 20)
     @Enumerated(EnumType.STRING)
     private OrderStatus status;

@@ -52,10 +52,6 @@ public class PermissionsAspect {
             }
         }
 
-        try {
-            return pjp.proceed();
-        } catch (Throwable throwable) {
-            throw new HttpException(throwable.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+        return pjp.proceed();
     }
 }

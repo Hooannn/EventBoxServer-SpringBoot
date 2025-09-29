@@ -29,4 +29,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     Optional<Order> findByIdAndUserIdAndStatusInAndExpiredAtAfter(Long id, Long userId, Collection<OrderStatus> statuses, LocalDateTime expiredAt);
 
+    boolean existsByVoucherId(Long voucherId);
+
+    long countByVoucherIdAndStatusIs(Long voucherId, OrderStatus status);
 }

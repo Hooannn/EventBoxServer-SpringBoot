@@ -84,6 +84,9 @@ public class Constant {
         public static final String TICKET_NOT_SOLD = "ticket_not_sold";
         public static final String SHOW_NOT_ENDED = "show_not_ended";
         public static final String TICKET_ITEM_ALREADY_USED = "ticket_item_already_used";
+        public static final String VOUCHER_NOT_FOUND = "voucher_not_found";
+        public static final String VOUCHER_HAS_BEEN_USED = "voucher_has_been_used";
+        public static final String VOUCHER_CODE_ALREADY_EXISTS = "voucher_code_already_exists";
     }
 
     public static class SuccessCode {

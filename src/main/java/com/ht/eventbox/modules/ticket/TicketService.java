@@ -372,6 +372,57 @@ public class TicketService {
         return true;
     }
 
+    public boolean triggerReminder(Long ticketItemId) {
+        var ticketItem = ticketItemRepository.findById(ticketItemId)
+                .orElseThrow(() -> new HttpException(
+                        Constant.ErrorCode.TICKET_ITEM_NOT_FOUND,
+                        HttpStatus.BAD_REQUEST
+                ));
+
+        var order = ticketItem.getOrder();
+        var user = order.getUser();
+        var eventShow = ticketItem.getTicket().getEventShow();
+        var event = eventShow.getEvent();
+
+        try {
+            mailService.sendReminderEmail(
+                    user.getEmail(),
+                    event,
+                    eventShow
+            );
+        } catch (MessagingException e) {
+            logger.error("Error when send reminder email for userId {}: {}", user.getId(), e.getMessage());
+            return false;
+        }
+
+        var notification = Notification.builder()
+                .setTitle("Nhắc nhở: Sự kiện sắp diễn ra - " + event.getTitle())
+                .setBody("Chương trình \"" + eventShow.getTitle() + "\" sẽ diễn ra vào " + Helper.formatDateToString(eventShow.getStartTime()) + ". Đừng quên tham gia nhé!")
+                .setImage(event.getAssets().stream()
+                        .filter(asset -> asset.getUsage() == AssetUsage.EVENT_LOGO)
+                        .findFirst()
+                        .map(Asset::getSecureUrl)
+                        .orElse(null))
+                .build();
+
+        try {
+            pushNotificationService.push(
+                    ticketItem.getOrder().getUser().getId(),
+                    notification,
+                    Map.of(
+                            "type", "upcoming_event",
+                            "event_id", event.getId().toString(),
+                            "event_show_id", eventShow.getId().toString()
+                    )
+            );
+        } catch (Exception e) {
+            logger.error("Error when push notification for userId {}: {}", user.getId(), e.getMessage());
+            return false;
+        }
+
+        return true;
+    }
+
     public void remindUpcomingEvents() {
         var startOfDay = LocalDateTime.of(
                 LocalDate.now(),

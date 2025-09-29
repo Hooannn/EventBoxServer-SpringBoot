@@ -195,4 +195,20 @@ public class TicketController {
                 )
         );
     }
+
+
+    @PostMapping("/items/{ticketItemId}/reminder/trigger")
+    @RequiredPermissions({"access:admin"})
+    public ResponseEntity<Response<Boolean>> triggerReminder(
+            @PathVariable String ticketItemId)
+    {
+        var res = ticketService.triggerReminder(Long.valueOf(ticketItemId));
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        HttpStatus.OK.getReasonPhrase(),
+                        res
+                )
+        );
+    }
 }
