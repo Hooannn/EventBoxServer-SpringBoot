@@ -35,6 +35,10 @@ public class VoucherService {
         return voucherRepository.findAllByEventIdOrderByIdAsc(eventId);
     }
 
+    public List<Voucher> getAllPublicByEventId(Long eventId) {
+        return voucherRepository.findAllByEventIdAndIsPublicTrueAndIsActiveTrueOrderByIdAsc(eventId);
+    }
+
     public boolean createByEventId(Long userId, Long eventId, CreateVoucherDto createVoucherDto) {
         // Chỉ có OWNER tổ chức mới có thể tạo voucher
         boolean isMember = eventService.isMember(userId, eventId, List.of(OrganizationRole.OWNER));
@@ -136,9 +140,5 @@ public class VoucherService {
         }
 
         return orderRepository.countByVoucherIdAndStatusIs(id, OrderStatus.FULFILLED);
-    }
-
-    public List<Voucher> getAllPublicByEventId(Long eventId) {
-        return voucherRepository.findAllByEventIdAndPublicIsTrueAndActiveIsTrueOrderByIdAsc(eventId);
     }
 }

@@ -18,5 +18,5 @@ public interface VoucherRepository extends JpaRepository<Voucher, Long> {
 
     List<Voucher> findAllByEventIdOrderByIdAsc(Long eventId);
 
-    List<Voucher> findAllByEventIdAndPublicIsTrueAndActiveIsTrueOrderByIdAsc(Long eventId);
+    List<Voucher> findAllByEventIdAndIsPublicTrueAndIsActiveTrueOrderByIdAsc(Long eventId);
 }

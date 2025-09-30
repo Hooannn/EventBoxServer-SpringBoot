@@ -43,14 +43,15 @@ public class VoucherController {
     }
 
     /*
-    API dùng để lấy tất cả public vouchers của một event, dùng cho mobile app giao diện người dùng
+    API dùng để lấy tất cả vouchers của một event, dùng cho web giao diện ban tổ chức
     */
-    @GetMapping("/event/{eventId}/public")
+    @GetMapping("/event/{eventId}")
     @RequiredPermissions({"read:vouchers"})
-    public ResponseEntity<Response<List<Voucher>>> getAllPublicByEventId(
+    public ResponseEntity<Response<List<Voucher>>> getAllByEventId(
+            @RequestAttribute("sub") String sub,
             @PathVariable Long eventId
     ) {
-        var res = voucherService.getAllPublicByEventId(eventId);
+        var res = voucherService.getAllByEventId(Long.valueOf(sub), eventId);
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
@@ -61,15 +62,14 @@ public class VoucherController {
     }
 
     /*
-    API dùng để lấy tất cả vouchers của một event, dùng cho web giao diện ban tổ chức
+    API dùng để lấy tất cả public vouchers của một event, dùng cho mobile app giao diện người dùng
     */
-    @GetMapping("/event/{eventId}")
+    @GetMapping("/event/{eventId}/public")
     @RequiredPermissions({"read:vouchers"})
-    public ResponseEntity<Response<List<Voucher>>> getAllByEventId(
-            @RequestAttribute("sub") String sub,
+    public ResponseEntity<Response<List<Voucher>>> getAllPublicByEventId(
             @PathVariable Long eventId
     ) {
-        var res = voucherService.getAllByEventId(Long.valueOf(sub), eventId);
+        var res = voucherService.getAllPublicByEventId(eventId);
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),

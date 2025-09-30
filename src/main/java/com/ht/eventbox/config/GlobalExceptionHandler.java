@@ -1,6 +1,5 @@
 package com.ht.eventbox.config;
 
-import org.slf4j.Logger;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -13,8 +12,6 @@ import java.util.List;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-    private static final Logger logger = org.slf4j.LoggerFactory.getLogger(GlobalExceptionHandler.class);
-
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ResponseEntity<ExceptionResponse> handleValidationException(MethodArgumentNotValidException ex) {
@@ -34,7 +31,6 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(HttpException.class)
     public ResponseEntity<ExceptionResponse> handleHttpException(HttpException ex) {
-        logger.error("HTTP Exception status: {}, message: {}", ex.getStatus(), ex.getMessage());
         return ResponseEntity.status(ex.getStatus()).body(
                 ExceptionResponse
                         .builder()
