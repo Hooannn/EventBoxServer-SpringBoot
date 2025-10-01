@@ -5,6 +5,7 @@ import com.ht.eventbox.config.Response;
 import com.ht.eventbox.constant.Constant;
 import com.ht.eventbox.entities.Voucher;
 import com.ht.eventbox.modules.category.dtos.CreateCategoryDto;
+import com.ht.eventbox.modules.event.dtos.ApplyVoucherDto;
 import com.ht.eventbox.modules.event.dtos.CreateVoucherDto;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +34,64 @@ public class VoucherController {
             @PathVariable Long id
     ) {
         var res = voucherService.getUsage(Long.valueOf(sub), id, eventId);
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        HttpStatus.OK.getReasonPhrase(),
+                        res
+                )
+        );
+    }
+
+    /*
+    API dùng để lấy voucher hiện tại của một đơn hàng, dùng cho mobile app giao diện người dùng
+    */
+    @GetMapping("/order/{orderId}")
+    @RequiredPermissions({"read:vouchers"})
+    public ResponseEntity<Response<Voucher>> getByOrderId(
+            @RequestAttribute("sub") String sub,
+            @PathVariable Long orderId
+    ) {
+        var res = voucherService.getByOrderId(Long.valueOf(sub), orderId);
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        HttpStatus.OK.getReasonPhrase(),
+                        res
+                )
+        );
+    }
+
+    /*
+    API dùng để áp dụng voucher cho một đơn hàng, dùng cho mobile app giao diện người dùng
+    */
+    @PostMapping("/order/{orderId}/apply")
+    @RequiredPermissions({"read:vouchers", "create:orders"})
+    public ResponseEntity<Response<Boolean>> applyByOrderId(
+            @RequestAttribute("sub") String sub,
+            @Valid @RequestBody ApplyVoucherDto applyVoucherDto,
+            @PathVariable Long orderId
+    ) {
+        var res = voucherService.applyByOrderId(Long.valueOf(sub), orderId, applyVoucherDto);
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        HttpStatus.OK.getReasonPhrase(),
+                        res
+                )
+        );
+    }
+
+    /*
+    API dùng để huỷ bỏ voucher cho một đơn hàng, dùng cho mobile app giao diện người dùng
+    */
+    @PostMapping("/order/{orderId}/remove")
+    @RequiredPermissions({"read:vouchers", "create:orders"})
+    public ResponseEntity<Response<Boolean>> removeByOrderId(
+            @RequestAttribute("sub") String sub,
+            @PathVariable Long orderId
+    ) {
+        var res = voucherService.removeByOrderId(Long.valueOf(sub), orderId);
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),

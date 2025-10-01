@@ -87,6 +87,10 @@ public class Constant {
         public static final String VOUCHER_NOT_FOUND = "voucher_not_found";
         public static final String VOUCHER_HAS_BEEN_USED = "voucher_has_been_used";
         public static final String VOUCHER_CODE_ALREADY_EXISTS = "voucher_code_already_exists";
+        public static final String VOUCHER_TIME_NOT_VALID = "voucher_time_not_valid";
+        public static final String VOUCHER_CONDITION_NOT_MET = "voucher_condition_not_met";
+        public static final String VOUCHER_USAGE_LIMIT_EXCEEDED = "voucher_usage_limit_exceeded";
+        public static final String VOUCHER_PER_USER_LIMIT_EXCEEDED = "voucher_per_user_limit_exceeded";
     }
 
     public static class SuccessCode {

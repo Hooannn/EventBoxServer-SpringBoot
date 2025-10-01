@@ -1,18 +1,20 @@
 package com.ht.eventbox.modules.event;
 
-import com.ht.eventbox.config.GlobalExceptionHandler;
 import com.ht.eventbox.config.HttpException;
 import com.ht.eventbox.constant.Constant;
 import com.ht.eventbox.entities.Voucher;
 import com.ht.eventbox.enums.OrderStatus;
 import com.ht.eventbox.enums.OrganizationRole;
+import com.ht.eventbox.modules.event.dtos.ApplyVoucherDto;
 import com.ht.eventbox.modules.event.dtos.CreateVoucherDto;
 import com.ht.eventbox.modules.order.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -36,7 +38,8 @@ public class VoucherService {
     }
 
     public List<Voucher> getAllPublicByEventId(Long eventId) {
-        return voucherRepository.findAllByEventIdAndIsPublicTrueAndIsActiveTrueOrderByIdAsc(eventId);
+        var now = LocalDateTime.now();
+        return voucherRepository.findAllByEventIdAndIsPublicTrueAndIsActiveTrueAndValidFromIsLessThanEqualAndValidToIsGreaterThanEqualOrderByIdAsc(eventId, now, now);
     }
 
     public boolean createByEventId(Long userId, Long eventId, CreateVoucherDto createVoucherDto) {
@@ -140,5 +143,68 @@ public class VoucherService {
         }
 
         return orderRepository.countByVoucherIdAndStatusIs(id, OrderStatus.FULFILLED);
+    }
+
+    public Voucher getByOrderId(Long userId, Long orderId) {
+        return voucherRepository.findByUserIdAndOrderId(userId, orderId).orElse(null);
+    }
+
+    @Transactional
+    public boolean applyByOrderId(Long userId, Long orderId, ApplyVoucherDto applyVoucherDto) {
+        var order = orderRepository.findByIdAndUserIdAndStatusInAndExpiredAtAfter(
+                orderId,
+                userId,
+                List.of(OrderStatus.WAITING_FOR_PAYMENT, OrderStatus.PENDING),
+                LocalDateTime.now()
+        ).orElseThrow(() -> new HttpException(
+                Constant.ErrorCode.ORDER_NOT_FOUND,
+                HttpStatus.NOT_FOUND
+        ));
+
+        var voucher = voucherRepository.findByCodeIgnoreCaseAndEventIdAndIsActiveTrue(applyVoucherDto.getCode().toUpperCase(), order.getItems().get(0).getTicket().getEventShow().getEvent().getId())
+                .orElseThrow(() -> new HttpException(Constant.ErrorCode.VOUCHER_NOT_FOUND, HttpStatus.NOT_FOUND));
+
+        // điều kiện thời gian
+        if (voucher.getValidFrom().isAfter(LocalDateTime.now()) || voucher.getValidTo().isBefore(LocalDateTime.now())) {
+            throw new HttpException(Constant.ErrorCode.VOUCHER_TIME_NOT_VALID, HttpStatus.BAD_REQUEST);
+        }
+
+        // điều kiện số lượng vé tối thiểu và giá trị đơn hàng tối thiểu
+        if (order.getPlaceTotal().compareTo(voucher.getMinOrderValue()) < 0 || order.getItems().size() < voucher.getMinTicketQuantity()) {
+            throw new HttpException(Constant.ErrorCode.VOUCHER_CONDITION_NOT_MET, HttpStatus.BAD_REQUEST);
+        }
+
+        // số lượt sử dụng
+        long totalUsageCount = orderRepository.countByVoucherId(voucher.getId());
+        if (totalUsageCount >= voucher.getUsageLimit()) {
+            throw new HttpException(Constant.ErrorCode.VOUCHER_USAGE_LIMIT_EXCEEDED, HttpStatus.BAD_REQUEST);
+        }
+
+        // số lượt sử dụng trên mỗi người dùng
+        long userUsageCount = orderRepository.countByUserIdAndVoucherId(userId, voucher.getId());
+        if (userUsageCount >= voucher.getPerUserLimit()) {
+            throw new HttpException(Constant.ErrorCode.VOUCHER_PER_USER_LIMIT_EXCEEDED, HttpStatus.BAD_REQUEST);
+        }
+
+        order.setVoucher(voucher);
+        orderRepository.save(order);
+
+        return true;
+    }
+
+    public boolean removeByOrderId(Long userId, Long orderId) {
+        var order = orderRepository.findByIdAndUserId(orderId, userId).orElseThrow(() -> new HttpException(
+                Constant.ErrorCode.ORDER_NOT_FOUND,
+                HttpStatus.NOT_FOUND
+        ));
+
+        if (order.getStatus().equals(OrderStatus.FULFILLED)) {
+            throw new HttpException(Constant.ErrorCode.NOT_ALLOWED_OPERATION, HttpStatus.FORBIDDEN);
+        }
+
+        order.setVoucher(null);
+        orderRepository.save(order);
+
+        return true;
     }
 }

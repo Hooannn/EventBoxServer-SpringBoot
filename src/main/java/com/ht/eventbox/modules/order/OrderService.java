@@ -5,6 +5,7 @@ import com.google.firebase.messaging.Notification;
 import com.ht.eventbox.config.HttpException;
 import com.ht.eventbox.constant.Constant;
 import com.ht.eventbox.entities.*;
+import com.ht.eventbox.enums.DiscountType;
 import com.ht.eventbox.enums.OrderStatus;
 import com.ht.eventbox.enums.OrganizationRole;
 import com.ht.eventbox.modules.event.EventRepository;
@@ -182,9 +183,26 @@ public class OrderService {
                         HttpStatus.NOT_FOUND
                 ));
 
+        double total = order.getPlaceTotal();
+
+        if (order.getVoucher() != null) {
+            if (order.getVoucher().getDiscountType().equals(DiscountType.PERCENTAGE)) {
+                total -= (order.getVoucher().getDiscountValue() / 100.0) * total;
+            } else {
+                total -= order.getVoucher().getDiscountValue();
+            }
+        }
+
+        if (total < 0) total = 0;
+
         ApiResponse<com.paypal.sdk.models.Order> response = null;
         try {
-            var usdAmount = currencyConverterService.convertVndToUsd(order.getPlaceTotal());
+            double usdAmount;
+            if (total == 0) {
+                usdAmount = 0.01; // PayPal không chấp nhận thanh toán 0 USD, nên tạm thời để 0.01 USD
+            } else {
+                usdAmount = currencyConverterService.convertVndToUsd(total);
+            }
             response = payPalService.createOrder(
                     order.getId().toString(),
                     usdAmount,

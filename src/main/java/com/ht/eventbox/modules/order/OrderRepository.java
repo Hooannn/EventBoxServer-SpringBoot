@@ -32,4 +32,12 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     boolean existsByVoucherId(Long voucherId);
 
     long countByVoucherIdAndStatusIs(Long voucherId, OrderStatus status);
+
+    long countByUserIdAndVoucherIdAndStatusIn(Long userId, Long voucherId, List<OrderStatus> statuses);
+
+    long countByUserIdAndVoucherId(Long userId, Long voucherId);
+
+    long countByVoucherId(Long id);
+
+    Optional<Order> findByIdAndUserId(Long orderId, Long userId);
 }
