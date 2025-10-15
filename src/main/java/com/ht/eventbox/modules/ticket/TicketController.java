@@ -196,6 +196,25 @@ public class TicketController {
         );
     }
 
+    /*
+    API dùng để lấy tất cả vé được phản hồi theo id sự kiện, dùng cho web ban tổ chức khi xem báo cáo
+    */
+    @GetMapping("/items/feedback/event/{eventId}")
+    @RequiredPermissions({"read:orders"})
+    public ResponseEntity<Response<List<TicketService.TicketItemDetails>>> getTicketItemFeedbackByEvent(
+            @RequestAttribute("sub") String sub,
+            @PathVariable String eventId)
+    {
+        var res = ticketService.getTicketItemFeedbackByEventId(Long.valueOf(sub), Long.valueOf(eventId));
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        HttpStatus.OK.getReasonPhrase(),
+                        res
+                )
+        );
+    }
+
 
     @PostMapping("/items/{ticketItemId}/reminder/trigger")
     @RequiredPermissions({"access:admin"})
