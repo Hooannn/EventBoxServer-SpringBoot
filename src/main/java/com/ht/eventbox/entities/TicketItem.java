@@ -3,6 +3,8 @@ package com.ht.eventbox.entities;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.ht.eventbox.enums.FeedbackSentimentType;
+import com.ht.eventbox.enums.OrderStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -38,6 +40,11 @@ public class TicketItem {
 
     @Column(name = "feedback", columnDefinition = "TEXT")
     private String feedback;
+
+    @Column(length = 20, name = "feedback_type")
+    @Enumerated(EnumType.STRING)
+    @JsonProperty("feedback_type")
+    private FeedbackSentimentType feedbackType;
 
     @Column(name = "reminded", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
     private boolean reminded = false;

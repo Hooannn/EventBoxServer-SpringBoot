@@ -6,18 +6,17 @@ import com.google.firebase.messaging.Notification;
 import com.ht.eventbox.config.HttpException;
 import com.ht.eventbox.constant.Constant;
 import com.ht.eventbox.entities.*;
-import com.ht.eventbox.enums.AssetUsage;
-import com.ht.eventbox.enums.OrderStatus;
-import com.ht.eventbox.enums.OrganizationRole;
-import com.ht.eventbox.enums.TicketItemTraceEvent;
+import com.ht.eventbox.enums.*;
 import com.ht.eventbox.filter.JwtService;
 import com.ht.eventbox.modules.auth.AuthService;
 import com.ht.eventbox.modules.event.EventRepository;
+import com.ht.eventbox.modules.event.EventService;
 import com.ht.eventbox.modules.mail.MailService;
 import com.ht.eventbox.modules.messaging.PushNotificationService;
 import com.ht.eventbox.modules.order.OrderRepository;
 import com.ht.eventbox.modules.order.TicketItemRepository;
 import com.ht.eventbox.modules.organization.OrganizationRepository;
+import com.ht.eventbox.modules.sentiment.SentimentAnalystService;
 import com.ht.eventbox.modules.ticket.dtos.FeedbackTicketItemDto;
 import com.ht.eventbox.modules.ticket.dtos.GiveawayTicketItemDto;
 import com.ht.eventbox.modules.ticket.dtos.ValidateTicketItemDto;
@@ -90,6 +89,8 @@ public class TicketService {
     public interface UserView {
         Long getId();
 
+        String getEmail();
+
         @JsonProperty("first_name")
         String getFirstName();
 
@@ -125,6 +126,9 @@ public class TicketService {
         @JsonProperty("place_total")
         Double getPlaceTotal();
 
+        @JsonProperty("feedback_type")
+        FeedbackSentimentType getFeedbackType();
+
         TicketView getTicket();
 
         String getFeedback();
@@ -144,6 +148,7 @@ public class TicketService {
     }
 
     private final EventRepository eventRepository;
+    private final EventService eventService;
     private final OrderRepository orderRepository;
     private final UserService userService;
     private final AuthService authService;
@@ -153,6 +158,7 @@ public class TicketService {
     private final TicketItemTraceRepository ticketItemTraceRepository;
     private final SocketIOServer socketIOServer;
     private final MailService mailService;
+    private final SentimentAnalystService sentimentAnalystService;
     private final PushNotificationService pushNotificationService;
 
     public List<TicketItemDetails> getTicketItemsByUserIdAndOrderStatusIs(Long userId, OrderStatus status) {
@@ -368,6 +374,8 @@ public class TicketService {
         ticketItem.setFeedback(feedbackTicketItemDto.getFeedback());
         ticketItem.setFeedbackAt(LocalDateTime.now());
         ticketItemRepository.save(ticketItem);
+
+        sentimentAnalystService.updateFeedbackSentiment(ticketItem.getId());
 
         return true;
     }
@@ -585,4 +593,20 @@ public class TicketService {
         );
     }
 
+    public List<TicketItemDetails> getTicketItemFeedbackByEventId(Long userId, Long eventId) {
+        var isMember = eventService.isMember(
+                userId,
+                eventId,
+                List.of(OrganizationRole.MANAGER, OrganizationRole.OWNER, OrganizationRole.STAFF)
+        );
+
+        if (!isMember) {
+            throw new HttpException(Constant.ErrorCode.NOT_ALLOWED_OPERATION, HttpStatus.FORBIDDEN);
+        }
+
+        return ticketItemRepository.findAllByTicketEventShowEventIdAndFeedbackIsNotNullOrderByFeedbackAtDesc(
+                eventId,
+                TicketItemDetails.class
+        );
+    }
 }

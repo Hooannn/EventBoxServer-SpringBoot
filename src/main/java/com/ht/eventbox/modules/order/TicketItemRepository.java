@@ -38,4 +38,6 @@ public interface TicketItemRepository extends JpaRepository<TicketItem, Long> {
     <T> Optional<T> findByIdAndOrderStatusIsAndTicketEventShowId(Long id, OrderStatus orderStatus, Long eventShowId, Class<T> clazz);
 
     <T> List<T> findTop20ByTicketEventShowEventOrganizationIdAndFeedbackIsNotNullOrderByFeedbackAtDesc(Long organizationId, Class<T> clazz);
+
+    <T> List<T> findAllByTicketEventShowEventIdAndFeedbackIsNotNullOrderByFeedbackAtDesc(Long eventId, Class<T> clazz);
 }
