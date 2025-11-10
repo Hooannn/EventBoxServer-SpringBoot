@@ -243,6 +243,48 @@ public class AuthService {
                 .build();
     }
 
+    public AuthenticationResponse googleAuthenticateWithIdToken(GoogleAuthenticateWithIdTokenDto googleAuthenticateDto) {
+        var googleUser = getGoogleTokenInfo(googleAuthenticateDto.getIdToken());
+        if (googleUser == null || !googleUser.isEmailVerified()) {
+            throw new HttpException(Constant.ErrorCode.INVALID_TOKEN, HttpStatus.FORBIDDEN);
+        }
+
+        var user = userRepository.findByEmail(googleUser.getEmail()).orElse(null);
+
+        if (user != null) {
+            var credentials = getCredentials(user);
+            return AuthenticationResponse.builder()
+                    .user(user)
+                    .accessToken(credentials.getAccessToken())
+                    .refreshToken(credentials.getRefreshToken())
+                    .build();
+        }
+
+        var defaultRole = roleRepository.findByName(Constant.DefaultRole.USER)
+                .orElseThrow(() -> new HttpException("Default user role not found in database", HttpStatus.INTERNAL_SERVER_ERROR));
+
+        var newUser = User.builder()
+                .email(googleUser.getEmail())
+                .firstName(googleUser.getGivenName())
+                .lastName(googleUser.getFamilyName())
+                .password(Helper.generateRandomSecret(12))
+                .activatedAt(Helper.getCurrentDateTime())
+                .roles(
+                        new java.util.HashSet<>(java.util.List.of(defaultRole))
+                )
+                .build();
+
+        var savedUser = userRepository.save(newUser);
+
+        var credentials = getCredentials(savedUser);
+
+        return AuthenticationResponse.builder()
+                .user(savedUser)
+                .accessToken(credentials.getAccessToken())
+                .refreshToken(credentials.getRefreshToken())
+                .build();
+    }
+
     public boolean resendVerify(ResendVerifyDto resendVerifyDto) {
         if (userRepository.existsByEmail(resendVerifyDto.getUsername())) {
             throw new HttpException(Constant.ErrorCode.USER_ALREADY_EXISTS, HttpStatus.BAD_REQUEST);
@@ -439,6 +481,26 @@ public class AuthService {
 
         return webClient
                 .get().uri("/oauth2/v3/userinfo")
+                .retrieve()
+                .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(),
+                        response -> {
+                            throw new HttpException(Constant.ErrorCode.INVALID_TOKEN, HttpStatus.FORBIDDEN);
+                        })
+                .bodyToMono(GoogleUserInfo.class)
+                .block();
+    }
+
+    private GoogleUserInfo getGoogleTokenInfo(String token) {
+        WebClient webClient = WebClient
+                .builder()
+                .baseUrl("https://oauth2.googleapis.com")
+                .build();
+
+        return webClient
+                .get().uri(uriBuilder -> uriBuilder
+                        .path("/tokeninfo")
+                        .queryParam("id_token", token)
+                        .build())
                 .retrieve()
                 .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(),
                         response -> {

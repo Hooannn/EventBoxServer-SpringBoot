@@ -117,6 +117,18 @@ public class AuthController {
         );
     }
 
+    @PostMapping("/google/tokeninfo")
+    public ResponseEntity<Response<AuthenticationResponse>> googleAuthenticateWithIdToken(@Valid @RequestBody GoogleAuthenticateWithIdTokenDto googleAuthenticateDto) {
+        var res = authService.googleAuthenticateWithIdToken(googleAuthenticateDto);
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        Constant.SuccessCode.LOGIN_SUCCESS,
+                        res
+                )
+        );
+    }
+
     @PostMapping("/forgot-password/otp")
     public ResponseEntity<Response<Boolean>> forgotPassword(@Valid @RequestBody ForgotPasswordDto forgotPasswordDto) {
         var res = authService.forgotPassword(forgotPasswordDto);
