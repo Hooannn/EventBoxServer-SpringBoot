@@ -40,4 +40,6 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     long countByVoucherId(Long id);
 
     Optional<Order> findByIdAndUserId(Long orderId, Long userId);
+
+    List<Order> findAllByItemsTicketEventShowEventIdAndStatusIs(Long eventId, OrderStatus orderStatus);
 }

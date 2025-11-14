@@ -1,7 +1,9 @@
 package com.ht.eventbox.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.ht.eventbox.enums.DiscountType;
 import com.ht.eventbox.enums.OrderStatus;
 import jakarta.persistence.*;
 import lombok.*;
@@ -65,4 +67,26 @@ public class Order {
     @Column(name = "updated_at")
     @JsonProperty("updated_at")
     private java.time.LocalDateTime updatedAt;
+
+    @JsonIgnore
+    public double calculateTotalAmount() {
+        double originalTotal = this.items.stream()
+                .mapToDouble(TicketItem::getPlaceTotal)
+                .sum();
+
+        if (this.voucher == null) {
+            return originalTotal;
+        }
+
+        if (this.voucher.getDiscountType() == DiscountType.FIXED_AMOUNT) {
+            double discountedTotal = originalTotal - this.voucher.getDiscountValue();
+            return Math.max(discountedTotal, 0);
+        } else if (this.voucher.getDiscountType() == DiscountType.PERCENTAGE) {
+            double discount = originalTotal * (this.voucher.getDiscountValue() / 100.0);
+            double discountedTotal = originalTotal - discount;
+            return Math.max(discountedTotal, 0);
+        } else {
+            return originalTotal;
+        }
+    }
 }

@@ -17,6 +17,7 @@ import com.ht.eventbox.modules.event.dtos.UpdateEventTagsDto;
 import com.ht.eventbox.modules.keyword.KeywordRepository;
 import com.ht.eventbox.modules.messaging.PushNotificationService;
 import com.ht.eventbox.modules.order.CurrencyConverterServiceV2;
+import com.ht.eventbox.modules.order.OrderRepository;
 import com.ht.eventbox.modules.order.PayPalService;
 import com.ht.eventbox.modules.order.TicketItemRepository;
 import com.ht.eventbox.modules.organization.OrganizationRepository;
@@ -73,6 +74,7 @@ public class EventService {
     private final PushNotificationService pushNotificationService;
     private final PayPalService payPalService;
     private final CurrencyConverterServiceV2 currencyConverterService;
+    private final OrderRepository orderRepository;
 
     public List<EventShow> getShowsById(Long eventId) {
         return eventShowRepository.findAllByEventIdOrderByIdAsc(eventId);
@@ -573,9 +575,13 @@ public class EventService {
             throw new HttpException(Constant.ErrorCode.NOT_ALLOWED_OPERATION, HttpStatus.FORBIDDEN);
         }
 
-        double totalAmount = event.getShows().stream()
-                .flatMap(show -> show.getTickets().stream())
-                .mapToDouble(ticket -> ticket.getPrice() * (ticket.getInitialStock() - ticket.getStock()))
+        var orders = orderRepository.findAllByItemsTicketEventShowEventIdAndStatusIs(
+                eventId,
+                OrderStatus.FULFILLED
+        );
+
+        double totalAmount = orders.stream()
+                .mapToDouble(Order::calculateTotalAmount)
                 .sum();
 
         if (totalAmount <= 0) {
@@ -584,7 +590,7 @@ public class EventService {
             return true;
         }
 
-        // Chuyển đổi tiền tệ sang USD
+        // Chuyển đổi tiền tệ sang SGD
         double sgdAmount;
         try {
             sgdAmount = currencyConverterService.convertVndToSgd(totalAmount);
