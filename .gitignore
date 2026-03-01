@@ -43,3 +43,5 @@ ehthumbs.db
 
 application.properties
 service-account-key.json
+*.pem
+note.md

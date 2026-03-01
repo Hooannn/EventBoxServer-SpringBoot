@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.security.PublicKey;
 import java.util.List;
 import java.util.Map;
 
@@ -26,9 +27,7 @@ public class AuthenticationFilter extends OncePerRequestFilter {
             "/actuator",
     };
     private final JwtService jwtService;
-
-    @Value("${application.security.jwt.access-secret-key}")
-    private String accessSecretKey;
+    private final PublicKey atPublicKey;
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
@@ -54,12 +53,12 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         }
         try {
             jwt = authHeader.substring(7);
-            sub = jwtService.extractSub(jwt, accessSecretKey);
+            sub = jwtService.extractSub(jwt, atPublicKey);
 
             if (sub != null) {
-                List<String> roles = jwtService.extractRoles(jwt, accessSecretKey);
-                List<String> permissions = jwtService.extractPermissions(jwt, accessSecretKey);
-                boolean isValid = jwtService.isTokenValid(jwt, accessSecretKey);
+                List<String> roles = jwtService.extractRoles(jwt, atPublicKey);
+                List<String> permissions = jwtService.extractPermissions(jwt, atPublicKey);
+                boolean isValid = jwtService.isTokenValid(jwt, atPublicKey);
                 if (!isValid) {
                     sendUnauthorizedResponse(response);
                 } else {

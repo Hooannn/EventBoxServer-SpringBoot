@@ -62,3 +62,4 @@ release.properties
 application.properties
 service-account-key.json
 replay_pid*
+*.pem
