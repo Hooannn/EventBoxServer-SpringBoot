@@ -109,12 +109,13 @@ public class Constant {
     }
 
     public static class ContextKey {
-        public static final String RESPONSE = "X-Response";
-        public static final String USER_ID = "X-User-ID";
-        public static final String USER_ROLES = "X-User-Roles";
-        public static final String USER_PERMISSIONS = "X-User-Permissions";
-        public static final String ACCESS_TOKEN = "X-Access-Token";
-        public static final String DEVICE_ID = "X-Device-ID";
+        public static final String RESPONSE = "EBox-Response";
+        public static final String USER_ID = "EBox-User-ID";
+        public static final String USER_ROLES = "EBox-User-Roles";
+        public static final String USER_PERMISSIONS = "EBox-User-Permissions";
+        public static final String ACCESS_TOKEN = "EBox-Access-Token";
+        public static final String REFRESH_TOKEN = "EBox-Refresh-Token";
+        public static final String DEVICE_ID = "EBox-Device-ID";
     }
 
     public static class RedisPrefix {

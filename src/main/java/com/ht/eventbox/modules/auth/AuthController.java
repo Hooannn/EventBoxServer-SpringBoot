@@ -5,10 +5,13 @@ import com.ht.eventbox.config.Response;
 import com.ht.eventbox.constant.Constant;
 import com.ht.eventbox.filter.JwtService;
 import com.ht.eventbox.modules.auth.dtos.*;
+import com.ht.eventbox.utils.CookieUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping(path = "/api/v1/auth")
 @RequiredArgsConstructor
 public class AuthController {
+    private final CookieUtil cookieUtil;
     private final AuthService authService;
     private final JwtService jwtService;
 
@@ -38,13 +42,17 @@ public class AuthController {
     @PostMapping("/verify")
     public ResponseEntity<Response<AuthenticationResponse>> verify(@Valid @RequestBody VerifyDto verifyDto) {
         var res = authService.verify(verifyDto);
-        return ResponseEntity.ok(
-                new Response<>(
-                        HttpStatus.OK.value(),
-                        Constant.SuccessCode.VERIFY_SUCCESS,
-                        res
-                )
-        );
+
+        ResponseCookie atCookie = cookieUtil.createAccessTokenCookie(res.getAccessToken());
+        ResponseCookie rtCookie = cookieUtil.createRefreshTokenCookie(res.getRefreshToken());
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, atCookie.toString())
+                .header(HttpHeaders.SET_COOKIE, rtCookie.toString())
+                .body(new Response<>(
+                                HttpStatus.OK.value(),
+                                Constant.SuccessCode.VERIFY_SUCCESS,
+                                res
+                ));
     }
 
     @PostMapping("/verify/resend")
@@ -62,13 +70,17 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<Response<AuthenticationResponse>> authenticate(@Valid @RequestBody AuthenticateDto authenticateDto) {
         var res = authService.authenticate(authenticateDto);
-        return ResponseEntity.ok(
-                new Response<>(
+
+        ResponseCookie atCookie = cookieUtil.createAccessTokenCookie(res.getAccessToken());
+        ResponseCookie rtCookie = cookieUtil.createRefreshTokenCookie(res.getRefreshToken());
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, atCookie.toString())
+                .header(HttpHeaders.SET_COOKIE, rtCookie.toString())
+                .body(new Response<>(
                         HttpStatus.OK.value(),
                         Constant.SuccessCode.LOGIN_SUCCESS,
                         res
-                )
-        );
+                ));
     }
 
     @PostMapping("/logout")
@@ -96,25 +108,33 @@ public class AuthController {
         }
 
         var res = authService.logout(Long.valueOf(sub), logoutDto);
-        return ResponseEntity.ok(
-                new Response<>(
+
+        ResponseCookie atCookie = cookieUtil.cleanAccessTokenCookie();
+        ResponseCookie rtCookie = cookieUtil.cleanRefreshTokenCookie();
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, atCookie.toString())
+                .header(HttpHeaders.SET_COOKIE, rtCookie.toString())
+                .body(new Response<>(
                         HttpStatus.OK.value(),
                         Constant.SuccessCode.LOGOUT_SUCCESS,
                         res
-                )
-        );
+                ));
     }
 
     @PostMapping("/google")
     public ResponseEntity<Response<AuthenticationResponse>> googleAuthenticate(@Valid @RequestBody GoogleAuthenticateDto googleAuthenticateDto) {
         var res = authService.googleAuthenticate(googleAuthenticateDto);
-        return ResponseEntity.ok(
-                new Response<>(
+
+        ResponseCookie atCookie = cookieUtil.createAccessTokenCookie(res.getAccessToken());
+        ResponseCookie rtCookie = cookieUtil.createRefreshTokenCookie(res.getRefreshToken());
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, atCookie.toString())
+                .header(HttpHeaders.SET_COOKIE, rtCookie.toString())
+                .body(new Response<>(
                         HttpStatus.OK.value(),
                         Constant.SuccessCode.LOGIN_SUCCESS,
                         res
-                )
-        );
+                ));
     }
 
     @PostMapping("/google/tokeninfo")
@@ -157,12 +177,16 @@ public class AuthController {
     @PostMapping("/refresh")
     public ResponseEntity<Response<AuthService.Credentials>> refresh(@Valid @RequestBody RefreshDto refreshDto) {
         var res = authService.refresh(refreshDto);
-        return ResponseEntity.ok(
-                new Response<>(
+
+        ResponseCookie atCookie = cookieUtil.createAccessTokenCookie(res.getAccessToken());
+        ResponseCookie rtCookie = cookieUtil.createRefreshTokenCookie(res.getRefreshToken());
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, atCookie.toString())
+                .header(HttpHeaders.SET_COOKIE, rtCookie.toString())
+                .body(new Response<>(
                         HttpStatus.OK.value(),
                         Constant.SuccessCode.REFRESH_SUCCESS,
                         res
-                )
-        );
+                ));
     }
 }
