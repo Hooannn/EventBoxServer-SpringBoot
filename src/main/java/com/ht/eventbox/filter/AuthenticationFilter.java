@@ -20,12 +20,9 @@ import java.util.Map;
 @Component
 @RequiredArgsConstructor
 public class AuthenticationFilter extends OncePerRequestFilter {
-    public static final String[] PUBLIC_APIS_PREFIX = {
-            "/api/v1/auth/",
-            "/api/v2/auth/",
-            "/api/v1/orders/paypal/webhook/",
-            "/actuator",
-    };
+    @Value("${application.security.public-apis-prefix}")
+    private String[] publicApisPrefixConfig;
+
     private final JwtService jwtService;
     private final PublicKey atPublicKey;
 
@@ -37,7 +34,7 @@ public class AuthenticationFilter extends OncePerRequestFilter {
 
         String requestURI = request.getRequestURI();
 
-        for (String publicApiPrefix : PUBLIC_APIS_PREFIX) {
+        for (String publicApiPrefix : publicApisPrefixConfig) {
             if (requestURI.startsWith(publicApiPrefix)) {
                 filterChain.doFilter(request, response);
                 return;

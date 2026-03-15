@@ -42,6 +42,7 @@ build/
 ehthumbs.db
 
 application.properties
+application-*.properties
 service-account-key.json
 *.pem
 note.md
