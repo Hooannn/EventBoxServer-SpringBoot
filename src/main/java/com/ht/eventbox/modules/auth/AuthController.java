@@ -6,14 +6,18 @@ import com.ht.eventbox.constant.Constant;
 import com.ht.eventbox.filter.JwtService;
 import com.ht.eventbox.modules.auth.dtos.*;
 import com.ht.eventbox.utils.CookieUtil;
+import com.ht.eventbox.utils.Request;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.security.PublicKey;
 
 @RestController
 @CrossOrigin
@@ -23,9 +27,7 @@ public class AuthController {
     private final CookieUtil cookieUtil;
     private final AuthService authService;
     private final JwtService jwtService;
-
-    @Value("${application.security.jwt.access-secret-key}")
-    private String accessSecretKey;
+    private final PublicKey atPublicKey;
 
     @PostMapping("/register")
     public ResponseEntity<Response<Boolean>> register(@Valid @RequestBody RegisterDto registerDto) {
@@ -85,12 +87,14 @@ public class AuthController {
 
     @PostMapping("/logout")
     public ResponseEntity<Response<Boolean>> logout(
-            @RequestHeader("Authorization") String authHeader,
+            @NonNull HttpServletRequest request,
             @Valid @RequestBody LogoutDto logoutDto
     ) {
-        final String jwt;
-        final String sub;
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        String jwt = Request.getTokenFromHeader(request)
+                .or(() -> Request.getTokenFromCookie(request))
+                .orElse(null);
+
+        if (jwt == null) {
             throw new HttpException(
                     Constant.ErrorCode.UNAUTHORIZED,
                     HttpStatus.UNAUTHORIZED
@@ -98,27 +102,25 @@ public class AuthController {
         }
 
         try {
-            jwt = authHeader.substring(7);
-            sub = jwtService.extractSub(jwt, accessSecretKey);
+            String sub = jwtService.extractSub(jwt, atPublicKey);
+            var res = authService.logout(Long.valueOf(sub), logoutDto);
+
+            ResponseCookie atCookie = cookieUtil.cleanAccessTokenCookie();
+            ResponseCookie rtCookie = cookieUtil.cleanRefreshTokenCookie();
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.SET_COOKIE, atCookie.toString())
+                    .header(HttpHeaders.SET_COOKIE, rtCookie.toString())
+                    .body(new Response<>(
+                            HttpStatus.OK.value(),
+                            Constant.SuccessCode.LOGOUT_SUCCESS,
+                            res
+                    ));
         } catch (Exception e) {
             throw new HttpException(
                     Constant.ErrorCode.UNAUTHORIZED,
                     HttpStatus.UNAUTHORIZED
             );
         }
-
-        var res = authService.logout(Long.valueOf(sub), logoutDto);
-
-        ResponseCookie atCookie = cookieUtil.cleanAccessTokenCookie();
-        ResponseCookie rtCookie = cookieUtil.cleanRefreshTokenCookie();
-        return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, atCookie.toString())
-                .header(HttpHeaders.SET_COOKIE, rtCookie.toString())
-                .body(new Response<>(
-                        HttpStatus.OK.value(),
-                        Constant.SuccessCode.LOGOUT_SUCCESS,
-                        res
-                ));
     }
 
     @PostMapping("/google")

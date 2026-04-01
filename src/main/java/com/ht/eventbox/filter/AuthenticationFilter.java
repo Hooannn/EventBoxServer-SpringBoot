@@ -2,6 +2,7 @@ package com.ht.eventbox.filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ht.eventbox.constant.Constant;
+import com.ht.eventbox.utils.Request;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -41,16 +42,16 @@ public class AuthenticationFilter extends OncePerRequestFilter {
             }
         }
 
-        final String authHeader = request.getHeader("Authorization");
-        final String jwt;
-        final String sub;
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        String jwt = Request.getTokenFromHeader(request)
+                .or(() -> Request.getTokenFromCookie(request))
+                .orElse(null);
+
+        if (jwt == null) {
             sendUnauthorizedResponse(response);
             return;
         }
         try {
-            jwt = authHeader.substring(7);
-            sub = jwtService.extractSub(jwt, atPublicKey);
+            String sub = jwtService.extractSub(jwt, atPublicKey);
 
             if (sub != null) {
                 List<String> roles = jwtService.extractRoles(jwt, atPublicKey);
