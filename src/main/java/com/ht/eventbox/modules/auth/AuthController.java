@@ -6,6 +6,7 @@ import com.ht.eventbox.constant.Constant;
 import com.ht.eventbox.filter.JwtService;
 import com.ht.eventbox.modules.auth.dtos.*;
 import com.ht.eventbox.utils.CookieUtil;
+import com.ht.eventbox.utils.Helper;
 import com.ht.eventbox.utils.Request;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -17,6 +18,7 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.Nullable;
 import java.security.PublicKey;
 
 @RestController
@@ -177,7 +179,26 @@ public class AuthController {
 
 
     @PostMapping("/refresh")
-    public ResponseEntity<Response<AuthService.Credentials>> refresh(@Valid @RequestBody RefreshDto refreshDto) {
+    public ResponseEntity<Response<AuthService.Credentials>> refresh(
+            @Nullable @RequestBody RefreshDto refreshDto,
+            @NonNull HttpServletRequest request
+    ) {
+        if (refreshDto == null) {
+            refreshDto = new RefreshDto();
+        }
+
+        if (refreshDto.getToken() == null) {
+            String refreshToken = Request.getRefreshTokenFromCookie(request).orElse(null);
+            refreshDto.setToken(refreshToken);
+        }
+
+        if (refreshDto.getToken() == null) {
+            throw new HttpException(
+                    Constant.ErrorCode.INVALID_TOKEN,
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
         var res = authService.refresh(refreshDto);
 
         ResponseCookie atCookie = cookieUtil.createAccessTokenCookie(res.getAccessToken());

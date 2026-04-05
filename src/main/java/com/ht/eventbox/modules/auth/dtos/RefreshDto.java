@@ -3,6 +3,7 @@ package com.ht.eventbox.modules.auth.dtos;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ht.eventbox.constant.Constant;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Null;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,7 +14,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class RefreshDto {
-    @NotBlank(message = Constant.ValidationCode.TOKEN_NOT_EMPTY)
     @JsonProperty("refresh_token")
     private String token;
 }

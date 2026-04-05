@@ -26,4 +26,16 @@ public class Request {
 
         return Optional.empty();
     }
+
+    public static Optional<String> getRefreshTokenFromCookie(HttpServletRequest request) {
+        if (request.getCookies() != null) {
+            for (var cookie : request.getCookies()) {
+                if (Constant.ContextKey.REFRESH_TOKEN.equals(cookie.getName())) {
+                    return Optional.of(cookie.getValue());
+                }
+            }
+        }
+
+        return Optional.empty();
+    }
 }
