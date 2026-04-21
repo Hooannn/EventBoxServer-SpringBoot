@@ -15,6 +15,7 @@ public class Constant {
         public static final String MEMBER_ADDED = "EventBox - You have been added to an organization";
         public static final String MEMBER_REMOVED = "EventBox - You have been removed from an organization";
         public static final String ORDER_PAID = "EventBox - Your order has been paid successfully";
+        public static final String ORDER_REFUNDED = "EventBox - Your order has been refunded";
         public static final String UPCOMING_EVENT = "EventBox - Upcoming event reminder";
         public static final String GIVEAWAY_TICKET = "EventBox - You have received a giveaway ticket";
     }
@@ -25,6 +26,7 @@ public class Constant {
         public static final String MEMBER_ADDED = "member-added";
         public static final String MEMBER_REMOVED = "member-removed";
         public static final String ORDER_PAID = "order-paid";
+        public static final String ORDER_REFUNDED = "order-refunded";
         public static final String UPCOMING_EVENT = "upcoming-event";
         public static final String GIVEAWAY_TICKET = "giveaway-ticket";
     }
@@ -46,6 +48,7 @@ public class Constant {
         public static final String TICKET_ITEM_NOT_USED = "ticket_item_not_used";
         public static final String NOT_ALLOWED_OPERATION = "not_allowed_operation";
         public static final String USER_NOT_FOUND = "user_not_found";
+        public static final String PAYMENT_NOT_FOUND = "payment_not_found";
         public static final String USER_ALREADY_EXISTS = "user_already_exists";
         public static final String INVALID_CREDENTIALS = "invalid_credentials";
         public static final String INVALID_TOKEN = "invalid_token";

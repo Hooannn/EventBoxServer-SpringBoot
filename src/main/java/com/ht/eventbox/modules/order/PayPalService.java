@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ht.eventbox.modules.order.dtos.PayPalWebhookVerifyDto;
 import com.paypal.sdk.PaypalServerSdkClient;
 import com.paypal.sdk.controllers.OrdersController;
+import com.paypal.sdk.controllers.PaymentsController;
 import com.paypal.sdk.exceptions.ApiException;
 import com.paypal.sdk.http.response.ApiResponse;
 import com.paypal.sdk.models.*;
@@ -33,10 +34,10 @@ public class PayPalService {
             String transmissionSig,
             String certUrl,
             String authAlgo,
-            String webhookId
-    ) {
+            String webhookId) {
         // 1. Lấy PayPal Access Token (OAuth2)
-        logger.info("Verifying PayPal webhook with transmissionId: {}, transmissionTime: {}, certUrl: {}, authAlgo: {}, webhookId: {}",
+        logger.info(
+                "Verifying PayPal webhook with transmissionId: {}, transmissionTime: {}, certUrl: {}, authAlgo: {}, webhookId: {}",
                 transmissionId, transmissionTime, certUrl, authAlgo, webhookId);
         logger.info("Raw JSON payload: {}", rawJsonPayload);
         String accessToken = null;
@@ -45,7 +46,8 @@ public class PayPalService {
         } catch (ApiException | IOException e) {
             logger.error("Error retrieving PayPal access token: {}", e.getMessage());
         }
-        if (accessToken == null) return false;
+        if (accessToken == null)
+            return false;
         logger.info("Access token retrieved: {}", accessToken);
 
         // 2. Tạo request body
@@ -80,11 +82,11 @@ public class PayPalService {
             ResponseEntity<String> response = restTemplate.postForEntity(
                     verifyUrl,
                     httpEntity,
-                    String.class
-            );
+                    String.class);
 
             // 4. Kiểm tra response
-            logger.info("PayPal webhook verification statusCode: {} - response: {}", response.getStatusCode(), response.getBody());
+            logger.info("PayPal webhook verification statusCode: {} - response: {}", response.getStatusCode(),
+                    response.getBody());
             return response.getStatusCode() == HttpStatus.OK
                     && response.getBody().contains("\"verification_status\":\"SUCCESS\"");
         } catch (Exception e) {
@@ -99,8 +101,7 @@ public class PayPalService {
             String currency,
             String description,
             String cancelUrl,
-            String successUrl
-    ) throws IOException, ApiException {
+            String successUrl) throws IOException, ApiException {
         CreateOrderInput createOrderInput = new CreateOrderInput.Builder(
                 null,
                 new OrderRequest.Builder(
@@ -109,11 +110,10 @@ public class PayPalService {
                                 new PurchaseUnitRequest.Builder(
                                         new AmountWithBreakdown.Builder(
                                                 currency,
-                                                totalAmount.toString()
-                                        ).build()
-                                ).description(description).customId(customId).build()
-                        )
-                ).paymentSource(
+                                                totalAmount.toString())
+                                                .build())
+                                        .description(description).customId(customId).build()))
+                        .paymentSource(
                                 new PaymentSource.Builder()
                                         .paypal(new PaypalWallet.Builder()
                                                 .experienceContext(new PaypalWalletExperienceContext.Builder()
@@ -127,10 +127,8 @@ public class PayPalService {
                                                         .locale("vi-VN")
                                                         .build())
                                                 .build())
-                                        .build()
-                        )
-                        .build()
-        )
+                                        .build())
+                        .build())
                 .prefer("return=minimal")
                 .build();
 
@@ -144,10 +142,23 @@ public class PayPalService {
 
         CaptureOrderInput captureOrderInput = new CaptureOrderInput.Builder(
                 orderId,
-                null
-        ).build();
+                null).build();
 
         return ordersController.captureOrder(captureOrderInput);
+    }
+
+    public ApiResponse<Refund> refundCapture(String captureId, String noteToPayer) throws IOException, ApiException {
+        PaymentsController paymentsController = paypalServerSdkClient.getPaymentsController();
+
+        RefundCapturedPaymentInput refundCapturedPaymentInput = new RefundCapturedPaymentInput.Builder(
+                captureId,
+                null)
+                .body(new RefundRequest.Builder()
+                        .noteToPayer(noteToPayer)
+                        .build())
+                .build();
+
+        return paymentsController.refundCapturedPayment(refundCapturedPaymentInput);
     }
 
     public ApiResponse<Order> getOrderById(String orderId) throws IOException, ApiException {
@@ -166,7 +177,8 @@ public class PayPalService {
         } catch (ApiException | IOException e) {
             logger.error("Error retrieving PayPal access token: {}", e.getMessage());
         }
-        if (accessToken == null) return false;
+        if (accessToken == null)
+            return false;
         logger.info("Access token retrieved: {}", accessToken);
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();

@@ -94,8 +94,11 @@ public class OrderController {
                 var payPalorder = captureResponse.getResult();
                 paymentService.createFromOrderAndPaypalOrder(order, payPalorder);
 
-                var updatedOrder = orderService.fulfill(order);
-                orderService.onOrderFulfilled(updatedOrder);
+                if (order.getStatus() == OrderStatus.PENDING && order.getExpiredAt().isAfter(LocalDateTime.now()))
+                    order.setStatus(OrderStatus.APPROVED);
+
+                orderService.save(order);
+                orderService.onOrderApproved(order);
             } catch (IOException | ApiException e) {
                 throw new HttpException("Lỗi khi capture đơn hàng PayPal: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
             }
@@ -159,6 +162,17 @@ public class OrderController {
 
                 var paypalOrder = paypalOrderRes.getResult();
                 paymentService.fulfillPaymentFromPaypalOrder(paymentWebhookDto, paypalOrder);
+
+                var captureId = paymentWebhookDto.getResource().getId();
+                var customId = paypalOrder.getPurchaseUnits().get(0).getCustomId();
+                var order = orderService.findById(Long.parseLong(customId));
+
+                if (order.getExpiredAt().isBefore(LocalDateTime.now())) {
+                    orderService.refund(order, captureId);
+                } else {
+                    var fulfilledOrder = orderService.fulfill(order);
+                    orderService.onOrderFulfilled(fulfilledOrder);
+                }
             } catch (IOException | ApiException e) {
                 throw new HttpException("Error getting PayPal order: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
             }
@@ -166,7 +180,7 @@ public class OrderController {
 
         return ResponseEntity.ok().body(new Response<>(
                 HttpStatus.OK.value(),
-                "Webhook PayPal cho Checkout thành công",
+                "Webhook PayPal cho Payment thành công",
                 null
         ));
     }
@@ -200,6 +214,23 @@ public class OrderController {
                 new Response<>(
                         HttpStatus.OK.value(),
                         HttpStatus.OK.getReasonPhrase(),
+                        res
+                )
+        );
+    }
+
+    @PostMapping("/{orderId}/reservation/cancel")
+    @RequiredPermissions({"create:orders"})
+    public ResponseEntity<Response<Boolean>> cancelReservationById(
+            @RequestAttribute("sub") String sub,
+            @PathVariable Long orderId
+    )
+    {
+        var res = orderService.cancelReservation(Long.valueOf(sub), orderId);
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        Constant.SuccessCode.UPDATE_SUCCESSFULLY,
                         res
                 )
         );

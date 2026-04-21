@@ -21,6 +21,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     long deleteAllByUserIdAndStatusIs(Long userId, OrderStatus orderStatus);
 
+    long deleteByIdAndUserIdAndStatusInAndExpiredAtAfter(Long orderId, Long userId, List<OrderStatus> statuses, LocalDateTime now);
+
     Optional<Order> findByIdAndStatusIs(Long id, OrderStatus status);
 
     Optional<Order> findByIdAndStatusIn(Long id, List<OrderStatus> statuses);

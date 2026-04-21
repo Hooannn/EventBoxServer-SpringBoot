@@ -31,7 +31,8 @@ public class MailService {
         javaMailSender.send(message);
     }
 
-    public void sendResetPasswordVerificationMail(String to, String subject, String signature) throws MessagingException {
+    public void sendResetPasswordVerificationMail(String to, String subject, String signature)
+            throws MessagingException {
         MimeMessage mimeMessage = javaMailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
         Context context = new Context();
@@ -113,7 +114,8 @@ public class MailService {
         javaMailSender.send(mimeMessage);
     }
 
-    public void sendOrderPaidMail(String to, String name, String invoiceId, String total, String paidDate) throws MessagingException {
+    public void sendOrderPaidMail(String to, String name, String invoiceId, String total, String paidDate)
+            throws MessagingException {
         MimeMessage mimeMessage = javaMailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
         Context context = new Context();
@@ -126,6 +128,25 @@ public class MailService {
 
         helper.setTo(to);
         helper.setSubject(Constant.MailSubject.ORDER_PAID);
+        helper.setText(htmlContent, true);
+
+        javaMailSender.send(mimeMessage);
+    }
+
+    public void sendOrderRefundedMail(String to, String name, String invoiceId, String total, String refundedDate)
+            throws MessagingException {
+        MimeMessage mimeMessage = javaMailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+        Context context = new Context();
+        context.setVariable("name", name);
+        context.setVariable("invoiceId", invoiceId);
+        context.setVariable("total", total);
+        context.setVariable("refundedDate", refundedDate);
+
+        String htmlContent = templateEngine.process(Constant.MailTemplate.ORDER_REFUNDED, context);
+
+        helper.setTo(to);
+        helper.setSubject(Constant.MailSubject.ORDER_REFUNDED);
         helper.setText(htmlContent, true);
 
         javaMailSender.send(mimeMessage);
@@ -156,7 +177,8 @@ public class MailService {
         javaMailSender.send(mimeMessage);
     }
 
-    public void sendGiveawayNotificationEmail(String to, Event event, EventShow eventShow, String from) throws MessagingException {
+    public void sendGiveawayNotificationEmail(String to, Event event, EventShow eventShow, String from)
+            throws MessagingException {
         MimeMessage mimeMessage = javaMailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
         Context context = new Context();

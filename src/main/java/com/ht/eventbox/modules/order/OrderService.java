@@ -37,12 +37,14 @@ import java.util.stream.IntStream;
 public class OrderService {
     private static final Logger logger = org.slf4j.LoggerFactory.getLogger(OrderService.class);
 
+    private final PaymentRepository paymentRepository;
     private final EventRepository eventRepository;
     private final TicketRepository ticketRepository;
     private final OrderRepository orderRepository;
     private final CurrencyConverterServiceV2 currencyConverterService;
     private final PayPalService payPalService;
     private final TicketItemRepository ticketItemRepository;
+    private final RefundRepository refundRepository;
     private final MailService mailService;
     private final PushNotificationService pushNotificationService;
     private final SocketIOServer socketIOServer;
@@ -54,9 +56,8 @@ public class OrderService {
     @Transactional
     public long cleanupExpiredReservations() {
         return orderRepository.deleteAllByStatusInAndExpiredAtBefore(
-                List.of(OrderStatus.WAITING_FOR_PAYMENT, OrderStatus.PENDING),
-                java.time.LocalDateTime.now()
-        );
+                List.of(OrderStatus.WAITING_FOR_PAYMENT),
+                java.time.LocalDateTime.now());
     }
 
     public void onStockUpdated(long eventId) {
@@ -83,15 +84,13 @@ public class OrderService {
             if (ticket.getEventShow().getSaleStartTime().isAfter(LocalDateTime.now())) {
                 throw new HttpException(
                         Constant.ErrorCode.TICKET_SALE_NOT_STARTED,
-                        HttpStatus.BAD_REQUEST
-                );
+                        HttpStatus.BAD_REQUEST);
             }
 
             if (ticket.getEventShow().getSaleEndTime().isBefore(LocalDateTime.now())) {
                 throw new HttpException(
                         Constant.ErrorCode.TICKET_SALE_ENDED,
-                        HttpStatus.BAD_REQUEST
-                );
+                        HttpStatus.BAD_REQUEST);
             }
         });
 
@@ -107,21 +106,18 @@ public class OrderService {
                             .findFirst()
                             .orElseThrow(() -> new HttpException(
                                     Constant.ErrorCode.TICKET_NOT_FOUND,
-                                    HttpStatus.NOT_FOUND
-                            ));
+                                    HttpStatus.NOT_FOUND));
 
                     long reservationCount = ticketItemRepository
                             .countAllByTicketIdAndOrderStatusInAndOrderExpiredAtIsAfter(
                                     ticket.getId(),
                                     List.of(OrderStatus.WAITING_FOR_PAYMENT, OrderStatus.PENDING),
-                                    LocalDateTime.now()
-                            );
+                                    LocalDateTime.now());
 
                     if (reservationCount + ticketDto.getQuantity() > ticket.getStock()) {
                         throw new HttpException(
                                 Constant.ErrorCode.TICKET_OUT_OF_STOCK,
-                                HttpStatus.BAD_REQUEST
-                        );
+                                HttpStatus.BAD_REQUEST);
                     }
 
                     List<TicketItem> ticketItems = IntStream.range(0, ticketDto.getQuantity())
@@ -132,7 +128,6 @@ public class OrderService {
                                     .build())
                             .toList();
 
-
                     order.getItems().addAll(ticketItems);
                 });
 
@@ -140,21 +135,37 @@ public class OrderService {
         order.setPlaceTotal(
                 order.getItems().stream()
                         .mapToDouble(TicketItem::getPlaceTotal)
-                        .sum()
-        );
+                        .sum());
         order.setExpiredAt(
-                LocalDateTime.now().plusSeconds(Constant.RedisKey.RESERVATION_EXPIRES)
-        );
+                LocalDateTime.now().plusSeconds(Constant.RedisKey.RESERVATION_EXPIRES));
 
         var savedOrder = orderRepository.save(order);
 
         if (!tickets.isEmpty()) {
             onStockUpdated(
-                    tickets.get(0).getEventShow().getEvent().getId()
-            );
+                    tickets.get(0).getEventShow().getEvent().getId());
         }
 
         return savedOrder;
+    }
+
+    @Transactional
+    public boolean cancelReservation(Long userId, Long orderId) {
+        var count = orderRepository.deleteByIdAndUserIdAndStatusInAndExpiredAtAfter(
+                orderId,
+                userId,
+                List.of(OrderStatus.WAITING_FOR_PAYMENT, OrderStatus.PENDING),
+                LocalDateTime.now());
+
+        if (count > 0) {
+            CompletableFuture.runAsync(() -> {
+                socketIOServer.getNamespace("/event")
+                        .getBroadcastOperations()
+                        .sendEvent("stock_updated", Map.of());
+            });
+        }
+
+        return count > 0;
     }
 
     @Transactional
@@ -174,14 +185,13 @@ public class OrderService {
 
     public com.paypal.sdk.models.Order createPayment(Long userId, CreatePaymentDto createPaymentDto) {
         Order order = orderRepository.findByIdAndUserIdAndStatusInAndExpiredAtAfter(
-                        createPaymentDto.getOrderId(),
-                        userId,
-                        List.of(OrderStatus.WAITING_FOR_PAYMENT, OrderStatus.PENDING),
-                        LocalDateTime.now()
-                ).orElseThrow(() -> new HttpException(
-                        Constant.ErrorCode.ORDER_NOT_FOUND,
-                        HttpStatus.NOT_FOUND
-                ));
+                createPaymentDto.getOrderId(),
+                userId,
+                List.of(OrderStatus.WAITING_FOR_PAYMENT, OrderStatus.PENDING),
+                LocalDateTime.now()).orElseThrow(
+                        () -> new HttpException(
+                                Constant.ErrorCode.ORDER_NOT_FOUND,
+                                HttpStatus.NOT_FOUND));
 
         double total = order.getPlaceTotal();
 
@@ -193,7 +203,8 @@ public class OrderService {
             }
         }
 
-        if (total < 0) total = 0;
+        if (total < 0)
+            total = 0;
 
         ApiResponse<com.paypal.sdk.models.Order> response = null;
         try {
@@ -209,9 +220,8 @@ public class OrderService {
                     "USD",
                     "Thanh toán đơn hàng #" + order.getId(),
                     createPaymentDto.getCancelUrl(),
-                    createPaymentDto.getReturnUrl()
-            );
-        }  catch (IOException | ApiException e) {
+                    createPaymentDto.getReturnUrl());
+        } catch (IOException | ApiException e) {
             throw new HttpException("Lỗi khi tạo đơn hàng PayPal: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
@@ -220,8 +230,7 @@ public class OrderService {
         }
 
         order.setExpiredAt(
-                LocalDateTime.now().plusSeconds(Constant.RedisKey.EXTENDED_RESERVATION_EXPIRES)
-        );
+                LocalDateTime.now().plusSeconds(Constant.RedisKey.EXTENDED_RESERVATION_EXPIRES));
         order.setStatus(OrderStatus.PENDING);
 
         orderRepository.save(order);
@@ -230,6 +239,33 @@ public class OrderService {
 
     public Order findById(long id) {
         return orderRepository.findById(id).orElse(null);
+    }
+
+    public void refund(Order order, String captureId) throws IOException, ApiException {
+        var payment = paymentRepository.findByPaypalCaptureId(captureId)
+                .orElseThrow(() -> new HttpException(Constant.ErrorCode.PAYMENT_NOT_FOUND, HttpStatus.BAD_REQUEST));
+
+        var noteToPayer = "Refund for order #" + order.getId() + " due to late payment";
+        var refundRes = payPalService.refundCapture(captureId, noteToPayer);
+        var audit = Refund.builder();
+        if (refundRes.getStatusCode() != 200 && refundRes.getStatusCode() != 201) {
+            audit
+                    .status("MISSED")
+                    .noteToPayer(noteToPayer)
+                    .payment(payment);
+
+            refundRepository.save(audit.build());
+            return;
+        }
+
+        var paypalRefund = refundRes.getResult();
+
+        buildRefundObject(audit, paypalRefund);
+        audit.payment(payment);
+
+        refundRepository.save(audit.build());
+
+        onOrderRefunded(order);
     }
 
     @Transactional
@@ -242,8 +278,7 @@ public class OrderService {
                         .map(TicketItem::getTicket)
                         .map(Ticket::getId)
                         .distinct()
-                        .toList()
-        );
+                        .toList());
 
         tickets.forEach(ticket -> {
             long reservedCount = order.getItems().stream()
@@ -259,8 +294,7 @@ public class OrderService {
 
         if (!tickets.isEmpty()) {
             onStockUpdated(
-                    tickets.get(0).getEventShow().getEvent().getId()
-            );
+                    tickets.get(0).getEventShow().getEvent().getId());
         }
 
         return savedOrder;
@@ -280,8 +314,7 @@ public class OrderService {
                         .map(TicketItem::getTicket)
                         .map(Ticket::getId)
                         .distinct()
-                        .toList()
-        );
+                        .toList());
 
         tickets.forEach(ticket -> {
             long reservedCount = order.getItems().stream()
@@ -297,23 +330,21 @@ public class OrderService {
 
         if (!tickets.isEmpty()) {
             onStockUpdated(
-                    tickets.get(0).getEventShow().getEvent().getId()
-            );
+                    tickets.get(0).getEventShow().getEvent().getId());
         }
 
         return savedOrder;
     }
 
-    public void onOrderFulfilled(Order order) {
+    public void onOrderRefunded(Order order) {
         CompletableFuture.runAsync(() -> {
             try {
-                mailService.sendOrderPaidMail(
+                mailService.sendOrderRefundedMail(
                         order.getUser().getEmail(),
                         order.getUser().getFullName(),
                         order.getId().toString(),
                         Helper.formatCurrencyToString(order.getPlaceTotal()),
-                        Helper.formatDateToString(LocalDateTime.now())
-                );
+                        Helper.formatDateToString(LocalDateTime.now()));
             } catch (Exception e) {
                 logger.error("Có lỗi xảy ra khi gửi mail: {}", e.getMessage());
             }
@@ -324,16 +355,58 @@ public class OrderService {
                 pushNotificationService.push(
                         order.getUser().getId(),
                         Notification.builder()
-                                .setBody("Cảm ơn bạn đã đặt hàng tại EventBox. Đơn hàng của bạn đã được thanh toán thành công.")
+                                .setBody(
+                                        "Có lỗi xảy ra trong quá trình xử lý đơn hàng. Số tiền của bạn đã được hoàn lại. Vui lòng kiểm tra email để biết thêm chi tiết.")
+                                .setTitle("Đơn hàng #" + order.getId() + " đã được hoàn tiền thành công")
+                                .build(),
+                        new HashMap<>(
+                                Map.of(
+                                        "type", "order",
+                                        "order_id", String.valueOf(order.getId()))));
+            } catch (Exception e) {
+                logger.error("Error sending push notification for order {}: {}", order.getId(), e.getMessage());
+            }
+        });
+    }
+
+    public void onOrderApproved(Order order) {
+        CompletableFuture.runAsync(() -> {
+            socketIOServer.getNamespace("/order")
+                    .getRoomOperations(order.getId().toString())
+                    .sendEvent("order_approved", Map.of(
+                            "order_id", order.getId(),
+                            "status", order.getStatus(),
+                            "place_total", order.getPlaceTotal()));
+        });
+    }
+
+    public void onOrderFulfilled(Order order) {
+        CompletableFuture.runAsync(() -> {
+            try {
+                mailService.sendOrderPaidMail(
+                        order.getUser().getEmail(),
+                        order.getUser().getFullName(),
+                        order.getId().toString(),
+                        Helper.formatCurrencyToString(order.getPlaceTotal()),
+                        Helper.formatDateToString(LocalDateTime.now()));
+            } catch (Exception e) {
+                logger.error("Có lỗi xảy ra khi gửi mail: {}", e.getMessage());
+            }
+        });
+
+        CompletableFuture.runAsync(() -> {
+            try {
+                pushNotificationService.push(
+                        order.getUser().getId(),
+                        Notification.builder()
+                                .setBody(
+                                        "Cảm ơn bạn đã đặt hàng tại EventBox. Đơn hàng của bạn đã được thanh toán thành công.")
                                 .setTitle("Đơn hàng #" + order.getId() + " đã được thanh toán thành công")
                                 .build(),
                         new HashMap<>(
                                 Map.of(
                                         "type", "order",
-                                        "order_id", String.valueOf(order.getId())
-                                )
-                        )
-                );
+                                        "order_id", String.valueOf(order.getId()))));
             } catch (Exception e) {
                 logger.error("Error sending push notification for order {}: {}", order.getId(), e.getMessage());
             }
@@ -345,8 +418,7 @@ public class OrderService {
                     .sendEvent("order_fulfilled", Map.of(
                             "order_id", order.getId(),
                             "status", order.getStatus(),
-                            "place_total", order.getPlaceTotal()
-                    ));
+                            "place_total", order.getPlaceTotal()));
         });
     }
 
@@ -356,7 +428,8 @@ public class OrderService {
 
         var members = event.getOrganization().getUserOrganizations();
 
-        if (members.stream().noneMatch(m -> m.getUser().getId().equals(userId) && List.of(OrganizationRole.MANAGER, OrganizationRole.OWNER).contains(m.getRole()))) {
+        if (members.stream().noneMatch(m -> m.getUser().getId().equals(userId)
+                && List.of(OrganizationRole.MANAGER, OrganizationRole.OWNER).contains(m.getRole()))) {
             throw new HttpException(Constant.ErrorCode.NOT_ALLOWED_OPERATION, HttpStatus.FORBIDDEN);
         }
 
@@ -364,8 +437,7 @@ public class OrderService {
                 showId,
                 OrderStatus.FULFILLED,
                 from,
-                to
-        );
+                to);
     }
 
     public List<Order> getByShowId(Long userId, Long showId) {
@@ -374,13 +446,54 @@ public class OrderService {
 
         var members = event.getOrganization().getUserOrganizations();
 
-        if (members.stream().noneMatch(m -> m.getUser().getId().equals(userId) && List.of(OrganizationRole.MANAGER, OrganizationRole.OWNER).contains(m.getRole()))) {
+        if (members.stream().noneMatch(m -> m.getUser().getId().equals(userId)
+                && List.of(OrganizationRole.MANAGER, OrganizationRole.OWNER).contains(m.getRole()))) {
             throw new HttpException(Constant.ErrorCode.NOT_ALLOWED_OPERATION, HttpStatus.FORBIDDEN);
         }
 
         return orderRepository.findAllByItemsTicketEventShowIdAndStatusIsOrderByIdAsc(
                 showId,
-                OrderStatus.FULFILLED
-        );
+                OrderStatus.FULFILLED);
+    }
+
+    private void buildRefundObject(Refund.RefundBuilder builder, com.paypal.sdk.models.Refund paypalRefund) {
+        builder
+                .status(paypalRefund.getStatus().value())
+                .paypalRefundId(paypalRefund.getId())
+                .invoiceId(paypalRefund.getInvoiceId())
+                .createTime(paypalRefund.getCreateTime())
+                .updateTime(paypalRefund.getUpdateTime())
+                .noteToPayer(paypalRefund.getNoteToPayer())
+                .acquirerReferenceNumber(paypalRefund.getAcquirerReferenceNumber())
+                .customId(paypalRefund.getCustomId())
+                .amountCurrency(paypalRefund.getAmount().getCurrencyCode())
+                .amountValue(
+                        Double.valueOf(paypalRefund.getAmount().getValue()))
+                .grossAmountCurrency(
+                        paypalRefund.getSellerPayableBreakdown()
+                                .getGrossAmount().getCurrencyCode())
+                .grossAmountValue(
+                        Double.valueOf(paypalRefund.getSellerPayableBreakdown()
+                                .getGrossAmount().getValue()))
+                .netAmountCurrency(
+                        paypalRefund.getSellerPayableBreakdown()
+                                .getNetAmount().getCurrencyCode())
+                .netAmountValue(
+                        Double.valueOf(paypalRefund.getSellerPayableBreakdown()
+                                .getNetAmount().getValue()))
+                .paypalFeeCurrency(
+                        paypalRefund.getSellerPayableBreakdown()
+                                .getPaypalFee().getCurrencyCode())
+                .paypalFeeValue(
+                        Double.valueOf(paypalRefund.getSellerPayableBreakdown()
+                                .getPaypalFee().getValue()))
+                .totalRefundedAmountCurrency(
+                        paypalRefund.getSellerPayableBreakdown()
+                                .getTotalRefundedAmount().getCurrencyCode())
+                .totalRefundedAmountValue(
+                        Double.valueOf(paypalRefund.getSellerPayableBreakdown()
+                                .getTotalRefundedAmount().getValue()))
+                .payerEmail(paypalRefund.getPayer().getEmailAddress())
+                .payerMerchantId(paypalRefund.getPayer().getMerchantId());
     }
 }
