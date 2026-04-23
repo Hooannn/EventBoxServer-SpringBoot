@@ -460,40 +460,67 @@ public class OrderService {
         builder
                 .status(paypalRefund.getStatus().value())
                 .paypalRefundId(paypalRefund.getId())
-                .invoiceId(paypalRefund.getInvoiceId())
+                .invoiceId(paypalRefund.getInvoiceId() != null ? paypalRefund.getInvoiceId()
+                        : String.format("Refund_%d", System.currentTimeMillis()))
                 .createTime(paypalRefund.getCreateTime())
                 .updateTime(paypalRefund.getUpdateTime())
                 .noteToPayer(paypalRefund.getNoteToPayer())
                 .acquirerReferenceNumber(paypalRefund.getAcquirerReferenceNumber())
-                .customId(paypalRefund.getCustomId())
-                .amountCurrency(paypalRefund.getAmount().getCurrencyCode())
-                .amountValue(
-                        Double.valueOf(paypalRefund.getAmount().getValue()))
-                .grossAmountCurrency(
-                        paypalRefund.getSellerPayableBreakdown()
-                                .getGrossAmount().getCurrencyCode())
-                .grossAmountValue(
-                        Double.valueOf(paypalRefund.getSellerPayableBreakdown()
-                                .getGrossAmount().getValue()))
-                .netAmountCurrency(
-                        paypalRefund.getSellerPayableBreakdown()
-                                .getNetAmount().getCurrencyCode())
-                .netAmountValue(
-                        Double.valueOf(paypalRefund.getSellerPayableBreakdown()
-                                .getNetAmount().getValue()))
-                .paypalFeeCurrency(
-                        paypalRefund.getSellerPayableBreakdown()
-                                .getPaypalFee().getCurrencyCode())
-                .paypalFeeValue(
-                        Double.valueOf(paypalRefund.getSellerPayableBreakdown()
-                                .getPaypalFee().getValue()))
-                .totalRefundedAmountCurrency(
-                        paypalRefund.getSellerPayableBreakdown()
-                                .getTotalRefundedAmount().getCurrencyCode())
-                .totalRefundedAmountValue(
-                        Double.valueOf(paypalRefund.getSellerPayableBreakdown()
-                                .getTotalRefundedAmount().getValue()))
-                .payerEmail(paypalRefund.getPayer().getEmailAddress())
-                .payerMerchantId(paypalRefund.getPayer().getMerchantId());
+                .customId(paypalRefund.getCustomId());
+
+        if (paypalRefund.getAmount() != null) {
+            builder
+                    .amountCurrency(paypalRefund.getAmount().getCurrencyCode())
+                    .amountValue(
+                            Double.valueOf(paypalRefund.getAmount().getValue()));
+        }
+
+        if (paypalRefund.getSellerPayableBreakdown() != null) {
+            if (paypalRefund.getSellerPayableBreakdown().getGrossAmount() != null) {
+                builder
+                        .grossAmountCurrency(
+                                paypalRefund.getSellerPayableBreakdown()
+                                        .getGrossAmount().getCurrencyCode())
+                        .grossAmountValue(
+                                Double.valueOf(paypalRefund.getSellerPayableBreakdown()
+                                        .getGrossAmount().getValue()));
+            }
+
+            if (paypalRefund.getSellerPayableBreakdown().getNetAmount() != null) {
+                builder
+                        .netAmountCurrency(
+                                paypalRefund.getSellerPayableBreakdown()
+                                        .getNetAmount().getCurrencyCode())
+                        .netAmountValue(
+                                Double.valueOf(paypalRefund.getSellerPayableBreakdown()
+                                        .getNetAmount().getValue()));
+            }
+
+            if (paypalRefund.getSellerPayableBreakdown().getPaypalFee() != null) {
+                builder
+                        .paypalFeeCurrency(
+                                paypalRefund.getSellerPayableBreakdown()
+                                        .getPaypalFee().getCurrencyCode())
+                        .paypalFeeValue(
+                                Double.valueOf(paypalRefund.getSellerPayableBreakdown()
+                                        .getPaypalFee().getValue()));
+            }
+
+            if (paypalRefund.getSellerPayableBreakdown().getTotalRefundedAmount() != null) {
+                builder
+                        .totalRefundedAmountCurrency(
+                                paypalRefund.getSellerPayableBreakdown()
+                                        .getTotalRefundedAmount().getCurrencyCode())
+                        .totalRefundedAmountValue(
+                                Double.valueOf(paypalRefund.getSellerPayableBreakdown()
+                                        .getTotalRefundedAmount().getValue()));
+            }
+        }
+
+        if (paypalRefund.getPayer() != null) {
+            builder
+                    .payerEmail(paypalRefund.getPayer().getEmailAddress())
+                    .payerMerchantId(paypalRefund.getPayer().getMerchantId());
+        }
     }
 }

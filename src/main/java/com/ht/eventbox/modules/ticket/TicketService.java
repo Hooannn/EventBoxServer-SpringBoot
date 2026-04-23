@@ -49,8 +49,11 @@ public class TicketService {
 
     public interface EventView {
         Long getId();
+
         String getTitle();
+
         String getDescription();
+
         String getAddress();
 
         @JsonProperty("place_name")
@@ -165,45 +168,48 @@ public class TicketService {
         return ticketItemRepository.findAllByOrderUserIdAndOrderStatusIsOrderByIdAsc(
                 userId,
                 status,
-                TicketItemDetails.class
-        );
+                TicketItemDetails.class);
+    }
+
+    public List<TicketItemDetails> getTicketItemsByUserIdAndOrderStatusIn(Long userId, List<OrderStatus> statuses) {
+        return ticketItemRepository.findAllByOrderUserIdAndOrderStatusInOrderByIdAsc(
+                userId,
+                statuses,
+                TicketItemDetails.class);
     }
 
     public TicketItemDetails getTicketItemById(Long ticketItemId) {
         return ticketItemRepository.findById(
                 ticketItemId,
-                TicketItemDetails.class
-        ).orElseThrow(() -> new HttpException(
-                Constant.ErrorCode.TICKET_ITEM_NOT_FOUND,
-                HttpStatus.BAD_REQUEST
-        ));
+                TicketItemDetails.class).orElseThrow(
+                        () -> new HttpException(
+                                Constant.ErrorCode.TICKET_ITEM_NOT_FOUND,
+                                HttpStatus.BAD_REQUEST));
     }
 
     public String getTicketItemQrCode(Long userId, Long ticketItemId) {
-        var ticketItem = ticketItemRepository.findByIdAndOrderUserIdAndOrderStatusIs(ticketItemId, userId, OrderStatus.FULFILLED, TicketItemDetails.class)
+        var ticketItem = ticketItemRepository
+                .findByIdAndOrderUserIdAndOrderStatusIs(ticketItemId, userId, OrderStatus.FULFILLED,
+                        TicketItemDetails.class)
                 .orElseThrow(() -> new HttpException(
                         Constant.ErrorCode.TICKET_ITEM_NOT_FOUND,
-                        HttpStatus.BAD_REQUEST
-                ));
+                        HttpStatus.BAD_REQUEST));
 
         if (ticketItem.getTicket().getEventShow().getStartTime().isAfter(LocalDateTime.now())) {
             throw new HttpException(
                     Constant.ErrorCode.SHOW_NOT_STARTED,
-                    HttpStatus.BAD_REQUEST
-            );
+                    HttpStatus.BAD_REQUEST);
         }
 
         if (ticketItem.getTicket().getEventShow().getEndTime().isBefore(LocalDateTime.now())) {
             throw new HttpException(
                     Constant.ErrorCode.SHOW_ENDED,
-                    HttpStatus.BAD_REQUEST
-            );
+                    HttpStatus.BAD_REQUEST);
         }
 
         // sử dụng jwt sinh token với sub là ticketItemId, thời hạn sử dụng 5 phút
         return jwtService.generateQrCode(ticketItem.getId());
     }
-
 
     public TicketItemDetails validateTicketItem(Long userId, ValidateTicketItemDto validateTicketItemDto) {
         String sub;
@@ -214,8 +220,7 @@ public class TicketService {
             if (!isTokenValid) {
                 throw new HttpException(
                         Constant.ErrorCode.TICKET_ITEM_INVALID,
-                        HttpStatus.BAD_REQUEST
-                );
+                        HttpStatus.BAD_REQUEST);
             }
 
             // extract lấy ticketItemId
@@ -223,39 +228,37 @@ public class TicketService {
         } catch (Exception e) {
             throw new HttpException(
                     e.getMessage(),
-                    HttpStatus.BAD_REQUEST
-            );
+                    HttpStatus.BAD_REQUEST);
         }
 
         if (sub == null || sub.isEmpty()) {
             throw new HttpException(
                     Constant.ErrorCode.TICKET_ITEM_INVALID,
-                    HttpStatus.BAD_REQUEST
-            );
+                    HttpStatus.BAD_REQUEST);
         }
 
         long ticketItemId = Long.parseLong(sub);
 
-        // Kiểm tra ticketItemId đúng với userId và orderStatus là FULFILLED và đúng với eventShowId
-        var ticketItem = ticketItemRepository.findByIdAndOrderStatusIsAndTicketEventShowId(ticketItemId, OrderStatus.FULFILLED, validateTicketItemDto.getEventShowId(), TicketItemDetails.class)
+        // Kiểm tra ticketItemId đúng với userId và orderStatus là FULFILLED và đúng với
+        // eventShowId
+        var ticketItem = ticketItemRepository
+                .findByIdAndOrderStatusIsAndTicketEventShowId(ticketItemId, OrderStatus.FULFILLED,
+                        validateTicketItemDto.getEventShowId(), TicketItemDetails.class)
                 .orElseThrow(() -> new HttpException(
                         Constant.ErrorCode.TICKET_ITEM_NOT_FOUND,
-                        HttpStatus.BAD_REQUEST
-                ));
+                        HttpStatus.BAD_REQUEST));
 
         // Kiểm tra xem chương trình đã bắt đầu chưa và đã kết thúc chưa
         if (ticketItem.getTicket().getEventShow().getStartTime().isAfter(LocalDateTime.now())) {
             throw new HttpException(
                     Constant.ErrorCode.SHOW_NOT_STARTED,
-                    HttpStatus.BAD_REQUEST
-            );
+                    HttpStatus.BAD_REQUEST);
         }
 
         if (ticketItem.getTicket().getEventShow().getEndTime().isBefore(LocalDateTime.now())) {
             throw new HttpException(
                     Constant.ErrorCode.SHOW_ENDED,
-                    HttpStatus.BAD_REQUEST
-            );
+                    HttpStatus.BAD_REQUEST);
         }
 
         // Chỉ thành viên của tổ chức mới có thể xác thực vé
@@ -263,14 +266,12 @@ public class TicketService {
 
         boolean isMember = organizationRepository.existsByIdAndUserOrganizationsUserId(
                 orgId,
-                userId
-        );
+                userId);
 
         if (!isMember) {
             throw new HttpException(
                     Constant.ErrorCode.USER_NOT_IN_ORGANIZATION,
-                    HttpStatus.BAD_REQUEST
-            );
+                    HttpStatus.BAD_REQUEST);
         }
 
         return ticketItem;
@@ -280,8 +281,7 @@ public class TicketService {
         // xác thực lại mã qr
         var ticketItem = validateTicketItem(
                 userId,
-                createTicketItemTraceDto
-        );
+                createTicketItemTraceDto);
 
         var trace = new TicketItemTrace();
         trace.setTicketItem(TicketItem.builder().id(ticketItem.getId()).build());
@@ -307,8 +307,7 @@ public class TicketService {
             socketIOServer.getNamespace("/ticket")
                     .getRoomOperations(ticketItem.getId().toString())
                     .sendEvent("traces_updated", Map.of(
-                            "ticket_item_id", ticketItem.getId()
-                    ));
+                            "ticket_item_id", ticketItem.getId()));
         });
 
         // gửi sự kiện đến client qua socketio để cập nhật dashboard
@@ -316,8 +315,7 @@ public class TicketService {
             socketIOServer.getNamespace("/event")
                     .getRoomOperations(ticketItem.getTicket().getEventShow().getEvent().getId().toString())
                     .sendEvent("traces_updated", Map.of(
-                            "ticket_item_id", ticketItem.getId()
-                    ));
+                            "ticket_item_id", ticketItem.getId()));
         });
 
         return true;
@@ -329,26 +327,27 @@ public class TicketService {
 
         var members = event.getOrganization().getUserOrganizations();
 
-        if (members.stream().noneMatch(m -> m.getUser().getId().equals(userId) && List.of(OrganizationRole.MANAGER, OrganizationRole.OWNER).contains(m.getRole()))) {
+        if (members.stream().noneMatch(m -> m.getUser().getId().equals(userId)
+                && List.of(OrganizationRole.MANAGER, OrganizationRole.OWNER).contains(m.getRole()))) {
             throw new HttpException(Constant.ErrorCode.NOT_ALLOWED_OPERATION, HttpStatus.FORBIDDEN);
         }
 
         return ticketItemRepository.findAllByTicketEventShowId(showId, TicketItem.class);
     }
 
-    public boolean createTicketItemFeedback(Long userId, Long ticketItemId, FeedbackTicketItemDto feedbackTicketItemDto) {
+    public boolean createTicketItemFeedback(Long userId, Long ticketItemId,
+            FeedbackTicketItemDto feedbackTicketItemDto) {
         // kiểm tra ticketItemId đúng với userId và orderStatus là FULFILLED
-        var ticketItem = ticketItemRepository.findByIdAndOrderUserIdAndOrderStatusIs(ticketItemId, userId, OrderStatus.FULFILLED, TicketItem.class)
+        var ticketItem = ticketItemRepository
+                .findByIdAndOrderUserIdAndOrderStatusIs(ticketItemId, userId, OrderStatus.FULFILLED, TicketItem.class)
                 .orElseThrow(() -> new HttpException(
                         Constant.ErrorCode.TICKET_ITEM_NOT_FOUND,
-                        HttpStatus.BAD_REQUEST
-                ));
+                        HttpStatus.BAD_REQUEST));
 
         if (ticketItem.getTraces().isEmpty()) {
             throw new HttpException(
                     Constant.ErrorCode.TICKET_ITEM_NOT_USED,
-                    HttpStatus.BAD_REQUEST
-            );
+                    HttpStatus.BAD_REQUEST);
         }
 
         var eventShow = ticketItem.getTicket().getEventShow();
@@ -359,16 +358,14 @@ public class TicketService {
         if (!isEnded) {
             throw new HttpException(
                     Constant.ErrorCode.SHOW_NOT_ENDED,
-                    HttpStatus.BAD_REQUEST
-            );
+                    HttpStatus.BAD_REQUEST);
         }
 
         // Kiểm tra xem người dùng đã gửi phản hồi cho vé này chưa
         if (ticketItem.getFeedback() != null) {
             throw new HttpException(
                     Constant.ErrorCode.NOT_ALLOWED_OPERATION,
-                    HttpStatus.BAD_REQUEST
-            );
+                    HttpStatus.BAD_REQUEST);
         }
 
         ticketItem.setFeedback(feedbackTicketItemDto.getFeedback());
@@ -384,8 +381,7 @@ public class TicketService {
         var ticketItem = ticketItemRepository.findById(ticketItemId)
                 .orElseThrow(() -> new HttpException(
                         Constant.ErrorCode.TICKET_ITEM_NOT_FOUND,
-                        HttpStatus.BAD_REQUEST
-                ));
+                        HttpStatus.BAD_REQUEST));
 
         var order = ticketItem.getOrder();
         var user = order.getUser();
@@ -396,8 +392,7 @@ public class TicketService {
             mailService.sendReminderEmail(
                     user.getEmail(),
                     event,
-                    eventShow
-            );
+                    eventShow);
         } catch (MessagingException e) {
             logger.error("Error when send reminder email for userId {}: {}", user.getId(), e.getMessage());
             return false;
@@ -405,7 +400,8 @@ public class TicketService {
 
         var notification = Notification.builder()
                 .setTitle("Nhắc nhở: Sự kiện sắp diễn ra - " + event.getTitle())
-                .setBody("Chương trình \"" + eventShow.getTitle() + "\" sẽ diễn ra vào " + Helper.formatDateToString(eventShow.getStartTime()) + ". Đừng quên tham gia nhé!")
+                .setBody("Chương trình \"" + eventShow.getTitle() + "\" sẽ diễn ra vào "
+                        + Helper.formatDateToString(eventShow.getStartTime()) + ". Đừng quên tham gia nhé!")
                 .setImage(event.getAssets().stream()
                         .filter(asset -> asset.getUsage() == AssetUsage.EVENT_LOGO)
                         .findFirst()
@@ -420,9 +416,7 @@ public class TicketService {
                     Map.of(
                             "type", "upcoming_event",
                             "event_id", event.getId().toString(),
-                            "event_show_id", eventShow.getId().toString()
-                    )
-            );
+                            "event_show_id", eventShow.getId().toString()));
         } catch (Exception e) {
             logger.error("Error when push notification for userId {}: {}", user.getId(), e.getMessage());
             return false;
@@ -434,17 +428,15 @@ public class TicketService {
     public void remindUpcomingEvents() {
         var startOfDay = LocalDateTime.of(
                 LocalDate.now(),
-                LocalTime.MIN
-        );
+                LocalTime.MIN);
         var endOfDay = LocalDateTime.of(
                 LocalDate.now(),
-                LocalTime.MAX
-        );
-        var ticketItems = ticketItemRepository.findAllByOrderStatusIsAndRemindedIsFalseAndTicketEventShowStartTimeBetween(
-                OrderStatus.FULFILLED,
-                startOfDay,
-                endOfDay
-        );
+                LocalTime.MAX);
+        var ticketItems = ticketItemRepository
+                .findAllByOrderStatusIsAndRemindedIsFalseAndTicketEventShowStartTimeBetween(
+                        OrderStatus.FULFILLED,
+                        startOfDay,
+                        endOfDay);
 
         ticketItems.forEach(
                 ticketItem -> {
@@ -457,21 +449,21 @@ public class TicketService {
                         mailService.sendReminderEmail(
                                 user.getEmail(),
                                 event,
-                                eventShow
-                        );
+                                eventShow);
                     } catch (MessagingException e) {
                         logger.error("Error when send reminder email for userId {}: {}", user.getId(), e.getMessage());
                     }
 
                     var notification = Notification.builder()
-                                    .setTitle("Nhắc nhở: Sự kiện sắp diễn ra - " + event.getTitle())
-                                    .setBody("Chương trình \"" + eventShow.getTitle() + "\" sẽ diễn ra vào " + Helper.formatDateToString(eventShow.getStartTime()) + ". Đừng quên tham gia nhé!")
-                                    .setImage(event.getAssets().stream()
-                                            .filter(asset -> asset.getUsage() == AssetUsage.EVENT_LOGO)
-                                            .findFirst()
-                                            .map(Asset::getSecureUrl)
-                                            .orElse(null))
-                                    .build();
+                            .setTitle("Nhắc nhở: Sự kiện sắp diễn ra - " + event.getTitle())
+                            .setBody("Chương trình \"" + eventShow.getTitle() + "\" sẽ diễn ra vào "
+                                    + Helper.formatDateToString(eventShow.getStartTime()) + ". Đừng quên tham gia nhé!")
+                            .setImage(event.getAssets().stream()
+                                    .filter(asset -> asset.getUsage() == AssetUsage.EVENT_LOGO)
+                                    .findFirst()
+                                    .map(Asset::getSecureUrl)
+                                    .orElse(null))
+                            .build();
 
                     try {
                         pushNotificationService.push(
@@ -480,42 +472,37 @@ public class TicketService {
                                 Map.of(
                                         "type", "upcoming_event",
                                         "event_id", event.getId().toString(),
-                                        "event_show_id", eventShow.getId().toString()
-                                )
-                        );
+                                        "event_show_id", eventShow.getId().toString()));
                     } catch (Exception e) {
                         logger.error("Error when push notification for userId {}: {}", user.getId(), e.getMessage());
                     }
 
                     ticketItem.setReminded(true);
-                }
-        );
+                });
 
         ticketItemRepository.saveAll(ticketItems);
     }
 
     public boolean giveawayTicketItem(Long userId, Long ticketItemId, GiveawayTicketItemDto giveawayTicketItemDto) {
         // kiểm tra ticketItemId đúng với userId và orderStatus là FULFILLED
-        var ticketItem = ticketItemRepository.findByIdAndOrderUserIdAndOrderStatusIs(ticketItemId, userId, OrderStatus.FULFILLED, TicketItem.class)
+        var ticketItem = ticketItemRepository
+                .findByIdAndOrderUserIdAndOrderStatusIs(ticketItemId, userId, OrderStatus.FULFILLED, TicketItem.class)
                 .orElseThrow(() -> new HttpException(
                         Constant.ErrorCode.TICKET_ITEM_NOT_FOUND,
-                        HttpStatus.BAD_REQUEST
-                ));
+                        HttpStatus.BAD_REQUEST));
 
         // kiểm tra xem người dùng có đang tặng vé cho chính mình không
         if (ticketItem.getOrder().getUser().getEmail().equals(giveawayTicketItemDto.getRecipientEmail())) {
             throw new HttpException(
                     Constant.ErrorCode.NOT_ALLOWED_OPERATION,
-                    HttpStatus.BAD_REQUEST
-            );
+                    HttpStatus.BAD_REQUEST);
         }
 
         // kiểm tra xem vé đã được sử dụng chưa (có trace chưa)
         if (!ticketItem.getTraces().isEmpty()) {
             throw new HttpException(
                     Constant.ErrorCode.TICKET_ITEM_ALREADY_USED,
-                    HttpStatus.BAD_REQUEST
-            );
+                    HttpStatus.BAD_REQUEST);
         }
 
         // kiểm tra xem chương trình đã kết thúc chưa
@@ -523,22 +510,19 @@ public class TicketService {
         if (isEnded) {
             throw new HttpException(
                     Constant.ErrorCode.SHOW_ENDED,
-                    HttpStatus.BAD_REQUEST
-            );
+                    HttpStatus.BAD_REQUEST);
         }
 
         // kiểm tra xem recipientEmail có tồn tại trong hệ thống không
         var recipient = userService.getByEmail(giveawayTicketItemDto.getRecipientEmail());
 
         var isPasswordMatch = authService.isPasswordMatch(
-                userId, giveawayTicketItemDto.getPassword()
-        );
+                userId, giveawayTicketItemDto.getPassword());
 
         if (!isPasswordMatch) {
             throw new HttpException(
                     Constant.ErrorCode.NOT_ALLOWED_OPERATION,
-                    HttpStatus.BAD_REQUEST
-            );
+                    HttpStatus.BAD_REQUEST);
         }
 
         String fromEmail = ticketItem.getOrder().getUser().getEmail();
@@ -569,10 +553,10 @@ public class TicketService {
                         recipient.getEmail(),
                         ticketItem.getTicket().getEventShow().getEvent(),
                         ticketItem.getTicket().getEventShow(),
-                        fromEmail
-                );
+                        fromEmail);
             } catch (MessagingException e) {
-                logger.error("Error when send giveaway notification email to userId {}: {}", recipient.getId(), e.getMessage());
+                logger.error("Error when send giveaway notification email to userId {}: {}", recipient.getId(),
+                        e.getMessage());
             }
         });
 
@@ -584,21 +568,19 @@ public class TicketService {
         var organization = organizationRepository.findById(organizationId)
                 .orElseThrow(() -> new HttpException(
                         Constant.ErrorCode.ORGANIZATION_NOT_FOUND,
-                        HttpStatus.NOT_FOUND
-                ));
+                        HttpStatus.NOT_FOUND));
 
-        return ticketItemRepository.findTop20ByTicketEventShowEventOrganizationIdAndFeedbackIsNotNullOrderByFeedbackAtDesc(
-                organization.getId(),
-                TicketItemDetails.class
-        );
+        return ticketItemRepository
+                .findTop20ByTicketEventShowEventOrganizationIdAndFeedbackIsNotNullOrderByFeedbackAtDesc(
+                        organization.getId(),
+                        TicketItemDetails.class);
     }
 
     public List<TicketItemDetails> getTicketItemFeedbackByEventId(Long userId, Long eventId) {
         var isMember = eventService.isMember(
                 userId,
                 eventId,
-                List.of(OrganizationRole.MANAGER, OrganizationRole.OWNER, OrganizationRole.STAFF)
-        );
+                List.of(OrganizationRole.MANAGER, OrganizationRole.OWNER, OrganizationRole.STAFF));
 
         if (!isMember) {
             throw new HttpException(Constant.ErrorCode.NOT_ALLOWED_OPERATION, HttpStatus.FORBIDDEN);
@@ -606,7 +588,6 @@ public class TicketService {
 
         return ticketItemRepository.findAllByTicketEventShowEventIdAndFeedbackIsNotNullOrderByFeedbackAtDesc(
                 eventId,
-                TicketItemDetails.class
-        );
+                TicketItemDetails.class);
     }
 }

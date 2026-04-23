@@ -43,7 +43,7 @@ public class Refund {
     @JsonProperty("update_time")
     private String updateTime;
 
-    @Column(name = "paypal_refund_id")
+    @Column(name = "paypal_refund_id", nullable = false)
     @JsonProperty("paypal_refund_id")
     private String paypalRefundId;
 

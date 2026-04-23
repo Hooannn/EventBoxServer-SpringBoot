@@ -13,9 +13,11 @@ import java.util.Optional;
 public interface TicketItemRepository extends JpaRepository<TicketItem, Long> {
     long countAllByTicketIdAndOrderStatusIn(Long ticketId, Collection<OrderStatus> statuses);
 
-    List<TicketItem> findAllByOrderStatusIsAndRemindedIsFalseAndTicketEventShowStartTimeBefore(OrderStatus status, LocalDateTime time);
+    List<TicketItem> findAllByOrderStatusIsAndRemindedIsFalseAndTicketEventShowStartTimeBefore(OrderStatus status,
+            LocalDateTime time);
 
-    List<TicketItem> findAllByOrderStatusIsAndRemindedIsFalseAndTicketEventShowStartTimeBetween(OrderStatus status, LocalDateTime startTime, LocalDateTime endTime);
+    List<TicketItem> findAllByOrderStatusIsAndRemindedIsFalseAndTicketEventShowStartTimeBetween(OrderStatus status,
+            LocalDateTime startTime, LocalDateTime endTime);
 
     List<TicketItem> findAllByOrderUserIdAndOrderStatusIs(Long userId, OrderStatus status);
 
@@ -25,19 +27,26 @@ public interface TicketItemRepository extends JpaRepository<TicketItem, Long> {
 
     <T> List<T> findAllByOrderUserIdAndOrderStatusIsOrderByIdAsc(Long userId, OrderStatus status, Class<T> clazz);
 
+    <T> List<T> findAllByOrderUserIdAndOrderStatusInOrderByIdAsc(Long userId, Collection<OrderStatus> statuses,
+            Class<T> clazz);
+
     <T> Optional<T> findByIdAndOrderUserId(Long id, Long userId, Class<T> clazz);
 
     <T> Optional<T> findById(Long id, Class<T> clazz);
 
-    <T> Optional<T> findByIdAndOrderUserIdAndOrderStatusIs(Long ticketItemId, Long userId, OrderStatus orderStatus, Class<T> clazz);
+    <T> Optional<T> findByIdAndOrderUserIdAndOrderStatusIs(Long ticketItemId, Long userId, OrderStatus orderStatus,
+            Class<T> clazz);
 
-    long countAllByTicketIdAndOrderStatusInAndOrderExpiredAtIsAfter(Long id, List<OrderStatus> statuses, LocalDateTime now);
+    long countAllByTicketIdAndOrderStatusInAndOrderExpiredAtIsAfter(Long id, List<OrderStatus> statuses,
+            LocalDateTime now);
 
     <T> Optional<T> findByIdAndOrderStatusIs(long ticketItemId, OrderStatus orderStatus, Class<T> clazz);
 
-    <T> Optional<T> findByIdAndOrderStatusIsAndTicketEventShowId(Long id, OrderStatus orderStatus, Long eventShowId, Class<T> clazz);
+    <T> Optional<T> findByIdAndOrderStatusIsAndTicketEventShowId(Long id, OrderStatus orderStatus, Long eventShowId,
+            Class<T> clazz);
 
-    <T> List<T> findTop20ByTicketEventShowEventOrganizationIdAndFeedbackIsNotNullOrderByFeedbackAtDesc(Long organizationId, Class<T> clazz);
+    <T> List<T> findTop20ByTicketEventShowEventOrganizationIdAndFeedbackIsNotNullOrderByFeedbackAtDesc(
+            Long organizationId, Class<T> clazz);
 
     <T> List<T> findAllByTicketEventShowEventIdAndFeedbackIsNotNullOrderByFeedbackAtDesc(Long eventId, Class<T> clazz);
 }
