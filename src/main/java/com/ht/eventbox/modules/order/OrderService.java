@@ -38,6 +38,8 @@ public class OrderService {
     private static final Logger logger = org.slf4j.LoggerFactory.getLogger(OrderService.class);
 
     private final PaymentRepository paymentRepository;
+    private final PaymentService paymentService;
+    private final PaymentSessionRepository paymentSessionRepository;
     private final EventRepository eventRepository;
     private final TicketRepository ticketRepository;
     private final OrderRepository orderRepository;
@@ -193,6 +195,21 @@ public class OrderService {
                                 Constant.ErrorCode.ORDER_NOT_FOUND,
                                 HttpStatus.NOT_FOUND));
 
+        PaymentSession paymentSession = paymentSessionRepository.findByOrderIdAndProvider(
+                order.getId(),
+                "paypal").orElse(null);
+
+        if (paymentSession != null) {
+            try {
+                var res = payPalService.getOrderById(paymentSession.getPaypalOrderId());
+                if (res.getStatusCode() == 200 || res.getStatusCode() == 201) {
+                    return res.getResult();
+                }
+            } catch (IOException | ApiException e) {
+                logger.error("Lỗi khi kiểm tra đơn hàng PayPal: {}", e.getMessage());
+            }
+        }
+
         double total = order.getPlaceTotal();
 
         if (order.getVoucher() != null) {
@@ -234,6 +251,15 @@ public class OrderService {
         order.setStatus(OrderStatus.PENDING);
 
         orderRepository.save(order);
+
+        paymentSession = PaymentSession.builder()
+                .order(order)
+                .provider("paypal")
+                .paypalOrderId(response.getResult().getId())
+                .build();
+
+        paymentSessionRepository.save(paymentSession);
+
         return response.getResult();
     }
 
@@ -241,12 +267,65 @@ public class OrderService {
         return orderRepository.findById(id).orElse(null);
     }
 
-    public void refund(Order order, String captureId) throws IOException, ApiException {
+    public void processPayment(Long orderId, String paypalOrderId) {
+        Order order = findById(orderId);
+
+        ApiResponse<com.paypal.sdk.models.Order> captureResponse = null;
+
+        try {
+            captureResponse = payPalService.captureOrder(paypalOrderId);
+        } catch (IOException | ApiException e) {
+            throw new HttpException("Lỗi khi capture đơn hàng PayPal: " + e.getMessage(),
+                    HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+        if (captureResponse.getStatusCode() != 201 && captureResponse.getStatusCode() != 200) {
+            logger.error("Failed to capture PayPal order: {}", captureResponse);
+            throw new HttpException("Không thể capture đơn hàng PayPal",
+                    HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+        logger.info("Capture PayPal order successful: {}", captureResponse.getResult());
+
+        var payPalOrder = captureResponse.getResult();
+        paymentService.createFromOrderAndPaypalOrder(order, payPalOrder);
+
+        if (order.getStatus() == OrderStatus.PENDING
+                && order.getExpiredAt().isAfter(LocalDateTime.now()))
+            order.setStatus(OrderStatus.APPROVED);
+
+        var approvedOrder = orderRepository.save(order);
+        onOrderApproved(approvedOrder);
+
+        var purchaseUnits = payPalOrder.getPurchaseUnits();
+        var latestPurchaseUnit = purchaseUnits.get(purchaseUnits.size() - 1);
+        var captures = latestPurchaseUnit.getPayments().getCaptures();
+        var latestCapture = captures.get(captures.size() - 1);
+        String captureId = latestCapture.getId();
+
+        if (payPalOrder.getStatus() == com.paypal.sdk.models.OrderStatus.COMPLETED) {
+            paymentService.fulfillPaymentFromPaypalOrder(latestCapture, payPalOrder);
+
+            if (approvedOrder.getExpiredAt().isBefore(LocalDateTime.now())) {
+                refund(approvedOrder, captureId);
+            } else {
+                var fulfilledOrder = fulfill(approvedOrder);
+                onOrderFulfilled(fulfilledOrder);
+            }
+        }
+    }
+
+    public void refund(Order order, String captureId) {
         var payment = paymentRepository.findByPaypalCaptureId(captureId)
                 .orElseThrow(() -> new HttpException(Constant.ErrorCode.PAYMENT_NOT_FOUND, HttpStatus.BAD_REQUEST));
 
         var noteToPayer = "Refund for order #" + order.getId() + " due to late payment";
-        var refundRes = payPalService.refundCapture(captureId, noteToPayer);
+        ApiResponse<com.paypal.sdk.models.Refund> refundRes = null;
+        try {
+            refundRes = payPalService.refundCapture(captureId, noteToPayer);
+        } catch (Exception e) {
+            throw new HttpException("Lỗi khi tạo refund PayPal: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
         var audit = Refund.builder();
         if (refundRes.getStatusCode() != 200 && refundRes.getStatusCode() != 201) {
             audit

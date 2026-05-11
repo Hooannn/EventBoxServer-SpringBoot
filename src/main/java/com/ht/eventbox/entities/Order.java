@@ -50,6 +50,10 @@ public class Order {
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Payment> payments = new ArrayList<>();
 
+    @JsonManagedReference
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PaymentSession> paymentSessions = new ArrayList<>();
+
     @Column(name = "fulfilled_at")
     @JsonProperty("fulfilled_at")
     private java.time.LocalDateTime fulfilledAt;

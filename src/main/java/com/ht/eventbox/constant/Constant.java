@@ -144,4 +144,11 @@ public class Constant {
         public static final String USER = "user";
         public static final String USER_DESCRIPTION = "User of the system";
     }
+
+    public static class WebhookEvent {
+        public static final String CHECKOUT_ORDER_APPROVED = "CHECKOUT.ORDER.APPROVED";
+        public static final String CHECKOUT_ORDER_APPROVED_STATUS = "APPROVED";
+        public static final String PAYMENT_CAPTURE_COMPLETED = "PAYMENT.CAPTURE.COMPLETED";
+        public static final String PAYMENT_CAPTURE_COMPLETED_STATUS = "COMPLETED";
+    }
 }
