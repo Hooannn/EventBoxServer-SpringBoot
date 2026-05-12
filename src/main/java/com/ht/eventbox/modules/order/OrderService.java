@@ -267,6 +267,7 @@ public class OrderService {
         return orderRepository.findById(id).orElse(null);
     }
 
+    @Transactional
     public void processPayment(Long orderId, String paypalOrderId) {
         Order order = findById(orderId);
 
@@ -284,8 +285,6 @@ public class OrderService {
             throw new HttpException("Không thể capture đơn hàng PayPal",
                     HttpStatus.INTERNAL_SERVER_ERROR);
         }
-
-        logger.info("Capture PayPal order successful: {}", captureResponse.getResult());
 
         var payPalOrder = captureResponse.getResult();
         paymentService.createFromOrderAndPaypalOrder(order, payPalOrder);

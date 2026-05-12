@@ -100,14 +100,13 @@ public class PaymentService {
         }
 
         public Capture createCaptureRecord(Payment payment, PaymentWebhookDto paymentWebhookDto) {
-                // todo: parse các trường còn thiếu từ paymentWebhookDto để lưu vào Capture
                 Capture capture = Capture.builder()
                                 .paypalCaptureId(paymentWebhookDto.getResource().getId())
                                 .payment(payment)
-                                // .amountCurrency(paymentWebhookDto.getResource().getSellerReceivableBreakdown()
-                                // .getAmount().getCurrencyCode())
-                                // .amountValue(Double.valueOf(paymentWebhookDto.getResource()
-                                // .getSellerReceivableBreakdown().getAmount().getValue()))
+                                .amountCurrency(paymentWebhookDto.getResource()
+                                                .getAmount().getCurrencyCode())
+                                .amountValue(Double.valueOf(paymentWebhookDto.getResource()
+                                                .getAmount().getValue()))
                                 .grossAmountCurrency(
                                                 paymentWebhookDto.getResource().getSellerReceivableBreakdown()
                                                                 .getGrossAmount()
@@ -130,11 +129,11 @@ public class PaymentService {
                                                 Double.valueOf(paymentWebhookDto.getResource()
                                                                 .getSellerReceivableBreakdown().getPaypalFee()
                                                                 .getValue()))
-                                // .customId(paymentWebhookDto.getResource().getCustomId())
-                                // .createTime(paymentWebhookDto.getResource().getCreateTime())
-                                // .updateTime(paymentWebhookDto.getResource().getUpdateTime())
+                                .customId(paymentWebhookDto.getResource().getCustomId())
+                                .createTime(paymentWebhookDto.getResource().getCreateTime())
+                                .updateTime(paymentWebhookDto.getResource().getUpdateTime())
                                 .status(paymentWebhookDto.getResource().getStatus().toString())
-                                // .finalCapture(paymentWebhookDto.getResource().getFinalCapture())
+                                .finalCapture(paymentWebhookDto.getResource().isFinalCapture())
                                 .build();
 
                 return captureRepository.save(capture);
@@ -166,7 +165,9 @@ public class PaymentService {
                                 .createTime(paypalOrderCapture.getCreateTime())
                                 .updateTime(paypalOrderCapture.getUpdateTime())
                                 .status(paypalOrderCapture.getStatus().toString())
-                                .finalCapture(paypalOrderCapture.getFinalCapture())
+                                .finalCapture(paypalOrderCapture.getFinalCapture() != null
+                                                ? paypalOrderCapture.getFinalCapture()
+                                                : true)
                                 .build();
 
                 return captureRepository.save(capture);

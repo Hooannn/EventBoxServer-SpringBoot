@@ -61,18 +61,15 @@ public class OrderController {
                                 authAlgo,
                                 checkoutWebhookId);
 
-                logger.info("Verifying PayPal webhook: {}",
-                                isValid ? "Webhook hợp lệ" : "Webhook không hợp lệ");
-
                 if (!isValid)
-                        throw new HttpException("Webhook PayPal không hợp lệ", HttpStatus.BAD_REQUEST);
+                        throw new HttpException(Constant.ErrorCode.INVALID_PAYPAL_WEBHOOK, HttpStatus.BAD_REQUEST);
 
                 ObjectMapper mapper = new ObjectMapper();
                 CheckoutWebhookDto checkoutWebhookDto = null;
                 try {
                         checkoutWebhookDto = mapper.readValue(rawJsonPayload, CheckoutWebhookDto.class);
                 } catch (JsonProcessingException e) {
-                        logger.error("Lỗi khi parse JSON payload: {}", e.getMessage());
+                        logger.error("Error parsing JSON payload: {}", e.getMessage());
                 }
 
                 if (checkoutWebhookDto != null
@@ -89,7 +86,7 @@ public class OrderController {
 
                 return ResponseEntity.ok().body(new Response<>(
                                 HttpStatus.OK.value(),
-                                "Webhook PayPal cho Checkout thành công",
+                                Constant.SuccessCode.PAYPAL_WEBHOOK_HANDLE_SUCCESSFULLY,
                                 null));
         }
 
@@ -110,18 +107,15 @@ public class OrderController {
                                 authAlgo,
                                 paymentWebhookId);
 
-                logger.info("Verifying PayPal webhook: {}",
-                                isValid ? "Webhook hợp lệ" : "Webhook không hợp lệ");
-
                 if (!isValid)
-                        throw new HttpException("Webhook PayPal không hợp lệ", HttpStatus.BAD_REQUEST);
+                        throw new HttpException(Constant.ErrorCode.INVALID_PAYPAL_WEBHOOK, HttpStatus.BAD_REQUEST);
 
                 ObjectMapper mapper = new ObjectMapper();
                 PaymentWebhookDto paymentWebhookDto = null;
                 try {
                         paymentWebhookDto = mapper.readValue(rawJsonPayload, PaymentWebhookDto.class);
                 } catch (JsonProcessingException e) {
-                        logger.error("Lỗi khi parse JSON payload: {}", e.getMessage());
+                        logger.error("Error parsing JSON payload: {}", e.getMessage());
                 }
 
                 if (paymentWebhookDto != null
@@ -137,30 +131,29 @@ public class OrderController {
                         try {
                                 paypalOrderRes = payPalService.getOrderById(orderId);
                         } catch (ApiException | IOException e) {
-                                logger.error("Lỗi khi gọi API PayPal để lấy thông tin đơn hàng: {}", e.getMessage());
-                                throw new HttpException("Không thể lấy thông tin đơn hàng PayPal",
+                                throw new HttpException(
+                                                Constant.ErrorCode.INVALID_PAYPAL_ORDER,
                                                 HttpStatus.INTERNAL_SERVER_ERROR);
                         }
 
                         if (paypalOrderRes.getStatusCode() != 200 && paypalOrderRes.getStatusCode() != 201) {
-                                throw new HttpException("Không thể lấy thông tin đơn hàng PayPal",
+                                throw new HttpException(
+                                                Constant.ErrorCode.INVALID_PAYPAL_ORDER,
                                                 HttpStatus.INTERNAL_SERVER_ERROR);
                         }
-
-                        logger.info("Get PayPal order successful: {}", paypalOrderRes.getResult());
 
                         var paypalOrder = paypalOrderRes.getResult();
                         var captureId = paymentWebhookDto.getResource().getId();
                         var customId = paypalOrder.getPurchaseUnits().get(0).getCustomId();
                         var order = orderService.findById(Long.parseLong(customId));
 
-                        if (order.getStatus() == OrderStatus.FULFILLED) {
-                                logger.info("Order #{} đã được hoàn thành trước đó, bỏ qua webhook này",
+                        if (order.getStatus() == OrderStatus.FULFILLED || order.getStatus() == OrderStatus.PENDING) {
+                                logger.info("Order #{} has already been processed, skipping payment processing",
                                                 order.getId());
 
                                 return ResponseEntity.ok().body(new Response<>(
                                                 HttpStatus.OK.value(),
-                                                "Webhook PayPal cho Payment thành công",
+                                                Constant.SuccessCode.PAYPAL_WEBHOOK_HANDLE_SUCCESSFULLY,
                                                 null));
                         }
 
@@ -177,7 +170,7 @@ public class OrderController {
 
                 return ResponseEntity.ok().body(new Response<>(
                                 HttpStatus.OK.value(),
-                                "Webhook PayPal cho Payment thành công",
+                                Constant.SuccessCode.PAYPAL_WEBHOOK_HANDLE_SUCCESSFULLY,
                                 null));
         }
 

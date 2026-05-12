@@ -94,6 +94,8 @@ public class Constant {
         public static final String VOUCHER_CONDITION_NOT_MET = "voucher_condition_not_met";
         public static final String VOUCHER_USAGE_LIMIT_EXCEEDED = "voucher_usage_limit_exceeded";
         public static final String VOUCHER_PER_USER_LIMIT_EXCEEDED = "voucher_per_user_limit_exceeded";
+        public static final String INVALID_PAYPAL_WEBHOOK = "invalid_paypal_webhook";
+        public static final String INVALID_PAYPAL_ORDER = "invalid_paypal_order";
     }
 
     public static class SuccessCode {
@@ -109,6 +111,7 @@ public class Constant {
         public static final String UPDATE_SUCCESSFULLY = "UPDATE_SUCCESSFULLY";
         public static final String DELETE_SUCCESSFULLY = "DELETE_SUCCESSFULLY";
         public static final String REQUEST_FOR_PAYOUT_SUCCESSFULLY = "REQUEST_FOR_PAYOUT_SUCCESSFULLY";
+        public static final String PAYPAL_WEBHOOK_HANDLE_SUCCESSFULLY = "PAYPAL_WEBHOOK_HANDLE_SUCCESSFULLY";
     }
 
     public static class ContextKey {

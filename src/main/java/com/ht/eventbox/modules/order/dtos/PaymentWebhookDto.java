@@ -20,6 +20,15 @@ public class PaymentWebhookDto {
         private String id;
         private String status;
 
+        @JsonProperty("custom_id")
+        private String customId;
+
+        @JsonProperty("create_time")
+        private String createTime;
+
+        @JsonProperty("update_time")
+        private String updateTime;
+
         @JsonProperty("final_capture")
         private boolean finalCapture;
 
@@ -28,6 +37,9 @@ public class PaymentWebhookDto {
 
         @JsonProperty("seller_receivable_breakdown")
         private SellerReceivableBreakdown sellerReceivableBreakdown;
+
+        @JsonProperty("amount")
+        private SellerReceivableBreakdown.Money amount;
 
         @Getter
         @JsonIgnoreProperties(ignoreUnknown = true)
