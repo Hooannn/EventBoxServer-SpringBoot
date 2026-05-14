@@ -23,4 +23,4 @@ EXPOSE 3000
 RUN addgroup --system spring && adduser --system --ingroup spring spring
 USER spring:spring
 
-ENTRYPOINT ["sh", "-c", "java ${JAVA_OPTS} -jar /app/app.jar"]
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]

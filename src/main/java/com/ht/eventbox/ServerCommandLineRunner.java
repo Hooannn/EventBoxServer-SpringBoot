@@ -11,6 +11,7 @@ import com.ht.eventbox.modules.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -20,6 +21,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
+@ConditionalOnProperty(name = "eventbox.bootstrap.enabled", havingValue = "true", matchIfMissing = true)
 @RequiredArgsConstructor
 public class ServerCommandLineRunner implements CommandLineRunner {
     private final SocketIOServer server;

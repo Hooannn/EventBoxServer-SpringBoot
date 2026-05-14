@@ -41,8 +41,8 @@ build/
 .Trashes
 ehthumbs.db
 
-application.properties
-application-*.properties
+src/main/resources/application.properties
+src/main/resources/application-*.properties
 service-account-key.json
 *.pem
 note.md

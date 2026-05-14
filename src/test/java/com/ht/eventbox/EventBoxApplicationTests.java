@@ -1,10 +1,9 @@
 package com.ht.eventbox;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
+import com.ht.eventbox.support.AbstractSpringBootTest;
 
-@SpringBootTest
-class EventBoxApplicationTests {
+class EventBoxApplicationTests extends AbstractSpringBootTest {
 
 	@Test
 	void contextLoads() {
