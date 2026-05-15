@@ -96,6 +96,7 @@ public class Constant {
         public static final String VOUCHER_PER_USER_LIMIT_EXCEEDED = "voucher_per_user_limit_exceeded";
         public static final String INVALID_PAYPAL_WEBHOOK = "invalid_paypal_webhook";
         public static final String INVALID_PAYPAL_ORDER = "invalid_paypal_order";
+        public static final String RATE_LIMIT_EXCEEDED = "rate_limit_exceeded";
     }
 
     public static class SuccessCode {
@@ -130,6 +131,7 @@ public class Constant {
         public static final String REFRESH_TOKEN = "refresh_token";
         public static final String PAYPAL_ACCESS_TOKEN = "paypal_access_token";
         public static final String REGISTER = "register";
+        public static final String RATE_LIMIT = "rate_limit";
     }
 
     public static class RedisKey {

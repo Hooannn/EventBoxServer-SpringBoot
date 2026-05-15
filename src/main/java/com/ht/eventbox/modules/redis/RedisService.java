@@ -33,6 +33,14 @@ public class RedisService {
         return redisTemplate.delete(key);
     }
 
+    public Long incrementValue(String key) {
+        return redisTemplate.opsForValue().increment(key);
+    }
+
+    public Boolean expireKey(String key, long expirationInSeconds) {
+        return redisTemplate.expire(key, Duration.ofSeconds(expirationInSeconds));
+    }
+
     public <T> void setObject(String key, T object, long expirationInSeconds) throws JsonProcessingException {
         String json = objectMapper.writeValueAsString(object);
         redisTemplate.opsForValue().set(key, json, Duration.ofSeconds(expirationInSeconds));
