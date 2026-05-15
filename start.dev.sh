@@ -4,4 +4,4 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT_DIR"
 
-exec SPRING_PROFILES_ACTIVE=dev ./mvnw spring-boot:run
+exec ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev

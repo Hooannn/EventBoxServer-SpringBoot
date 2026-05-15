@@ -429,6 +429,15 @@ public class OrderService {
         });
 
         CompletableFuture.runAsync(() -> {
+            socketIOServer.getNamespace("/order")
+                    .getRoomOperations(order.getId().toString())
+                    .sendEvent("order_refunded", Map.of(
+                            "order_id", order.getId(),
+                            "status", order.getStatus(),
+                            "place_total", order.getPlaceTotal()));
+        });
+
+        CompletableFuture.runAsync(() -> {
             try {
                 pushNotificationService.push(
                         order.getUser().getId(),

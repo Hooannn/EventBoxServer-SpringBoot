@@ -14,7 +14,7 @@ Templates and email views are under `src/main/resources/templates/`. Tests live 
 
 Use the Maven wrapper from the repo root:
 
-- `SPRING_PROFILES_ACTIVE=dev ./mvnw spring-boot:run` starts the API locally with the `dev` profile.
+- `./mvnw spring-boot:run -Dspring-boot.run.profiles=dev` starts the API locally with the `dev` profile.
 - `./mvnw spring-boot:run` starts with the default profile if no profile is set.
 - `./mvnw test` runs the Spring Boot test suite.
 - `./mvnw clean package` builds the application JAR in `target/`.
