@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -43,6 +44,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -146,7 +148,8 @@ class OrganizationServiceTests {
 
     @Test
     void update_shouldRejectNonOwner() {
-        when(organizationRepository.findByIdAndUserOrganizationsUserIdAndUserOrganizationsRoleIs(9L, 42L, OrganizationRole.OWNER))
+        when(organizationRepository.findByIdAndUserOrganizationsUserIdAndUserOrganizationsRoleIs(9L, 42L,
+                OrganizationRole.OWNER))
                 .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> organizationService.update(42L, 9L, sampleUpdateOrganizationDto(false, null)))
@@ -162,7 +165,8 @@ class OrganizationServiceTests {
     void update_shouldRemoveExistingAssetsWhenRemoveLogoIsTrue() {
         var org = sampleOrganizationWithAsset(9L, 42L);
         var assetsBeforeUpdate = new HashSet<>(org.getAssets());
-        when(organizationRepository.findByIdAndUserOrganizationsUserIdAndUserOrganizationsRoleIs(9L, 42L, OrganizationRole.OWNER))
+        when(organizationRepository.findByIdAndUserOrganizationsUserIdAndUserOrganizationsRoleIs(9L, 42L,
+                OrganizationRole.OWNER))
                 .thenReturn(Optional.of(org));
 
         var result = organizationService.update(42L, 9L, sampleUpdateOrganizationDto(true, null));
@@ -175,9 +179,11 @@ class OrganizationServiceTests {
     @Test
     void update_shouldReplaceLogoWhenNewLogoIsProvided() throws Exception {
         var org = sampleOrganizationWithAsset(9L, 42L);
-        when(organizationRepository.findByIdAndUserOrganizationsUserIdAndUserOrganizationsRoleIs(9L, 42L, OrganizationRole.OWNER))
+        when(organizationRepository.findByIdAndUserOrganizationsUserIdAndUserOrganizationsRoleIs(9L, 42L,
+                OrganizationRole.OWNER))
                 .thenReturn(Optional.of(org));
-        when(cloudinaryService.uploadByBase64(eq("updated-logo"), anyString())).thenReturn(sampleUploadResult("updated"));
+        when(cloudinaryService.uploadByBase64(eq("updated-logo"), anyString()))
+                .thenReturn(sampleUploadResult("updated"));
 
         var result = organizationService.update(42L, 9L, sampleUpdateOrganizationDto(false, "updated-logo"));
 
@@ -188,7 +194,8 @@ class OrganizationServiceTests {
     @Test
     void deleteById_shouldRejectWhenOrganizationHasEvents() {
         var org = sampleOrganization(9L, 42L);
-        when(organizationRepository.findByIdAndUserOrganizationsUserIdAndUserOrganizationsRoleIs(9L, 42L, OrganizationRole.OWNER))
+        when(organizationRepository.findByIdAndUserOrganizationsUserIdAndUserOrganizationsRoleIs(9L, 42L,
+                OrganizationRole.OWNER))
                 .thenReturn(Optional.of(org));
         when(eventRepository.existsByOrganizationId(9L)).thenReturn(true);
 
@@ -204,7 +211,8 @@ class OrganizationServiceTests {
     @Test
     void deleteById_shouldDeleteOrganizationAndAssets() throws Exception {
         var org = sampleOrganizationWithAsset(9L, 42L);
-        when(organizationRepository.findByIdAndUserOrganizationsUserIdAndUserOrganizationsRoleIs(9L, 42L, OrganizationRole.OWNER))
+        when(organizationRepository.findByIdAndUserOrganizationsUserIdAndUserOrganizationsRoleIs(9L, 42L,
+                OrganizationRole.OWNER))
                 .thenReturn(Optional.of(org));
         when(eventRepository.existsByOrganizationId(9L)).thenReturn(false);
 
@@ -219,7 +227,8 @@ class OrganizationServiceTests {
     void addMember_shouldRejectDuplicateMember() {
         var org = sampleOrganization(9L, 42L);
         org.getUserOrganizations().add(sampleUserOrganization(99L, "member@example.com", OrganizationRole.STAFF));
-        when(organizationRepository.findByIdAndUserOrganizationsUserIdAndUserOrganizationsRoleIs(9L, 42L, OrganizationRole.OWNER))
+        when(organizationRepository.findByIdAndUserOrganizationsUserIdAndUserOrganizationsRoleIs(9L, 42L,
+                OrganizationRole.OWNER))
                 .thenReturn(Optional.of(org));
 
         assertThatThrownBy(() -> organizationService.addMember(42L, 9L, sampleAddMemberDto("member@example.com")))
@@ -234,7 +243,8 @@ class OrganizationServiceTests {
     @Test
     void addMember_shouldRejectMissingUser() {
         var org = sampleOrganization(9L, 42L);
-        when(organizationRepository.findByIdAndUserOrganizationsUserIdAndUserOrganizationsRoleIs(9L, 42L, OrganizationRole.OWNER))
+        when(organizationRepository.findByIdAndUserOrganizationsUserIdAndUserOrganizationsRoleIs(9L, 42L,
+                OrganizationRole.OWNER))
                 .thenReturn(Optional.of(org));
         when(userRepository.findByEmail("new@example.com")).thenReturn(Optional.empty());
 
@@ -251,7 +261,8 @@ class OrganizationServiceTests {
     void addMember_shouldPersistNewMember() throws Exception {
         var org = sampleOrganization(9L, 42L);
         var user = User.builder().id(77L).email("new@example.com").firstName("New").lastName("User").build();
-        when(organizationRepository.findByIdAndUserOrganizationsUserIdAndUserOrganizationsRoleIs(9L, 42L, OrganizationRole.OWNER))
+        when(organizationRepository.findByIdAndUserOrganizationsUserIdAndUserOrganizationsRoleIs(9L, 42L,
+                OrganizationRole.OWNER))
                 .thenReturn(Optional.of(org));
         when(userRepository.findByEmail("new@example.com")).thenReturn(Optional.of(user));
 
@@ -259,16 +270,19 @@ class OrganizationServiceTests {
 
         assertThat(result).isTrue();
         verify(organizationRepository).save(org);
-        verify(mailService).sendMemberAddedEmail("new@example.com", "New User", "Eventbox");
+
+        verify(mailService, timeout(500)).sendMemberAddedEmail("new@example.com", "New User", "Eventbox");
     }
 
     @Test
     void updateMember_shouldRejectMissingTarget() {
         var org = sampleOrganization(9L, 42L);
-        when(organizationRepository.findByIdAndUserOrganizationsUserIdAndUserOrganizationsRoleIs(9L, 42L, OrganizationRole.OWNER))
+        when(organizationRepository.findByIdAndUserOrganizationsUserIdAndUserOrganizationsRoleIs(9L, 42L,
+                OrganizationRole.OWNER))
                 .thenReturn(Optional.of(org));
 
-        assertThatThrownBy(() -> organizationService.updateMember(42L, 9L, sampleUpdateMemberDto("missing@example.com")))
+        assertThatThrownBy(
+                () -> organizationService.updateMember(42L, 9L, sampleUpdateMemberDto("missing@example.com")))
                 .isInstanceOf(HttpException.class)
                 .satisfies(throwable -> {
                     var ex = (HttpException) throwable;
@@ -282,7 +296,8 @@ class OrganizationServiceTests {
         var org = sampleOrganization(9L, 42L);
         var member = sampleUserOrganization(77L, "member@example.com", OrganizationRole.STAFF);
         org.getUserOrganizations().add(member);
-        when(organizationRepository.findByIdAndUserOrganizationsUserIdAndUserOrganizationsRoleIs(9L, 42L, OrganizationRole.OWNER))
+        when(organizationRepository.findByIdAndUserOrganizationsUserIdAndUserOrganizationsRoleIs(9L, 42L,
+                OrganizationRole.OWNER))
                 .thenReturn(Optional.of(org));
 
         var result = organizationService.updateMember(42L, 9L, sampleUpdateMemberDto("member@example.com"));
@@ -294,10 +309,12 @@ class OrganizationServiceTests {
     @Test
     void removeMember_shouldRejectMissingTarget() {
         var org = sampleOrganization(9L, 42L);
-        when(organizationRepository.findByIdAndUserOrganizationsUserIdAndUserOrganizationsRoleIs(9L, 42L, OrganizationRole.OWNER))
+        when(organizationRepository.findByIdAndUserOrganizationsUserIdAndUserOrganizationsRoleIs(9L, 42L,
+                OrganizationRole.OWNER))
                 .thenReturn(Optional.of(org));
 
-        assertThatThrownBy(() -> organizationService.removeMember(42L, 9L, sampleRemoveMemberDto("missing@example.com")))
+        assertThatThrownBy(
+                () -> organizationService.removeMember(42L, 9L, sampleRemoveMemberDto("missing@example.com")))
                 .isInstanceOf(HttpException.class)
                 .satisfies(throwable -> {
                     var ex = (HttpException) throwable;
@@ -311,14 +328,15 @@ class OrganizationServiceTests {
         var org = sampleOrganization(9L, 42L);
         var member = sampleUserOrganization(77L, "member@example.com", OrganizationRole.STAFF);
         org.getUserOrganizations().add(member);
-        when(organizationRepository.findByIdAndUserOrganizationsUserIdAndUserOrganizationsRoleIs(9L, 42L, OrganizationRole.OWNER))
+        when(organizationRepository.findByIdAndUserOrganizationsUserIdAndUserOrganizationsRoleIs(9L, 42L,
+                OrganizationRole.OWNER))
                 .thenReturn(Optional.of(org));
 
         var result = organizationService.removeMember(42L, 9L, sampleRemoveMemberDto("member@example.com"));
 
         assertThat(result).isTrue();
         verify(organizationRepository).save(org);
-        verify(mailService).sendMemberRemovedEmail("member@example.com", "Member User", "Eventbox");
+        verify(mailService, timeout(500)).sendMemberRemovedEmail("member@example.com", "Member User", "Eventbox");
     }
 
     @Test
@@ -358,7 +376,8 @@ class OrganizationServiceTests {
                 .assets(new HashSet<>())
                 .userOrganizations(new java.util.ArrayList<>())
                 .build();
-        org.getUserOrganizations().add(sampleUserOrganization(ownerUserId, "owner@example.com", OrganizationRole.OWNER));
+        org.getUserOrganizations()
+                .add(sampleUserOrganization(ownerUserId, "owner@example.com", OrganizationRole.OWNER));
         return org;
     }
 
