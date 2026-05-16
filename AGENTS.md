@@ -40,6 +40,15 @@ The repo uses JUnit 5 with `spring-boot-starter-test`. The shared Spring test ba
 
 Git history uses conventional-style prefixes such as `feat(auth): ...`, `fix(order): ...`, and `refactor: ...`. Follow that pattern for new commits, keeping the scope short and specific.
 
+Before committing, make sure the commit is clean:
+
+- Stage only the files that belong to the current task.
+- Do not include unrelated user changes, generated artifacts, or local scratch files.
+- Check `git status` and `git diff --stat` before committing so the change set is obvious.
+- Verify the relevant tests before committing, and note the command in the commit body or PR description.
+- Use a conventional commit title plus a short body that explains what changed and why.
+- If the work is broad, split it into multiple commits by concern rather than one large mixed commit.
+
 Pull requests should include:
 
 - a short summary of the change
