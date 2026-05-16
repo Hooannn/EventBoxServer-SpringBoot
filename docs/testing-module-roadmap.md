@@ -19,5 +19,7 @@ This note captures the order we agreed to use when expanding module test coverag
 ## Current Decision
 
 - `order` was the first module expanded.
-- The next session should continue with `event`.
+- `event` was expanded next.
+- `organization` was expanded next.
+- `ticket` was completed after organization.
 - If a future bug report changes the priority, keep the same order only if the risk still matches the list above.

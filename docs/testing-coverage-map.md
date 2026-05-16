@@ -80,46 +80,132 @@ Result:
 
 Current test files:
 
-- None in the current tree
+- [src/test/java/com/ht/eventbox/modules/event/EventServiceTests.java](/Users/nguyenduckhaihoan/Working/backend/EventboxServer-SpringBoot-s0ngnguyen/src/test/java/com/ht/eventbox/modules/event/EventServiceTests.java)
+- [src/test/java/com/ht/eventbox/modules/event/VoucherServiceTests.java](/Users/nguyenduckhaihoan/Working/backend/EventboxServer-SpringBoot-s0ngnguyen/src/test/java/com/ht/eventbox/modules/event/VoucherServiceTests.java)
+- [src/test/java/com/ht/eventbox/modules/event/EventControllerTests.java](/Users/nguyenduckhaihoan/Working/backend/EventboxServer-SpringBoot-s0ngnguyen/src/test/java/com/ht/eventbox/modules/event/EventControllerTests.java)
+- [src/test/java/com/ht/eventbox/modules/event/VoucherControllerTests.java](/Users/nguyenduckhaihoan/Working/backend/EventboxServer-SpringBoot-s0ngnguyen/src/test/java/com/ht/eventbox/modules/event/VoucherControllerTests.java)
 
 Current coverage:
 
-- No `event` module tests are present yet
+- `getById` returns an event when it exists and throws `EVENT_NOT_FOUND` when it does not
+- `getDiscovery` queries featured, trending, and latest event buckets
+- `search` covers province and non-province branches
+- `create` persists a pending event with shows, categories, keywords, and assets
+- `update` rejects non-pending events and persists updated metadata for pending events
+- `publishByAdmin` publishes pending events
+- `archiveByAdmin` archives pending events
+- `archive`, `inactive`, and `active` enforce ownership and status guards
+- `updateTags` rejects non-published events
+- `getByIdAndStatusIsNot` and `getWithRealStockByIdAndStatusIsNot` cover stock and visibility reads
+- `getAllByStatusIn` returns repository results directly
+- `eventPayout` covers not-ended, non-owner, zero-total, and payout success flows
+- `isMember` covers matching and non-matching organization roles
+- `getAllByEventId` rejects non-members and returns vouchers for organization members
+- `getAllPublicByEventId` covers the public time-window query
+- `createByEventId`, `updateByEventId`, and `deleteByEventId` cover code uniqueness and used-voucher guards
+- `getUsage` covers the fulfilled-order counting path
+- `applyByOrderId` covers order lookup, voucher lookup, time-window, condition, usage-limit, per-user-limit, and success branches
+- `removeByOrderId` covers fulfilled-order rejection and successful removal
+- Event controller routes are covered for list, create, update, admin publish/archive, user archive/inactive/active, organization reads, event reads, discovery, search, category, public, shows, and payout request endpoints
+- Voucher controller routes are covered for usage, order lookup, apply/remove, event list/public list, create, update, and delete endpoints
 
 Current gaps:
 
-- Controller coverage is missing
-- Service coverage is missing
 - Repository-focused behavior is also unverified
+
+Last verified command:
+
+```bash
+./mvnw -Dtest=EventServiceTests,VoucherServiceTests test
+```
+
+Result:
+
+- `46` tests run
+- `0` failures
+- `0` errors
+
+Latest verified command:
+
+```bash
+./mvnw -Dtest=EventControllerTests,VoucherControllerTests test
+```
+
+Result:
+
+- `27` tests run
+- `0` failures
+- `0` errors
 
 ## Organization
 
 Current test files:
 
-- None in the current tree
+- [src/test/java/com/ht/eventbox/modules/organization/OrganizationServiceTests.java](/Users/nguyenduckhaihoan/Working/backend/EventboxServer-SpringBoot-s0ngnguyen/src/test/java/com/ht/eventbox/modules/organization/OrganizationServiceTests.java)
+- [src/test/java/com/ht/eventbox/modules/organization/OrganizationControllerTests.java](/Users/nguyenduckhaihoan/Working/backend/EventboxServer-SpringBoot-s0ngnguyen/src/test/java/com/ht/eventbox/modules/organization/OrganizationControllerTests.java)
 
 Current coverage:
 
-- No `organization` module tests are present yet
+- `getById` returns an organization and throws `ORGANIZATION_NOT_FOUND` when missing
+- `getDetailsById` combines organization data with subscriber and event counts
+- `create` covers org creation with and without logo upload
+- `update` covers owner checks, remove-logo, and replacement-logo branches
+- `deleteById` rejects organizations with events and deletes allowed organizations
+- `addMember` covers duplicate member, missing user, and success paths
+- `updateMember` covers missing target and role update paths
+- `removeMember` covers missing target and member removal paths
+- `subscribe` covers add and remove toggle behavior
+- Organization controller routes are covered for list, mine, member list, details, get by id, update, delete, create, add member, update member, remove member, and subscribe endpoints
 
 Current gaps:
 
-- Controller coverage is missing
-- Service coverage is missing
-- Authorization and member-management paths are unverified
+- Repository-focused behavior is also unverified
+
+Last verified command:
+
+```bash
+./mvnw -Dtest=OrganizationServiceTests,OrganizationControllerTests test
+```
+
+Result:
+
+- `32` tests run
+- `0` failures
+- `0` errors
 
 ## Ticket
 
 Current test files:
 
-- None in the current tree
+- [src/test/java/com/ht/eventbox/modules/ticket/TicketServiceTests.java](/Users/nguyenduckhaihoan/Working/backend/EventboxServer-SpringBoot-s0ngnguyen/src/test/java/com/ht/eventbox/modules/ticket/TicketServiceTests.java)
+- [src/test/java/com/ht/eventbox/modules/ticket/TicketControllerTests.java](/Users/nguyenduckhaihoan/Working/backend/EventboxServer-SpringBoot-s0ngnguyen/src/test/java/com/ht/eventbox/modules/ticket/TicketControllerTests.java)
 
 Current coverage:
 
-- No `ticket` module tests are present yet
+- `getTicketItemById` returns a projection and rejects missing items
+- `getTicketItemQrCode` covers before-start, after-end, and success branches
+- `validateTicketItem` covers invalid token, non-member, and success paths
+- `createTicketItemTrace` persists traces through the validation flow
+- `getTicketItemByShowId` rejects unauthorized users
+- `createTicketItemFeedback` rejects unused tickets and persists valid feedback
+- `giveawayTicketItem` controller wiring is covered and the service pass includes the self-gift, already-used, ended, and reminder-related safety branches
+- `triggerReminder` covers the mail-failure return path
+- `getLatestTicketItemFeedbackByOrganizationId` rejects missing organizations
+- `getTicketItemFeedbackByEventId` rejects non-members
+- Ticket controller routes are covered for my-items, item details, QR code, validate, traces, show-items, feedback, giveaway, organization feedback, event feedback, and reminder trigger endpoints
 
 Current gaps:
 
-- Controller coverage is missing
-- Service coverage is missing
-- Stock, QR, validation, and reminder flows are unverified
+- Repository-focused behavior is also unverified
+
+Last verified command:
+
+```bash
+./mvnw -Dtest=TicketServiceTests,TicketControllerTests test
+```
+
+Result:
+
+- `27` tests run
+- `0` failures
+- `0` errors
