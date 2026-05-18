@@ -2,12 +2,13 @@
 
 **Goal:** Replace ad hoc `CompletableFuture.runAsync(...)` side effects with a Redis-backed job queue for durable work, while keeping socket emits out of the queue.
 
-**Scope:** Mail delivery and push notification work currently triggered from `AuthService`, `OrganizationService`, `OrderService`, and `TicketService`.
+**Scope:** All production `CompletableFuture`-based side effects in the application. The primary targets are mail delivery, push notification work, and any other background task still using `CompletableFuture` in `src/main/java/com/ht/eventbox`.
 
 **Non-Goals:**
 - Do not queue socket events.
 - Do not introduce RabbitMQ, Kafka, or a DB-backed job table in this phase.
 - Do not redesign the business flows that produce the side effects.
+- Do not leave any production `CompletableFuture` usage behind if it is used for background side effects.
 
 ## Architecture
 
@@ -109,16 +110,17 @@ Phase 1: Introduce the queue abstraction
 - Add a Spring worker that can claim and process jobs.
 - Add retry and dead-letter handling.
 
-Phase 2: Migrate email jobs
-- Replace `CompletableFuture.runAsync(...)` email calls in authentication, organization, order, and ticket flows.
+Phase 2: Migrate all email jobs
+- Replace every `CompletableFuture.runAsync(...)` email call in production code.
 - Keep the old code path only until the worker is verified.
 
-Phase 3: Migrate push notifications
+Phase 3: Migrate all other production `CompletableFuture` side effects
 - Move push notification dispatch onto the same worker pipeline.
-- Keep handlers separate from email handlers so failures are isolated by job type.
+- Replace any remaining production `CompletableFuture` usage with either the worker pipeline or a direct post-commit synchronous emit if the work is intentionally non-durable, such as socket signaling.
+- Keep handlers separate so failures are isolated by job type.
 
 Phase 4: Remove direct async calls
-- Delete the remaining `CompletableFuture` usage for mail and push side effects.
+- Delete the remaining `CompletableFuture` usage from production code.
 - Retain direct socket emits where appropriate.
 
 ## Error Handling
@@ -152,4 +154,3 @@ Target cases:
 - Keep job payloads stable and versioned if the schema evolves.
 - Prefer per-type handler classes over a single monolithic worker method.
 - Do not let the queue layer leak into controllers.
-
