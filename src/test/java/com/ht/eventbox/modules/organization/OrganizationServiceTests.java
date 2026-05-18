@@ -11,9 +11,10 @@ import com.ht.eventbox.entities.UserOrganizationId;
 import com.ht.eventbox.enums.AssetUsage;
 import com.ht.eventbox.enums.EventStatus;
 import com.ht.eventbox.enums.OrganizationRole;
+import com.ht.eventbox.modules.jobs.MailKind;
+import com.ht.eventbox.modules.jobs.RedisBackgroundJobService;
 import com.ht.eventbox.modules.asset.AssetRepository;
 import com.ht.eventbox.modules.event.EventRepository;
-import com.ht.eventbox.modules.mail.MailService;
 import com.ht.eventbox.modules.organization.dtos.AddMemberDto;
 import com.ht.eventbox.modules.organization.dtos.CreateOrganizationDto;
 import com.ht.eventbox.modules.organization.dtos.RemoveMemberDto;
@@ -44,7 +45,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -65,7 +65,7 @@ class OrganizationServiceTests {
     private UserRepository userRepository;
 
     @Mock
-    private MailService mailService;
+    private RedisBackgroundJobService redisBackgroundJobService;
 
     @Mock
     private EventRepository eventRepository;
@@ -265,13 +265,18 @@ class OrganizationServiceTests {
                 OrganizationRole.OWNER))
                 .thenReturn(Optional.of(org));
         when(userRepository.findByEmail("new@example.com")).thenReturn(Optional.of(user));
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, String>> payloadCaptor = ArgumentCaptor.forClass(Map.class);
 
         var result = organizationService.addMember(42L, 9L, sampleAddMemberDto("new@example.com"));
 
         assertThat(result).isTrue();
         verify(organizationRepository).save(org);
-
-        verify(mailService, timeout(500)).sendMemberAddedEmail("new@example.com", "New User", "Eventbox");
+        verify(redisBackgroundJobService).enqueueSendMail(eq(MailKind.MEMBER_ADDED), payloadCaptor.capture());
+        assertThat(payloadCaptor.getValue())
+                .containsEntry("recipient", "new@example.com")
+                .containsEntry("name", "New User")
+                .containsEntry("orgName", "Eventbox");
     }
 
     @Test
@@ -331,12 +336,18 @@ class OrganizationServiceTests {
         when(organizationRepository.findByIdAndUserOrganizationsUserIdAndUserOrganizationsRoleIs(9L, 42L,
                 OrganizationRole.OWNER))
                 .thenReturn(Optional.of(org));
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, String>> payloadCaptor = ArgumentCaptor.forClass(Map.class);
 
         var result = organizationService.removeMember(42L, 9L, sampleRemoveMemberDto("member@example.com"));
 
         assertThat(result).isTrue();
         verify(organizationRepository).save(org);
-        verify(mailService, timeout(500)).sendMemberRemovedEmail("member@example.com", "Member User", "Eventbox");
+        verify(redisBackgroundJobService).enqueueSendMail(eq(MailKind.MEMBER_REMOVED), payloadCaptor.capture());
+        assertThat(payloadCaptor.getValue())
+                .containsEntry("recipient", "member@example.com")
+                .containsEntry("name", "Member User")
+                .containsEntry("orgName", "Eventbox");
     }
 
     @Test

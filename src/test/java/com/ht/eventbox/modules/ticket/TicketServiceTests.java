@@ -1,5 +1,7 @@
 package com.ht.eventbox.modules.ticket;
 
+import com.corundumstudio.socketio.BroadcastOperations;
+import com.corundumstudio.socketio.SocketIONamespace;
 import com.corundumstudio.socketio.SocketIOServer;
 import com.ht.eventbox.config.HttpException;
 import com.ht.eventbox.constant.Constant;
@@ -22,7 +24,8 @@ import com.ht.eventbox.filter.JwtService;
 import com.ht.eventbox.modules.auth.AuthService;
 import com.ht.eventbox.modules.event.EventRepository;
 import com.ht.eventbox.modules.event.EventService;
-import com.ht.eventbox.modules.mail.MailService;
+import com.ht.eventbox.modules.jobs.MailKind;
+import com.ht.eventbox.modules.jobs.RedisBackgroundJobService;
 import com.ht.eventbox.modules.messaging.PushNotificationService;
 import com.ht.eventbox.modules.order.OrderRepository;
 import com.ht.eventbox.modules.order.TicketItemRepository;
@@ -57,7 +60,6 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -97,7 +99,19 @@ class TicketServiceTests {
     private SocketIOServer socketIOServer;
 
     @Mock
-    private MailService mailService;
+    private SocketIONamespace ticketNamespace;
+
+    @Mock
+    private BroadcastOperations ticketBroadcastOperations;
+
+    @Mock
+    private SocketIONamespace eventNamespace;
+
+    @Mock
+    private BroadcastOperations eventBroadcastOperations;
+
+    @Mock
+    private RedisBackgroundJobService redisBackgroundJobService;
 
     @Mock
     private SentimentAnalystService sentimentAnalystService;
@@ -111,6 +125,10 @@ class TicketServiceTests {
     @BeforeEach
     void setUp() {
         ReflectionTestUtils.setField(ticketService, "qrcodeSecretKey", "qr-secret");
+        org.mockito.Mockito.lenient().when(socketIOServer.getNamespace("/ticket")).thenReturn(ticketNamespace);
+        org.mockito.Mockito.lenient().when(ticketNamespace.getRoomOperations(anyString())).thenReturn(ticketBroadcastOperations);
+        org.mockito.Mockito.lenient().when(socketIOServer.getNamespace("/event")).thenReturn(eventNamespace);
+        org.mockito.Mockito.lenient().when(eventNamespace.getRoomOperations(anyString())).thenReturn(eventBroadcastOperations);
     }
 
     @Test
@@ -310,16 +328,20 @@ class TicketServiceTests {
     }
 
     @Test
-    void triggerReminder_shouldReturnFalseWhenMailFails() throws Exception {
+    void triggerReminder_shouldEnqueueReminderMailAndReturnTrue() throws Exception {
         var item = sampleFulfilledTicketItemEntity(88L, 42L, 1);
         when(ticketItemRepository.findById(88L)).thenReturn(Optional.of(item));
-        doAnswer(invocation -> {
-            throw new jakarta.mail.MessagingException("mail fail");
-        }).when(mailService).sendReminderEmail(anyString(), any(Event.class), any(EventShow.class));
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, String>> payloadCaptor = ArgumentCaptor.forClass(Map.class);
 
         var result = ticketService.triggerReminder(88L);
 
-        assertThat(result).isFalse();
+        assertThat(result).isTrue();
+        verify(redisBackgroundJobService).enqueueSendMail(eq(MailKind.REMINDER), payloadCaptor.capture());
+        assertThat(payloadCaptor.getValue())
+                .containsEntry("recipient", "owner@example.com")
+                .containsEntry("eventId", "9")
+                .containsEntry("eventShowId", "77");
     }
 
     @Test
@@ -437,6 +459,7 @@ class TicketServiceTests {
                                 .event(Event.builder()
                                         .id(9L)
                                         .organization(Organization.builder().id(9L).build())
+                                        .assets(Set.of(sampleAsset()))
                                         .build())
                                 .build())
                         .build())

@@ -11,7 +11,8 @@ import com.ht.eventbox.filter.JwtService;
 import com.ht.eventbox.modules.auth.AuthService;
 import com.ht.eventbox.modules.event.EventRepository;
 import com.ht.eventbox.modules.event.EventService;
-import com.ht.eventbox.modules.mail.MailService;
+import com.ht.eventbox.modules.jobs.MailKind;
+import com.ht.eventbox.modules.jobs.RedisBackgroundJobService;
 import com.ht.eventbox.modules.messaging.PushNotificationService;
 import com.ht.eventbox.modules.order.OrderRepository;
 import com.ht.eventbox.modules.order.TicketItemRepository;
@@ -22,7 +23,6 @@ import com.ht.eventbox.modules.ticket.dtos.GiveawayTicketItemDto;
 import com.ht.eventbox.modules.ticket.dtos.ValidateTicketItemDto;
 import com.ht.eventbox.modules.user.UserService;
 import com.ht.eventbox.utils.Helper;
-import jakarta.mail.MessagingException;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
@@ -33,7 +33,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 
 @Service
 @RequiredArgsConstructor
@@ -160,7 +159,7 @@ public class TicketService {
     private final OrganizationRepository organizationRepository;
     private final TicketItemTraceRepository ticketItemTraceRepository;
     private final SocketIOServer socketIOServer;
-    private final MailService mailService;
+    private final RedisBackgroundJobService redisBackgroundJobService;
     private final SentimentAnalystService sentimentAnalystService;
     private final PushNotificationService pushNotificationService;
 
@@ -303,20 +302,16 @@ public class TicketService {
         ticketItemTraceRepository.save(trace);
 
         // gửi sự kiện đến client qua socketio để cập nhật trạng thái vé
-        CompletableFuture.runAsync(() -> {
-            socketIOServer.getNamespace("/ticket")
-                    .getRoomOperations(ticketItem.getId().toString())
-                    .sendEvent("traces_updated", Map.of(
-                            "ticket_item_id", ticketItem.getId()));
-        });
+        socketIOServer.getNamespace("/ticket")
+                .getRoomOperations(ticketItem.getId().toString())
+                .sendEvent("traces_updated", Map.of(
+                        "ticket_item_id", ticketItem.getId()));
 
         // gửi sự kiện đến client qua socketio để cập nhật dashboard
-        CompletableFuture.runAsync(() -> {
-            socketIOServer.getNamespace("/event")
-                    .getRoomOperations(ticketItem.getTicket().getEventShow().getEvent().getId().toString())
-                    .sendEvent("traces_updated", Map.of(
-                            "ticket_item_id", ticketItem.getId()));
-        });
+        socketIOServer.getNamespace("/event")
+                .getRoomOperations(ticketItem.getTicket().getEventShow().getEvent().getId().toString())
+                .sendEvent("traces_updated", Map.of(
+                        "ticket_item_id", ticketItem.getId()));
 
         return true;
     }
@@ -388,15 +383,12 @@ public class TicketService {
         var eventShow = ticketItem.getTicket().getEventShow();
         var event = eventShow.getEvent();
 
-        try {
-            mailService.sendReminderEmail(
-                    user.getEmail(),
-                    event,
-                    eventShow);
-        } catch (MessagingException e) {
-            logger.error("Error when send reminder email for userId {}: {}", user.getId(), e.getMessage());
-            return false;
-        }
+        redisBackgroundJobService.enqueueSendMail(
+                MailKind.REMINDER,
+                Map.of(
+                        "recipient", user.getEmail(),
+                        "eventId", event.getId().toString(),
+                        "eventShowId", eventShow.getId().toString()));
 
         var notification = Notification.builder()
                 .setTitle("Nhắc nhở: Sự kiện sắp diễn ra - " + event.getTitle())
@@ -445,14 +437,12 @@ public class TicketService {
                     var eventShow = ticketItem.getTicket().getEventShow();
                     var event = eventShow.getEvent();
 
-                    try {
-                        mailService.sendReminderEmail(
-                                user.getEmail(),
-                                event,
-                                eventShow);
-                    } catch (MessagingException e) {
-                        logger.error("Error when send reminder email for userId {}: {}", user.getId(), e.getMessage());
-                    }
+                    redisBackgroundJobService.enqueueSendMail(
+                            MailKind.REMINDER,
+                            Map.of(
+                                    "recipient", user.getEmail(),
+                                    "eventId", event.getId().toString(),
+                                    "eventShowId", eventShow.getId().toString()));
 
                     var notification = Notification.builder()
                             .setTitle("Nhắc nhở: Sự kiện sắp diễn ra - " + event.getTitle())
@@ -546,19 +536,13 @@ public class TicketService {
         }
         ticketItemRepository.save(ticketItem);
 
-        // gửi email thông báo tặng vé thành công
-        CompletableFuture.runAsync(() -> {
-            try {
-                mailService.sendGiveawayNotificationEmail(
-                        recipient.getEmail(),
-                        ticketItem.getTicket().getEventShow().getEvent(),
-                        ticketItem.getTicket().getEventShow(),
-                        fromEmail);
-            } catch (MessagingException e) {
-                logger.error("Error when send giveaway notification email to userId {}: {}", recipient.getId(),
-                        e.getMessage());
-            }
-        });
+        redisBackgroundJobService.enqueueSendMail(
+                MailKind.GIVEAWAY_NOTIFICATION,
+                Map.of(
+                        "recipient", recipient.getEmail(),
+                        "eventId", ticketItem.getTicket().getEventShow().getEvent().getId().toString(),
+                        "eventShowId", ticketItem.getTicket().getEventShow().getId().toString(),
+                        "from", fromEmail));
 
         return true;
     }

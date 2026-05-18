@@ -8,22 +8,21 @@ import com.ht.eventbox.entities.FCMToken;
 import com.ht.eventbox.entities.User;
 import com.ht.eventbox.filter.JwtService;
 import com.ht.eventbox.modules.auth.dtos.*;
-import com.ht.eventbox.modules.mail.MailService;
+import com.ht.eventbox.modules.jobs.MailKind;
+import com.ht.eventbox.modules.jobs.RedisBackgroundJobService;
 import com.ht.eventbox.modules.redis.RedisService;
 import com.ht.eventbox.modules.user.FCMTokenRepository;
 import com.ht.eventbox.modules.user.RoleRepository;
 import com.ht.eventbox.modules.user.UserRepository;
 import com.ht.eventbox.utils.Helper;
-import jakarta.mail.MessagingException;
 import lombok.*;
-import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import java.util.concurrent.CompletableFuture;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -81,8 +80,6 @@ public class AuthService {
         private String refreshToken;
     }
 
-    private static final Logger logger = org.slf4j.LoggerFactory.getLogger(AuthService.class);
-
     @Value("${application.security.jwt.refresh.expiration}")
     private long refreshExpiration;
     @Value("${application.security.jwt.password.expiration}")
@@ -90,7 +87,7 @@ public class AuthService {
     @Value("${application.security.jwt.refresh-secret-key}")
     private String refreshSecretKey;
 
-    private final MailService mailService;
+    private final RedisBackgroundJobService redisBackgroundJobService;
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
@@ -163,17 +160,13 @@ public class AuthService {
             );
         }
 
-        CompletableFuture.runAsync(() -> {
-            try {
-                mailService.sendRegistrationEmail(
-                        registerDto.getUsername(),
-                        registerDto.getFirstName() + " " + registerDto.getLastName(),
-                        otp
-                );
-            } catch (MessagingException e) {
-                logger.error("mailService.sendRegistrationEmail: {}", e.getMessage());
-            }
-        });
+        redisBackgroundJobService.enqueueSendMail(
+                MailKind.REGISTRATION,
+                Map.of(
+                        "recipient", registerDto.getUsername(),
+                        "name", registerDto.getFirstName() + " " + registerDto.getLastName(),
+                        "otp", otp
+                ));
 
         return true;
     }
@@ -325,18 +318,13 @@ public class AuthService {
             );
         }
 
-        RegisterData finalRegisterData = registerData;
-        CompletableFuture.runAsync(() -> {
-            try {
-                mailService.sendRegistrationEmail(
-                        resendVerifyDto.getUsername(),
-                        finalRegisterData.getFirstName() + " " + finalRegisterData.getLastName(),
-                        otp
-                );
-            } catch (MessagingException e) {
-                logger.error("mailService.resendVerify: {}", e.getMessage());
-            }
-        });
+        redisBackgroundJobService.enqueueSendMail(
+                MailKind.VERIFY_RESEND,
+                Map.of(
+                        "recipient", resendVerifyDto.getUsername(),
+                        "name", registerData.getFirstName() + " " + registerData.getLastName(),
+                        "otp", otp
+                ));
 
         return true;
     }
@@ -408,16 +396,12 @@ public class AuthService {
                 passwordExpiration / 1000
         );
 
-        CompletableFuture.runAsync(() -> {
-            try {
-                mailService.sendForgotPasswordEmail(
-                        forgotPasswordDto.getUsername(),
-                        otp
-                );
-            } catch (MessagingException e) {
-                logger.error("mailService.sendForgotPasswordEmail: {}", e.getMessage());
-            }
-        });
+        redisBackgroundJobService.enqueueSendMail(
+                MailKind.FORGOT_PASSWORD,
+                Map.of(
+                        "recipient", forgotPasswordDto.getUsername(),
+                        "otp", otp
+                ));
 
         return true;
     }

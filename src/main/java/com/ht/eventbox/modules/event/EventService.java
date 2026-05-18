@@ -1,7 +1,6 @@
 package com.ht.eventbox.modules.event;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.firebase.messaging.Notification;
 import com.ht.eventbox.config.HttpException;
 import com.ht.eventbox.constant.Constant;
 import com.ht.eventbox.entities.*;
@@ -15,7 +14,7 @@ import com.ht.eventbox.modules.event.dtos.CreateEventDto;
 import com.ht.eventbox.modules.event.dtos.UpdateEventDto;
 import com.ht.eventbox.modules.event.dtos.UpdateEventTagsDto;
 import com.ht.eventbox.modules.keyword.KeywordRepository;
-import com.ht.eventbox.modules.messaging.PushNotificationService;
+import com.ht.eventbox.modules.jobs.RedisBackgroundJobService;
 import com.ht.eventbox.modules.order.CurrencyConverterServiceV2;
 import com.ht.eventbox.modules.order.OrderRepository;
 import com.ht.eventbox.modules.order.PayPalService;
@@ -39,7 +38,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Service
@@ -71,7 +69,7 @@ public class EventService {
     private final KeywordRepository keywordRepository;
     private final AssetRepository assetRepository;
     private final JdbcTemplate jdbcTemplate;
-    private final PushNotificationService pushNotificationService;
+    private final RedisBackgroundJobService redisBackgroundJobService;
     private final PayPalService payPalService;
     private final CurrencyConverterServiceV2 currencyConverterService;
     private final OrderRepository orderRepository;
@@ -419,35 +417,27 @@ public class EventService {
         event.setPublishedAt(LocalDateTime.now());
         eventRepository.save(event);
 
-        // CompletableFuture để chạy task không đồng bộ (không block luồng chính)
-        // Gửi push notification cho tất cả người dùng đã đăng ký tổ chức
-        CompletableFuture.runAsync(() -> {
-            String sql = "SELECT user_id FROM subscriptions WHERE organization_id = ?";
-            List<Long> subscribers = jdbcTemplate.queryForList(sql, Long.class, event.getOrganization().getId());
+        String sql = "SELECT user_id FROM subscriptions WHERE organization_id = ?";
+        List<Long> subscribers = jdbcTemplate.queryForList(sql, Long.class, event.getOrganization().getId());
 
-            try {
-                pushNotificationService.push(
-                        subscribers,
-                        Notification.builder()
-                                .setBody(event.getTitle())
-                                .setTitle("Sự kiện mới từ " + event.getOrganization().getName())
-                                .setImage(event.getAssets().stream()
+        redisBackgroundJobService.enqueueSendPushNotification(
+                new HashMap<>(
+                        Map.of(
+                                "userIds", subscribers.stream()
+                                        .map(String::valueOf)
+                                        .collect(Collectors.joining(",")),
+                                "title", "Sự kiện mới từ " + event.getOrganization().getName(),
+                                "body", event.getTitle(),
+                                "image", event.getAssets().stream()
                                         .filter(asset -> asset.getUsage() == AssetUsage.EVENT_LOGO)
                                         .findFirst()
                                         .map(Asset::getSecureUrl)
-                                        .orElse(null))
-                                .build(),
-                        new HashMap<>(
-                                Map.of(
-                                        "type", "event",
-                                        "event_id", String.valueOf(event.getId())
-                                )
+                                        .orElse(""),
+                                "type", "event",
+                                "event_id", String.valueOf(event.getId())
                         )
-                );
-            } catch (Exception e) {
-                logger.error("Error sending push notification for event {}: {}", eventId, e.getMessage());
-            }
-        });
+                )
+        );
 
         return true;
     }

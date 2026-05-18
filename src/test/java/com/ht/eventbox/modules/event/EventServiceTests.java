@@ -23,7 +23,7 @@ import com.ht.eventbox.modules.event.dtos.CreateEventDto;
 import com.ht.eventbox.modules.event.dtos.UpdateEventDto;
 import com.ht.eventbox.modules.event.dtos.UpdateEventTagsDto;
 import com.ht.eventbox.modules.keyword.KeywordRepository;
-import com.ht.eventbox.modules.messaging.PushNotificationService;
+import com.ht.eventbox.modules.jobs.RedisBackgroundJobService;
 import com.ht.eventbox.modules.order.CurrencyConverterServiceV2;
 import com.ht.eventbox.modules.order.OrderRepository;
 import com.ht.eventbox.modules.order.PayPalService;
@@ -90,7 +90,7 @@ class EventServiceTests {
     private JdbcTemplate jdbcTemplate;
 
     @Mock
-    private PushNotificationService pushNotificationService;
+    private RedisBackgroundJobService redisBackgroundJobService;
 
     @Mock
     private PayPalService payPalService;
@@ -260,6 +260,9 @@ class EventServiceTests {
     void publishByAdmin_shouldPublishPendingEvent() {
         var event = sampleEvent(EventStatus.PENDING);
         when(eventRepository.findById(7L)).thenReturn(Optional.of(event));
+        when(jdbcTemplate.queryForList(anyString(), eq(Long.class), eq(9L))).thenReturn(List.of(42L));
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, String>> payloadCaptor = ArgumentCaptor.forClass(Map.class);
 
         var result = eventService.publishByAdmin(7L);
 
@@ -267,6 +270,13 @@ class EventServiceTests {
         assertThat(event.getStatus()).isEqualTo(EventStatus.PUBLISHED);
         assertThat(event.getPublishedAt()).isNotNull();
         verify(eventRepository).save(event);
+        verify(redisBackgroundJobService).enqueueSendPushNotification(payloadCaptor.capture());
+        assertThat(payloadCaptor.getValue())
+                .containsEntry("userIds", "42")
+                .containsEntry("title", "Sự kiện mới từ Eventbox")
+                .containsEntry("body", "Summer Fest")
+                .containsEntry("type", "event")
+                .containsEntry("event_id", "7");
     }
 
     @Test

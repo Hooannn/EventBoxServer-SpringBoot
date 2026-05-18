@@ -18,10 +18,11 @@ import com.ht.eventbox.entities.UserOrganization;
 import com.ht.eventbox.enums.EventStatus;
 import com.ht.eventbox.enums.OrderStatus;
 import com.ht.eventbox.enums.OrganizationRole;
+import com.ht.eventbox.modules.jobs.MailKind;
+import com.ht.eventbox.modules.jobs.RedisBackgroundJobService;
 import com.ht.eventbox.modules.event.EventRepository;
 import com.ht.eventbox.modules.messaging.PushNotificationService;
 import com.ht.eventbox.modules.ticket.TicketRepository;
-import com.ht.eventbox.modules.mail.MailService;
 import com.ht.eventbox.modules.order.dtos.CreateReservationDto;
 import com.paypal.sdk.http.response.ApiResponse;
 import com.paypal.sdk.models.Money;
@@ -45,6 +46,7 @@ import java.util.ArrayList;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Map;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -97,7 +99,7 @@ class OrderServiceTests {
     private RefundRepository refundRepository;
 
     @Mock
-    private MailService mailService;
+    private RedisBackgroundJobService redisBackgroundJobService;
 
     @Mock
     private PushNotificationService pushNotificationService;
@@ -447,6 +449,10 @@ class OrderServiceTests {
         when(paymentRepository.findByPaypalCaptureId("capture-2")).thenReturn(Optional.of(payment));
         when(payPalService.refundCapture(eq("capture-2"), anyString()))
                 .thenReturn(new ApiResponse<>(200, null, sampleRefund()));
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, String>> payloadCaptor = ArgumentCaptor.forClass(Map.class);
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, String>> pushPayloadCaptor = ArgumentCaptor.forClass(Map.class);
 
         orderService.refund(order, "capture-2");
 
@@ -457,6 +463,46 @@ class OrderServiceTests {
                         && "capture-2".equals(refund.getPayment().getPaypalCaptureId())
                         && "REF-123".equals(refund.getPayerMerchantId())
                         && "payer@example.com".equals(refund.getPayerEmail())));
+        verify(redisBackgroundJobService).enqueueSendMail(eq(MailKind.ORDER_REFUNDED), payloadCaptor.capture());
+        verify(redisBackgroundJobService).enqueueSendPushNotification(pushPayloadCaptor.capture());
+        assertThat(payloadCaptor.getValue())
+                .containsEntry("recipient", "user@example.com")
+                .containsEntry("name", "Test User")
+                .containsEntry("orderId", "500");
+        assertThat(payloadCaptor.getValue().get("amount")).isNotBlank();
+        assertThat(payloadCaptor.getValue().get("timestamp")).isNotBlank();
+        assertThat(pushPayloadCaptor.getValue())
+                .containsEntry("userIds", "42")
+                .containsEntry("title", "Đơn hàng #500 đã được hoàn tiền thành công")
+                .containsEntry("body", "Có lỗi xảy ra trong quá trình xử lý đơn hàng. Số tiền của bạn đã được hoàn lại. Vui lòng kiểm tra email để biết thêm chi tiết.")
+                .containsEntry("type", "order")
+                .containsEntry("order_id", "500");
+    }
+
+    @Test
+    void onOrderFulfilled_shouldEnqueuePaidMailJob() {
+        var order = sampleOrder();
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, String>> payloadCaptor = ArgumentCaptor.forClass(Map.class);
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, String>> pushPayloadCaptor = ArgumentCaptor.forClass(Map.class);
+
+        orderService.onOrderFulfilled(order);
+
+        verify(redisBackgroundJobService).enqueueSendMail(eq(MailKind.ORDER_PAID), payloadCaptor.capture());
+        verify(redisBackgroundJobService).enqueueSendPushNotification(pushPayloadCaptor.capture());
+        assertThat(payloadCaptor.getValue())
+                .containsEntry("recipient", "user@example.com")
+                .containsEntry("name", "Test User")
+                .containsEntry("orderId", "500");
+        assertThat(payloadCaptor.getValue().get("amount")).isNotBlank();
+        assertThat(payloadCaptor.getValue().get("timestamp")).isNotBlank();
+        assertThat(pushPayloadCaptor.getValue())
+                .containsEntry("userIds", "42")
+                .containsEntry("title", "Đơn hàng #500 đã được thanh toán thành công")
+                .containsEntry("body", "Cảm ơn bạn đã đặt hàng tại EventBox. Đơn hàng của bạn đã được thanh toán thành công.")
+                .containsEntry("type", "order")
+                .containsEntry("order_id", "500");
     }
 
     @Test

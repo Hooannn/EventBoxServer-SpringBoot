@@ -15,7 +15,8 @@ import com.ht.eventbox.modules.auth.dtos.RegisterDto;
 import com.ht.eventbox.modules.auth.dtos.ResendVerifyDto;
 import com.ht.eventbox.modules.auth.dtos.ResetPasswordDto;
 import com.ht.eventbox.modules.auth.dtos.VerifyDto;
-import com.ht.eventbox.modules.mail.MailService;
+import com.ht.eventbox.modules.jobs.MailKind;
+import com.ht.eventbox.modules.jobs.RedisBackgroundJobService;
 import com.ht.eventbox.modules.redis.RedisService;
 import com.ht.eventbox.modules.user.FCMTokenRepository;
 import com.ht.eventbox.modules.user.RoleRepository;
@@ -31,6 +32,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -41,13 +43,12 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.timeout;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTests {
 
     @Mock
-    private MailService mailService;
+    private RedisBackgroundJobService redisBackgroundJobService;
 
     @Mock
     private UserRepository userRepository;
@@ -122,6 +123,8 @@ class AuthServiceTests {
         when(passwordEncoder.encode(anyString())).thenReturn("hashed-otp", "hashed-password");
 
         var captor = ArgumentCaptor.forClass(AuthService.RegisterData.class);
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, String>> payloadCaptor = ArgumentCaptor.forClass(Map.class);
 
         boolean result = authService.register(RegisterDto.builder()
                 .username("new@example.com")
@@ -136,7 +139,11 @@ class AuthServiceTests {
         assertThat(captor.getValue().getLastName()).isEqualTo("User");
         assertThat(captor.getValue().getPassword()).isEqualTo("hashed-password");
         assertThat(captor.getValue().getOtp()).isEqualTo("hashed-otp");
-        verify(mailService, timeout(1000)).sendRegistrationEmail(eq("new@example.com"), eq("Test User"), anyString());
+        verify(redisBackgroundJobService).enqueueSendMail(eq(MailKind.REGISTRATION), payloadCaptor.capture());
+        assertThat(payloadCaptor.getValue())
+                .containsEntry("recipient", "new@example.com")
+                .containsEntry("name", "Test User");
+        assertThat(payloadCaptor.getValue().get("otp")).isNotBlank();
     }
 
     @Test
@@ -227,6 +234,8 @@ class AuthServiceTests {
                 .password("hashed-password")
                 .otp("old-hashed-otp")
                 .build();
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, String>> payloadCaptor = ArgumentCaptor.forClass(Map.class);
 
         when(userRepository.existsByEmail("user@example.com")).thenReturn(false);
         when(redisService.getObject("register:username:user@example.com", AuthService.RegisterData.class))
@@ -239,13 +248,19 @@ class AuthServiceTests {
 
         assertThat(result).isTrue();
         verify(redisService).setObject(eq("register:username:user@example.com"), any(AuthService.RegisterData.class), eq(3600L));
-        verify(mailService, timeout(1000)).sendRegistrationEmail(eq("user@example.com"), eq("Test User"), anyString());
+        verify(redisBackgroundJobService).enqueueSendMail(eq(MailKind.VERIFY_RESEND), payloadCaptor.capture());
+        assertThat(payloadCaptor.getValue())
+                .containsEntry("recipient", "user@example.com")
+                .containsEntry("name", "Test User");
+        assertThat(payloadCaptor.getValue().get("otp")).isNotBlank();
     }
 
     @Test
     void forgotPassword_shouldStoreOtpAndSendEmail() throws Exception {
         when(userRepository.existsByEmail("user@example.com")).thenReturn(true);
         when(passwordEncoder.encode(anyString())).thenReturn("hashed-otp");
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, String>> payloadCaptor = ArgumentCaptor.forClass(Map.class);
 
         boolean result = authService.forgotPassword(ForgotPasswordDto.builder()
                 .username("user@example.com")
@@ -253,7 +268,10 @@ class AuthServiceTests {
 
         assertThat(result).isTrue();
         verify(redisService).setValue("reset_password_otp:username:user@example.com", "hashed-otp", 3600L);
-        verify(mailService, timeout(1000)).sendForgotPasswordEmail(eq("user@example.com"), anyString());
+        verify(redisBackgroundJobService).enqueueSendMail(eq(MailKind.FORGOT_PASSWORD), payloadCaptor.capture());
+        assertThat(payloadCaptor.getValue())
+                .containsEntry("recipient", "user@example.com");
+        assertThat(payloadCaptor.getValue().get("otp")).isNotBlank();
     }
 
     @Test
