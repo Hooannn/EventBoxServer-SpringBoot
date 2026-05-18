@@ -28,18 +28,21 @@ Each job contains:
 - `correlationId` when a request needs traceability across logs
 
 Suggested job types:
-- `SEND_REGISTRATION_EMAIL`
-- `SEND_VERIFY_EMAIL`
-- `SEND_FORGOT_PASSWORD_EMAIL`
-- `SEND_MEMBER_ADDED_EMAIL`
-- `SEND_MEMBER_REMOVED_EMAIL`
-- `SEND_ORDER_REFUNDED_EMAIL`
-- `SEND_ORDER_PAID_EMAIL`
-- `SEND_GIVEAWAY_NOTIFICATION_EMAIL`
-- `SEND_REMINDER_EMAIL`
+- `SEND_MAIL`
 - `SEND_PUSH_NOTIFICATION`
 
 Payloads should be small and serializable. Prefer IDs and immutable fields that the worker can use to reconstruct the message, instead of embedding full entity graphs.
+
+For `SEND_MAIL`, include a `mailKind` or `templateKey` field in the payload to distinguish the concrete email template, such as:
+- `REGISTRATION`
+- `VERIFY_RESEND`
+- `FORGOT_PASSWORD`
+- `MEMBER_ADDED`
+- `MEMBER_REMOVED`
+- `ORDER_REFUNDED`
+- `ORDER_PAID`
+- `GIVEAWAY_NOTIFICATION`
+- `REMINDER`
 
 ## Redis Structures
 
@@ -111,7 +114,7 @@ Phase 1: Introduce the queue abstraction
 - Add retry and dead-letter handling.
 
 Phase 2: Migrate all email jobs
-- Replace every `CompletableFuture.runAsync(...)` email call in production code.
+- Replace every `CompletableFuture.runAsync(...)` email call in production code with `SEND_MAIL` jobs.
 - Keep the old code path only until the worker is verified.
 
 Phase 3: Migrate all other production `CompletableFuture` side effects
