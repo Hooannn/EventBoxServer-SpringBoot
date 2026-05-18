@@ -8,7 +8,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
-@Testcontainers
+@Testcontainers(disabledWithoutDocker = true)
 @ExtendWith(org.springframework.test.context.junit.jupiter.SpringExtension.class)
 public abstract class RedisTestSupport {
     @Container
