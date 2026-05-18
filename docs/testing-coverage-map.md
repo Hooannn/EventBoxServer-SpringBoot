@@ -2,10 +2,44 @@
 
 This document tracks the current test coverage in the repository, grouped by module.
 
+## Jobs
+
+Current test files:
+
+- [src/test/java/com/ht/eventbox/modules/jobs/RedisBackgroundJobServiceTests.java](/Users/nguyenduckhaihoan/Working/backend/EventboxServer-SpringBoot-s0ngnguyen/src/test/java/com/ht/eventbox/modules/jobs/RedisBackgroundJobServiceTests.java)
+- [src/test/java/com/ht/eventbox/modules/jobs/RedisBackgroundJobWorkerTests.java](/Users/nguyenduckhaihoan/Working/backend/EventboxServer-SpringBoot-s0ngnguyen/src/test/java/com/ht/eventbox/modules/jobs/RedisBackgroundJobWorkerTests.java)
+- [src/test/java/com/ht/eventbox/modules/jobs/RedisBackgroundJobIntegrationTests.java](/Users/nguyenduckhaihoan/Working/backend/EventboxServer-SpringBoot-s0ngnguyen/src/test/java/com/ht/eventbox/modules/jobs/RedisBackgroundJobIntegrationTests.java)
+
+Current coverage:
+
+- `enqueueSendMail` writes a `SEND_MAIL` envelope to the Redis Stream and persists job metadata
+- `enqueueSendPushNotification` writes a `SEND_PUSH_NOTIFICATION` envelope to the Redis Stream
+- worker dispatch routes `SEND_MAIL` to the mail handler and `SEND_PUSH_NOTIFICATION` to the push handler
+- retry handling covers transient failures and dead-letter behavior
+- integration tests cover stream acknowledgement and retry storage when Docker is available
+
+Current gaps:
+
+- No admin-facing job inspection endpoint exists yet
+- No manual replay or requeue tooling exists yet
+
+Last verified command:
+
+```bash
+./mvnw -Dtest=RedisBackgroundJobServiceTests,RedisBackgroundJobWorkerTests,RedisBackgroundJobIntegrationTests test
+```
+
+Result:
+
+- `0` failures
+- `0` errors
+- `2` skipped when Docker was unavailable
+
 ## Auth
 
 Current test file:
 
+- [src/test/java/com/ht/eventbox/modules/auth/AuthServiceTests.java](/Users/nguyenduckhaihoan/Working/backend/EventboxServer-SpringBoot-s0ngnguyen/src/test/java/com/ht/eventbox/modules/auth/AuthServiceTests.java)
 - [src/test/java/com/ht/eventbox/modules/auth/AuthControllerTests.java](/Users/nguyenduckhaihoan/Working/backend/EventboxServer-SpringBoot-s0ngnguyen/src/test/java/com/ht/eventbox/modules/auth/AuthControllerTests.java)
 
 Current controller coverage:
@@ -16,7 +50,7 @@ Current controller coverage:
 
 Current gaps:
 
-- No auth service test file is present in the current tree
+- No explicit controller test yet for Google authentication success/failure branches
 - No auth validation-failure controller cases are covered yet
 
 ## Order
@@ -39,7 +73,8 @@ Current service coverage:
 - `processPayment` approves and fulfills an active order
 - `processPayment` refunds an expired order
 - `refund` stores a missed-refund audit when PayPal does not return success
-- `refund` persists full refund details and triggers notifications
+- `refund` persists full refund details and enqueues mail and push jobs
+- `onOrderFulfilled` enqueues mail and push jobs
 - `getByShowId` returns orders for an authorized manager
 - `getByShowId` rejects a missing event
 
@@ -92,7 +127,7 @@ Current coverage:
 - `search` covers province and non-province branches
 - `create` persists a pending event with shows, categories, keywords, and assets
 - `update` rejects non-pending events and persists updated metadata for pending events
-- `publishByAdmin` publishes pending events
+- `publishByAdmin` publishes pending events and enqueues a push job for subscribers
 - `archiveByAdmin` archives pending events
 - `archive`, `inactive`, and `active` enforce ownership and status guards
 - `updateTags` rejects non-published events
@@ -185,10 +220,11 @@ Current coverage:
 - `getTicketItemById` returns a projection and rejects missing items
 - `getTicketItemQrCode` covers before-start, after-end, and success branches
 - `validateTicketItem` covers invalid token, non-member, and success paths
-- `createTicketItemTrace` persists traces through the validation flow
+- `createTicketItemTrace` persists traces through the validation flow and emits socket updates directly
 - `getTicketItemByShowId` rejects unauthorized users
 - `createTicketItemFeedback` rejects unused tickets and persists valid feedback
 - `giveawayTicketItem` controller wiring is covered and the service pass includes the self-gift, already-used, ended, and reminder-related safety branches
+- `remindUpcomingEvents` enqueues reminder mail jobs and keeps push delivery inside the service path
 - `triggerReminder` covers the mail-failure return path
 - `getLatestTicketItemFeedbackByOrganizationId` rejects missing organizations
 - `getTicketItemFeedbackByEventId` rejects non-members
