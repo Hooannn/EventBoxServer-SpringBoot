@@ -1,20 +1,18 @@
 package com.ht.eventbox.modules.order;
 
-import com.corundumstudio.socketio.SocketIOServer;
-import com.google.firebase.messaging.Notification;
 import com.ht.eventbox.config.HttpException;
 import com.ht.eventbox.constant.Constant;
 import com.ht.eventbox.entities.*;
 import com.ht.eventbox.enums.DiscountType;
 import com.ht.eventbox.enums.OrderStatus;
 import com.ht.eventbox.enums.OrganizationRole;
+import com.ht.eventbox.modules.backgroundjobs.MailJobService;
+import com.ht.eventbox.modules.backgroundjobs.NotificationJobService;
+import com.ht.eventbox.modules.backgroundjobs.SocketJobService;
 import com.ht.eventbox.modules.event.EventRepository;
-import com.ht.eventbox.modules.mail.MailService;
-import com.ht.eventbox.modules.messaging.PushNotificationService;
 import com.ht.eventbox.modules.order.dtos.CreatePaymentDto;
 import com.ht.eventbox.modules.order.dtos.CreateReservationDto;
 import com.ht.eventbox.modules.ticket.TicketRepository;
-import com.ht.eventbox.utils.Helper;
 import com.paypal.sdk.exceptions.ApiException;
 import com.paypal.sdk.http.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
@@ -26,10 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.IntStream;
 
 @Service
@@ -47,9 +42,9 @@ public class OrderService {
     private final PayPalService payPalService;
     private final TicketItemRepository ticketItemRepository;
     private final RefundRepository refundRepository;
-    private final MailService mailService;
-    private final PushNotificationService pushNotificationService;
-    private final SocketIOServer socketIOServer;
+    private final MailJobService mailJobService;
+    private final NotificationJobService notificationJobService;
+    private final SocketJobService socketJobService;
 
     public Order save(Order order) {
         return orderRepository.save(order);
@@ -63,11 +58,7 @@ public class OrderService {
     }
 
     public void onStockUpdated(long eventId) {
-        CompletableFuture.runAsync(() -> {
-            socketIOServer.getNamespace("/event")
-                    .getRoomOperations(String.valueOf(eventId))
-                    .sendEvent("stock_updated", Map.of());
-        });
+        socketJobService.enqueueStockUpdated(eventId);
     }
 
     @Transactional
@@ -160,11 +151,7 @@ public class OrderService {
                 LocalDateTime.now());
 
         if (count > 0) {
-            CompletableFuture.runAsync(() -> {
-                socketIOServer.getNamespace("/event")
-                        .getBroadcastOperations()
-                        .sendEvent("stock_updated", Map.of());
-            });
+            socketJobService.enqueueStockUpdated();
         }
 
         return count > 0;
@@ -175,11 +162,7 @@ public class OrderService {
         var count = orderRepository.deleteAllByUserIdAndStatusIs(userId, OrderStatus.WAITING_FOR_PAYMENT);
 
         if (count > 0) {
-            CompletableFuture.runAsync(() -> {
-                socketIOServer.getNamespace("/event")
-                        .getBroadcastOperations()
-                        .sendEvent("stock_updated", Map.of());
-            });
+            socketJobService.enqueueStockUpdated();
         }
 
         return count > 0;
@@ -415,98 +398,19 @@ public class OrderService {
     }
 
     public void onOrderRefunded(Order order) {
-        CompletableFuture.runAsync(() -> {
-            try {
-                mailService.sendOrderRefundedMail(
-                        order.getUser().getEmail(),
-                        order.getUser().getFullName(),
-                        order.getId().toString(),
-                        Helper.formatCurrencyToString(order.getPlaceTotal()),
-                        Helper.formatDateToString(LocalDateTime.now()));
-            } catch (Exception e) {
-                logger.error("Có lỗi xảy ra khi gửi mail: {}", e.getMessage());
-            }
-        });
-
-        CompletableFuture.runAsync(() -> {
-            socketIOServer.getNamespace("/order")
-                    .getRoomOperations(order.getId().toString())
-                    .sendEvent("order_refunded", Map.of(
-                            "order_id", order.getId(),
-                            "status", order.getStatus(),
-                            "place_total", order.getPlaceTotal()));
-        });
-
-        CompletableFuture.runAsync(() -> {
-            try {
-                pushNotificationService.push(
-                        order.getUser().getId(),
-                        Notification.builder()
-                                .setBody(
-                                        "Có lỗi xảy ra trong quá trình xử lý đơn hàng. Số tiền của bạn đã được hoàn lại. Vui lòng kiểm tra email để biết thêm chi tiết.")
-                                .setTitle("Đơn hàng #" + order.getId() + " đã được hoàn tiền thành công")
-                                .build(),
-                        new HashMap<>(
-                                Map.of(
-                                        "type", "order",
-                                        "order_id", String.valueOf(order.getId()))));
-            } catch (Exception e) {
-                logger.error("Error sending push notification for order {}: {}", order.getId(), e.getMessage());
-            }
-        });
+        mailJobService.enqueueOrderRefundedEmail(order.getId());
+        socketJobService.enqueueOrderRefunded(order.getId());
+        notificationJobService.enqueueOrderRefunded(order.getId());
     }
 
     public void onOrderApproved(Order order) {
-        CompletableFuture.runAsync(() -> {
-            socketIOServer.getNamespace("/order")
-                    .getRoomOperations(order.getId().toString())
-                    .sendEvent("order_approved", Map.of(
-                            "order_id", order.getId(),
-                            "status", order.getStatus(),
-                            "place_total", order.getPlaceTotal()));
-        });
+        socketJobService.enqueueOrderApproved(order.getId());
     }
 
     public void onOrderFulfilled(Order order) {
-        CompletableFuture.runAsync(() -> {
-            try {
-                mailService.sendOrderPaidMail(
-                        order.getUser().getEmail(),
-                        order.getUser().getFullName(),
-                        order.getId().toString(),
-                        Helper.formatCurrencyToString(order.getPlaceTotal()),
-                        Helper.formatDateToString(LocalDateTime.now()));
-            } catch (Exception e) {
-                logger.error("Có lỗi xảy ra khi gửi mail: {}", e.getMessage());
-            }
-        });
-
-        CompletableFuture.runAsync(() -> {
-            try {
-                pushNotificationService.push(
-                        order.getUser().getId(),
-                        Notification.builder()
-                                .setBody(
-                                        "Cảm ơn bạn đã đặt hàng tại EventBox. Đơn hàng của bạn đã được thanh toán thành công.")
-                                .setTitle("Đơn hàng #" + order.getId() + " đã được thanh toán thành công")
-                                .build(),
-                        new HashMap<>(
-                                Map.of(
-                                        "type", "order",
-                                        "order_id", String.valueOf(order.getId()))));
-            } catch (Exception e) {
-                logger.error("Error sending push notification for order {}: {}", order.getId(), e.getMessage());
-            }
-        });
-
-        CompletableFuture.runAsync(() -> {
-            socketIOServer.getNamespace("/order")
-                    .getRoomOperations(order.getId().toString())
-                    .sendEvent("order_fulfilled", Map.of(
-                            "order_id", order.getId(),
-                            "status", order.getStatus(),
-                            "place_total", order.getPlaceTotal()));
-        });
+        mailJobService.enqueueOrderPaidEmail(order.getId());
+        notificationJobService.enqueueOrderFulfilled(order.getId());
+        socketJobService.enqueueOrderFulfilled(order.getId());
     }
 
     public List<Order> getByShowId(Long userId, Long showId, LocalDateTime from, LocalDateTime to) {

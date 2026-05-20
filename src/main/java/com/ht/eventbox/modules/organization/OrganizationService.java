@@ -7,14 +7,13 @@ import com.ht.eventbox.entities.*;
 import com.ht.eventbox.enums.AssetUsage;
 import com.ht.eventbox.enums.EventStatus;
 import com.ht.eventbox.enums.OrganizationRole;
+import com.ht.eventbox.modules.backgroundjobs.MailJobService;
 import com.ht.eventbox.modules.asset.AssetRepository;
 import com.ht.eventbox.modules.event.EventRepository;
-import com.ht.eventbox.modules.mail.MailService;
 import com.ht.eventbox.modules.organization.dtos.*;
 import com.ht.eventbox.modules.storage.CloudinaryService;
 import com.ht.eventbox.modules.user.UserRepository;
 import com.ht.eventbox.utils.Helper;
-import jakarta.mail.MessagingException;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -25,7 +24,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 
 @Service
 @RequiredArgsConstructor
@@ -47,7 +45,7 @@ public class OrganizationService {
     private final CloudinaryService cloudinaryService;
     private final AssetRepository assetRepository;
     private final UserRepository userRepository;
-    private final MailService mailService;
+    private final MailJobService mailJobService;
     private final EventRepository eventRepository;
     private final JdbcTemplate jdbcTemplate;
 
@@ -259,17 +257,10 @@ public class OrganizationService {
         org.getUserOrganizations().add(newUserOrg);
         organizationRepository.save(org);
 
-        CompletableFuture.runAsync(() -> {
-            try {
-                mailService.sendMemberAddedEmail(
-                        user.getEmail(),
-                        user.getFullName(),
-                        org.getName()
-                );
-            } catch (MessagingException e) {
-                logger.error("mailService.sendRegistrationEmail: {}", e.getMessage());
-            }
-        });
+        mailJobService.enqueueMemberAddedEmail(
+                user.getEmail(),
+                user.getFullName(),
+                org.getName());
 
         return true;
     }
@@ -312,17 +303,10 @@ public class OrganizationService {
         org.getUserOrganizations().remove(userOrg.get());
         organizationRepository.save(org);
 
-        CompletableFuture.runAsync(() -> {
-            try {
-                mailService.sendMemberRemovedEmail(
-                        userOrg.get().getUser().getEmail(),
-                        userOrg.get().getUser().getFullName(),
-                        org.getName()
-                );
-            } catch (MessagingException e) {
-                logger.error("mailService.sendMemberRemovedEmail: {}", e.getMessage());
-            }
-        });
+        mailJobService.enqueueMemberRemovedEmail(
+                userOrg.get().getUser().getEmail(),
+                userOrg.get().getUser().getFullName(),
+                org.getName());
 
         return true;
     }

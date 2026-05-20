@@ -1,6 +1,5 @@
 package com.ht.eventbox.modules.ticket;
 
-import com.corundumstudio.socketio.SocketIOServer;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.firebase.messaging.Notification;
 import com.ht.eventbox.config.HttpException;
@@ -8,6 +7,8 @@ import com.ht.eventbox.constant.Constant;
 import com.ht.eventbox.entities.*;
 import com.ht.eventbox.enums.*;
 import com.ht.eventbox.filter.JwtService;
+import com.ht.eventbox.modules.backgroundjobs.MailJobService;
+import com.ht.eventbox.modules.backgroundjobs.SocketJobService;
 import com.ht.eventbox.modules.auth.AuthService;
 import com.ht.eventbox.modules.event.EventRepository;
 import com.ht.eventbox.modules.event.EventService;
@@ -33,7 +34,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 
 @Service
 @RequiredArgsConstructor
@@ -159,10 +159,11 @@ public class TicketService {
     private final JwtService jwtService;
     private final OrganizationRepository organizationRepository;
     private final TicketItemTraceRepository ticketItemTraceRepository;
-    private final SocketIOServer socketIOServer;
     private final MailService mailService;
     private final SentimentAnalystService sentimentAnalystService;
     private final PushNotificationService pushNotificationService;
+    private final MailJobService mailJobService;
+    private final SocketJobService socketJobService;
 
     public List<TicketItemDetails> getTicketItemsByUserIdAndOrderStatusIs(Long userId, OrderStatus status) {
         return ticketItemRepository.findAllByOrderUserIdAndOrderStatusIsOrderByIdAsc(
@@ -302,21 +303,9 @@ public class TicketService {
 
         ticketItemTraceRepository.save(trace);
 
-        // gửi sự kiện đến client qua socketio để cập nhật trạng thái vé
-        CompletableFuture.runAsync(() -> {
-            socketIOServer.getNamespace("/ticket")
-                    .getRoomOperations(ticketItem.getId().toString())
-                    .sendEvent("traces_updated", Map.of(
-                            "ticket_item_id", ticketItem.getId()));
-        });
-
-        // gửi sự kiện đến client qua socketio để cập nhật dashboard
-        CompletableFuture.runAsync(() -> {
-            socketIOServer.getNamespace("/event")
-                    .getRoomOperations(ticketItem.getTicket().getEventShow().getEvent().getId().toString())
-                    .sendEvent("traces_updated", Map.of(
-                            "ticket_item_id", ticketItem.getId()));
-        });
+        socketJobService.enqueueTicketTracesUpdated(
+                ticketItem.getId(),
+                ticketItem.getTicket().getEventShow().getEvent().getId());
 
         return true;
     }
@@ -546,19 +535,9 @@ public class TicketService {
         }
         ticketItemRepository.save(ticketItem);
 
-        // gửi email thông báo tặng vé thành công
-        CompletableFuture.runAsync(() -> {
-            try {
-                mailService.sendGiveawayNotificationEmail(
-                        recipient.getEmail(),
-                        ticketItem.getTicket().getEventShow().getEvent(),
-                        ticketItem.getTicket().getEventShow(),
-                        fromEmail);
-            } catch (MessagingException e) {
-                logger.error("Error when send giveaway notification email to userId {}: {}", recipient.getId(),
-                        e.getMessage());
-            }
-        });
+        mailJobService.enqueueGiveawayNotificationEmail(
+                ticketItem.getId(),
+                fromEmail);
 
         return true;
     }
