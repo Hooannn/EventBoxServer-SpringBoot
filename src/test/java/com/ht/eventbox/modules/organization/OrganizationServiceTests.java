@@ -12,8 +12,8 @@ import com.ht.eventbox.enums.AssetUsage;
 import com.ht.eventbox.enums.EventStatus;
 import com.ht.eventbox.enums.OrganizationRole;
 import com.ht.eventbox.modules.asset.AssetRepository;
+import com.ht.eventbox.modules.backgroundjobs.MailJobService;
 import com.ht.eventbox.modules.event.EventRepository;
-import com.ht.eventbox.modules.mail.MailService;
 import com.ht.eventbox.modules.organization.dtos.AddMemberDto;
 import com.ht.eventbox.modules.organization.dtos.CreateOrganizationDto;
 import com.ht.eventbox.modules.organization.dtos.RemoveMemberDto;
@@ -44,7 +44,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -65,7 +64,7 @@ class OrganizationServiceTests {
     private UserRepository userRepository;
 
     @Mock
-    private MailService mailService;
+    private MailJobService mailJobService;
 
     @Mock
     private EventRepository eventRepository;
@@ -271,7 +270,7 @@ class OrganizationServiceTests {
         assertThat(result).isTrue();
         verify(organizationRepository).save(org);
 
-        verify(mailService, timeout(500)).sendMemberAddedEmail("new@example.com", "New User", "Eventbox");
+        verify(mailJobService).enqueueMemberAddedEmail("new@example.com", "New User", "Eventbox");
     }
 
     @Test
@@ -336,7 +335,7 @@ class OrganizationServiceTests {
 
         assertThat(result).isTrue();
         verify(organizationRepository).save(org);
-        verify(mailService, timeout(500)).sendMemberRemovedEmail("member@example.com", "Member User", "Eventbox");
+        verify(mailJobService).enqueueMemberRemovedEmail("member@example.com", "Member User", "Eventbox");
     }
 
     @Test

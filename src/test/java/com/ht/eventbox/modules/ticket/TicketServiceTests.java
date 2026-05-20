@@ -1,6 +1,5 @@
 package com.ht.eventbox.modules.ticket;
 
-import com.corundumstudio.socketio.SocketIOServer;
 import com.ht.eventbox.config.HttpException;
 import com.ht.eventbox.constant.Constant;
 import com.ht.eventbox.entities.Asset;
@@ -19,6 +18,8 @@ import com.ht.eventbox.enums.OrderStatus;
 import com.ht.eventbox.enums.OrganizationRole;
 import com.ht.eventbox.enums.TicketItemTraceEvent;
 import com.ht.eventbox.filter.JwtService;
+import com.ht.eventbox.modules.backgroundjobs.MailJobService;
+import com.ht.eventbox.modules.backgroundjobs.SocketJobService;
 import com.ht.eventbox.modules.auth.AuthService;
 import com.ht.eventbox.modules.event.EventRepository;
 import com.ht.eventbox.modules.event.EventService;
@@ -94,9 +95,6 @@ class TicketServiceTests {
     private TicketItemTraceRepository ticketItemTraceRepository;
 
     @Mock
-    private SocketIOServer socketIOServer;
-
-    @Mock
     private MailService mailService;
 
     @Mock
@@ -104,6 +102,12 @@ class TicketServiceTests {
 
     @Mock
     private PushNotificationService pushNotificationService;
+
+    @Mock
+    private MailJobService mailJobService;
+
+    @Mock
+    private SocketJobService socketJobService;
 
     @InjectMocks
     private TicketService ticketService;
@@ -248,6 +252,7 @@ class TicketServiceTests {
 
         assertThat(result).isTrue();
         verify(ticketItemTraceRepository).save(any(TicketItemTrace.class));
+        verify(socketJobService).enqueueTicketTracesUpdated(anyLong(), anyLong());
     }
 
     @Test
@@ -296,7 +301,7 @@ class TicketServiceTests {
 
     @Test
     void giveawayTicketItem_shouldRejectSelfGift() {
-        var item = sampleFulfilledTicketItemEntity(88L, 42L, 1);
+        var item = sampleFulfilledTicketItemEntity(88L, 42L, 0);
         when(ticketItemRepository.findByIdAndOrderUserIdAndOrderStatusIs(88L, 42L, OrderStatus.FULFILLED, TicketItem.class))
                 .thenReturn(Optional.of(item));
 
@@ -307,6 +312,21 @@ class TicketServiceTests {
                     assertThat(ex.getMessage()).isEqualTo(Constant.ErrorCode.NOT_ALLOWED_OPERATION);
                     assertThat(ex.getStatus().value()).isEqualTo(400);
                 });
+    }
+
+    @Test
+    void giveawayTicketItem_shouldQueueNotificationEmail() {
+        var item = sampleFulfilledTicketItemEntity(88L, 42L, 0);
+        var recipient = User.builder().id(77L).email("recipient@example.com").firstName("Recipient").lastName("User").build();
+        when(ticketItemRepository.findByIdAndOrderUserIdAndOrderStatusIs(88L, 42L, OrderStatus.FULFILLED, TicketItem.class))
+                .thenReturn(Optional.of(item));
+        when(userService.getByEmail("recipient@example.com")).thenReturn(recipient);
+        when(authService.isPasswordMatch(42L, "secret")).thenReturn(true);
+
+        var result = ticketService.giveawayTicketItem(42L, 88L, sampleGiveawayDto("recipient@example.com"));
+
+        assertThat(result).isTrue();
+        verify(mailJobService).enqueueGiveawayNotificationEmail(eq(88L), eq("owner@example.com"));
     }
 
     @Test
@@ -443,6 +463,7 @@ class TicketServiceTests {
                 .order(Order.builder()
                         .id(1L)
                         .user(User.builder().id(42L).email("owner@example.com").firstName("Owner").lastName("User").build())
+                        .items(new ArrayList<>(List.of(TicketItem.builder().id(89L).build())))
                         .build())
                 .traces(new ArrayList<>())
                 .build();

@@ -17,13 +17,13 @@ import com.ht.eventbox.enums.AssetUsage;
 import com.ht.eventbox.enums.EventStatus;
 import com.ht.eventbox.enums.OrderStatus;
 import com.ht.eventbox.enums.OrganizationRole;
+import com.ht.eventbox.modules.backgroundjobs.NotificationJobService;
 import com.ht.eventbox.modules.asset.AssetRepository;
 import com.ht.eventbox.modules.category.CategoryRepository;
 import com.ht.eventbox.modules.event.dtos.CreateEventDto;
 import com.ht.eventbox.modules.event.dtos.UpdateEventDto;
 import com.ht.eventbox.modules.event.dtos.UpdateEventTagsDto;
 import com.ht.eventbox.modules.keyword.KeywordRepository;
-import com.ht.eventbox.modules.messaging.PushNotificationService;
 import com.ht.eventbox.modules.order.CurrencyConverterServiceV2;
 import com.ht.eventbox.modules.order.OrderRepository;
 import com.ht.eventbox.modules.order.PayPalService;
@@ -38,7 +38,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -87,10 +86,7 @@ class EventServiceTests {
     private AssetRepository assetRepository;
 
     @Mock
-    private JdbcTemplate jdbcTemplate;
-
-    @Mock
-    private PushNotificationService pushNotificationService;
+    private NotificationJobService notificationJobService;
 
     @Mock
     private PayPalService payPalService;
@@ -267,6 +263,7 @@ class EventServiceTests {
         assertThat(event.getStatus()).isEqualTo(EventStatus.PUBLISHED);
         assertThat(event.getPublishedAt()).isNotNull();
         verify(eventRepository).save(event);
+        verify(notificationJobService).enqueueEventPublished(7L);
     }
 
     @Test

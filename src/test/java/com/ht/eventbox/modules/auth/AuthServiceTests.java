@@ -15,7 +15,7 @@ import com.ht.eventbox.modules.auth.dtos.RegisterDto;
 import com.ht.eventbox.modules.auth.dtos.ResendVerifyDto;
 import com.ht.eventbox.modules.auth.dtos.ResetPasswordDto;
 import com.ht.eventbox.modules.auth.dtos.VerifyDto;
-import com.ht.eventbox.modules.mail.MailService;
+import com.ht.eventbox.modules.backgroundjobs.MailJobService;
 import com.ht.eventbox.modules.redis.RedisService;
 import com.ht.eventbox.modules.user.FCMTokenRepository;
 import com.ht.eventbox.modules.user.RoleRepository;
@@ -41,13 +41,12 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.timeout;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTests {
 
     @Mock
-    private MailService mailService;
+    private MailJobService mailJobService;
 
     @Mock
     private UserRepository userRepository;
@@ -136,7 +135,7 @@ class AuthServiceTests {
         assertThat(captor.getValue().getLastName()).isEqualTo("User");
         assertThat(captor.getValue().getPassword()).isEqualTo("hashed-password");
         assertThat(captor.getValue().getOtp()).isEqualTo("hashed-otp");
-        verify(mailService, timeout(1000)).sendRegistrationEmail(eq("new@example.com"), eq("Test User"), anyString());
+        verify(mailJobService).enqueueRegistrationEmail(eq("new@example.com"), eq("Test User"), anyString());
     }
 
     @Test
@@ -239,7 +238,7 @@ class AuthServiceTests {
 
         assertThat(result).isTrue();
         verify(redisService).setObject(eq("register:username:user@example.com"), any(AuthService.RegisterData.class), eq(3600L));
-        verify(mailService, timeout(1000)).sendRegistrationEmail(eq("user@example.com"), eq("Test User"), anyString());
+        verify(mailJobService).enqueueResendVerifyEmail(eq("user@example.com"), eq("Test User"), anyString());
     }
 
     @Test
@@ -253,7 +252,7 @@ class AuthServiceTests {
 
         assertThat(result).isTrue();
         verify(redisService).setValue("reset_password_otp:username:user@example.com", "hashed-otp", 3600L);
-        verify(mailService, timeout(1000)).sendForgotPasswordEmail(eq("user@example.com"), anyString());
+        verify(mailJobService).enqueueForgotPasswordEmail(eq("user@example.com"), anyString());
     }
 
     @Test

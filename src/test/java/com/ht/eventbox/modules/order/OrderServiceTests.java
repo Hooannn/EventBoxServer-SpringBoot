@@ -1,8 +1,5 @@
 package com.ht.eventbox.modules.order;
 
-import com.corundumstudio.socketio.BroadcastOperations;
-import com.corundumstudio.socketio.SocketIONamespace;
-import com.corundumstudio.socketio.SocketIOServer;
 import com.ht.eventbox.config.HttpException;
 import com.ht.eventbox.constant.Constant;
 import com.ht.eventbox.entities.Event;
@@ -18,10 +15,11 @@ import com.ht.eventbox.entities.UserOrganization;
 import com.ht.eventbox.enums.EventStatus;
 import com.ht.eventbox.enums.OrderStatus;
 import com.ht.eventbox.enums.OrganizationRole;
+import com.ht.eventbox.modules.backgroundjobs.MailJobService;
+import com.ht.eventbox.modules.backgroundjobs.NotificationJobService;
+import com.ht.eventbox.modules.backgroundjobs.SocketJobService;
 import com.ht.eventbox.modules.event.EventRepository;
-import com.ht.eventbox.modules.messaging.PushNotificationService;
 import com.ht.eventbox.modules.ticket.TicketRepository;
-import com.ht.eventbox.modules.mail.MailService;
 import com.ht.eventbox.modules.order.dtos.CreateReservationDto;
 import com.paypal.sdk.http.response.ApiResponse;
 import com.paypal.sdk.models.Money;
@@ -31,7 +29,6 @@ import com.paypal.sdk.models.PaymentCollection;
 import com.paypal.sdk.models.PurchaseUnit;
 import com.paypal.sdk.models.Refund;
 import com.paypal.sdk.models.SellerPayableBreakdown;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -56,7 +53,6 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
@@ -97,38 +93,17 @@ class OrderServiceTests {
     private RefundRepository refundRepository;
 
     @Mock
-    private MailService mailService;
+    private MailJobService mailJobService;
 
     @Mock
-    private PushNotificationService pushNotificationService;
+    private NotificationJobService notificationJobService;
 
     @Mock
-    private SocketIOServer socketIOServer;
+    private SocketJobService socketJobService;
 
     @Spy
     @InjectMocks
     private OrderService orderService;
-
-    @Mock
-    private SocketIONamespace eventNamespace;
-
-    @Mock
-    private BroadcastOperations eventBroadcastOperations;
-
-    @Mock
-    private SocketIONamespace orderNamespace;
-
-    @Mock
-    private BroadcastOperations orderBroadcastOperations;
-
-    @BeforeEach
-    void setUp() {
-        lenient().when(socketIOServer.getNamespace("/event")).thenReturn(eventNamespace);
-        lenient().when(eventNamespace.getBroadcastOperations()).thenReturn(eventBroadcastOperations);
-        lenient().when(eventNamespace.getRoomOperations(anyString())).thenReturn(eventBroadcastOperations);
-        lenient().when(socketIOServer.getNamespace("/order")).thenReturn(orderNamespace);
-        lenient().when(orderNamespace.getRoomOperations(anyString())).thenReturn(orderBroadcastOperations);
-    }
 
     @Test
     void createReservation_shouldPersistOrderAndReserveTickets() {
@@ -207,6 +182,7 @@ class OrderServiceTests {
 
         assertThat(result).isTrue();
         verify(orderRepository).deleteAllByUserIdAndStatusIs(42L, OrderStatus.WAITING_FOR_PAYMENT);
+        verify(socketJobService).enqueueStockUpdated();
     }
 
     @Test
@@ -225,6 +201,48 @@ class OrderServiceTests {
                 eq(42L),
                 eq(List.of(OrderStatus.WAITING_FOR_PAYMENT, OrderStatus.PENDING)),
                 any());
+        verify(socketJobService).enqueueStockUpdated();
+    }
+
+    @Test
+    void onStockUpdated_shouldQueueRoomBroadcast() {
+        orderService.onStockUpdated(9L);
+
+        verify(socketJobService).enqueueStockUpdated(9L);
+    }
+
+    @Test
+    void onOrderApproved_shouldQueueApprovedBroadcast() {
+        var order = sampleOrder();
+        order.setId(500L);
+
+        orderService.onOrderApproved(order);
+
+        verify(socketJobService).enqueueOrderApproved(500L);
+    }
+
+    @Test
+    void onOrderFulfilled_shouldQueueEmailPushAndSocketJobs() {
+        var order = sampleOrder();
+        order.setId(500L);
+
+        orderService.onOrderFulfilled(order);
+
+        verify(mailJobService).enqueueOrderPaidEmail(500L);
+        verify(notificationJobService).enqueueOrderFulfilled(500L);
+        verify(socketJobService).enqueueOrderFulfilled(500L);
+    }
+
+    @Test
+    void onOrderRefunded_shouldQueueEmailPushAndSocketJobs() {
+        var order = sampleOrder();
+        order.setId(500L);
+
+        orderService.onOrderRefunded(order);
+
+        verify(mailJobService).enqueueOrderRefundedEmail(500L);
+        verify(notificationJobService).enqueueOrderRefunded(500L);
+        verify(socketJobService).enqueueOrderRefunded(500L);
     }
 
     @Test
