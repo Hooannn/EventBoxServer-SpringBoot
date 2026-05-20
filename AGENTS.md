@@ -1,5 +1,11 @@
 # Repository Guidelines
 
+## Agent Workflow
+
+- Use Superpowers skills when they apply to the task before proceeding with implementation.
+- Prefer the smallest relevant skill set. Common matches are brainstorming for feature work, debugging for bugs, TDD for new behavior, and verification-before-completion before claiming success.
+- If no Superpowers skill fits the task, continue with the repository guidance below.
+
 ## Project Structure & Module Organization
 
 This is a single-module Spring Boot service built with Maven. Main application code lives under `src/main/java/com/ht/eventbox/`, organized by feature area:
