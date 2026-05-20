@@ -46,19 +46,19 @@ public class SocketJobService {
         enqueueAfterCommit(() -> broadcastTicketTracesUpdated(ticketItemId, eventId));
     }
 
-    void broadcastStockUpdated(long eventId) {
+    public void broadcastStockUpdated(long eventId) {
         socketIOServer.getNamespace("/event")
                 .getRoomOperations(String.valueOf(eventId))
                 .sendEvent("stock_updated", Map.of());
     }
 
-    void broadcastStockUpdated() {
+    public void broadcastStockUpdated() {
         socketIOServer.getNamespace("/event")
                 .getBroadcastOperations()
                 .sendEvent("stock_updated", Map.of());
     }
 
-    void broadcastOrderApproved(long orderId) {
+    public void broadcastOrderApproved(long orderId) {
         Order order = loadOrder(orderId);
         socketIOServer.getNamespace("/order")
                 .getRoomOperations(order.getId().toString())
@@ -68,7 +68,7 @@ public class SocketJobService {
                         "place_total", order.getPlaceTotal()));
     }
 
-    void broadcastOrderFulfilled(long orderId) {
+    public void broadcastOrderFulfilled(long orderId) {
         Order order = loadOrder(orderId);
         socketIOServer.getNamespace("/order")
                 .getRoomOperations(order.getId().toString())
@@ -78,7 +78,7 @@ public class SocketJobService {
                         "place_total", order.getPlaceTotal()));
     }
 
-    void broadcastOrderRefunded(long orderId) {
+    public void broadcastOrderRefunded(long orderId) {
         Order order = loadOrder(orderId);
         socketIOServer.getNamespace("/order")
                 .getRoomOperations(order.getId().toString())
@@ -88,7 +88,7 @@ public class SocketJobService {
                         "place_total", order.getPlaceTotal()));
     }
 
-    void broadcastTicketTracesUpdated(long ticketItemId, long eventId) {
+    public void broadcastTicketTracesUpdated(long ticketItemId, long eventId) {
         socketIOServer.getNamespace("/ticket")
                 .getRoomOperations(String.valueOf(ticketItemId))
                 .sendEvent("traces_updated", Map.of("ticket_item_id", ticketItemId));

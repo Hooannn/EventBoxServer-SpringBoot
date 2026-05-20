@@ -46,7 +46,7 @@ public class NotificationJobService {
         enqueueAfterCommit(() -> sendOrderRefunded(orderId));
     }
 
-    void sendEventPublished(long eventId) {
+    public void sendEventPublished(long eventId) {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new IllegalStateException("Event not found: " + eventId));
 
@@ -77,7 +77,7 @@ public class NotificationJobService {
         }
     }
 
-    void sendOrderFulfilled(long orderId) {
+    public void sendOrderFulfilled(long orderId) {
         Order order = loadOrder(orderId);
 
         try {
@@ -96,7 +96,7 @@ public class NotificationJobService {
         }
     }
 
-    void sendOrderRefunded(long orderId) {
+    public void sendOrderRefunded(long orderId) {
         Order order = loadOrder(orderId);
 
         try {

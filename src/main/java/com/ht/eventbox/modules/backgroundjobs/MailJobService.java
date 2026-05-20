@@ -57,7 +57,7 @@ public class MailJobService {
         enqueueAfterCommit(() -> sendGiveawayNotificationEmail(ticketItemId, fromEmail));
     }
 
-    void sendRegistrationEmail(String to, String name, String otp) {
+    public void sendRegistrationEmail(String to, String name, String otp) {
         try {
             mailService.sendRegistrationEmail(to, name, otp);
         } catch (MessagingException e) {
@@ -65,7 +65,7 @@ public class MailJobService {
         }
     }
 
-    void sendForgotPasswordEmail(String to, String otp) {
+    public void sendForgotPasswordEmail(String to, String otp) {
         try {
             mailService.sendForgotPasswordEmail(to, otp);
         } catch (MessagingException e) {
@@ -73,7 +73,7 @@ public class MailJobService {
         }
     }
 
-    void sendMemberAddedEmail(String to, String name, String orgName) {
+    public void sendMemberAddedEmail(String to, String name, String orgName) {
         try {
             mailService.sendMemberAddedEmail(to, name, orgName);
         } catch (MessagingException e) {
@@ -81,7 +81,7 @@ public class MailJobService {
         }
     }
 
-    void sendMemberRemovedEmail(String to, String name, String orgName) {
+    public void sendMemberRemovedEmail(String to, String name, String orgName) {
         try {
             mailService.sendMemberRemovedEmail(to, name, orgName);
         } catch (MessagingException e) {
@@ -89,7 +89,7 @@ public class MailJobService {
         }
     }
 
-    void sendOrderPaidEmail(long orderId) {
+    public void sendOrderPaidEmail(long orderId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalStateException("Order not found: " + orderId));
 
@@ -105,7 +105,7 @@ public class MailJobService {
         }
     }
 
-    void sendOrderRefundedEmail(long orderId) {
+    public void sendOrderRefundedEmail(long orderId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalStateException("Order not found: " + orderId));
 
@@ -121,7 +121,7 @@ public class MailJobService {
         }
     }
 
-    void sendGiveawayNotificationEmail(long ticketItemId, String fromEmail) {
+    public void sendGiveawayNotificationEmail(long ticketItemId, String fromEmail) {
         TicketItem ticketItem = ticketItemRepository.findById(ticketItemId)
                 .orElseThrow(() -> new IllegalStateException("Ticket item not found: " + ticketItemId));
 
