@@ -173,6 +173,8 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<configuration>
+					<!-- Keep the legacy jar loader so packaged runs preserve the older jar:file URL form. -->
+					<loaderImplementation>CLASSIC</loaderImplementation>
 					<excludes>
 						<exclude>
 							<groupId>org.projectlombok</groupId>

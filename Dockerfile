@@ -18,6 +18,7 @@ COPY --from=builder /app/target/*.jar app.jar
 ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0"
 EXPOSE 8080
 EXPOSE 3000
+EXPOSE 8000
 
 # Security best practice - chạy bằng user không có quyền root
 RUN addgroup --system spring && adduser --system --ingroup spring spring
