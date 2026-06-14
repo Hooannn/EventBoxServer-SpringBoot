@@ -4,12 +4,15 @@ import com.ht.eventbox.constant.Constant;
 import com.ht.eventbox.entities.Asset;
 import com.ht.eventbox.entities.Event;
 import com.ht.eventbox.entities.EventShow;
-import com.ht.eventbox.entities.Ticket;
 import com.ht.eventbox.enums.AssetUsage;
 import com.ht.eventbox.utils.Helper;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
+
+import java.io.UnsupportedEncodingException;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -23,6 +26,23 @@ public class MailService {
     private final JavaMailSender javaMailSender;
     private final TemplateEngine templateEngine;
 
+    @Value("${spring.mail.properties.from-address}")
+    private String defaultAddress;
+
+    @Value("${spring.mail.properties.from-name}")
+    private String defaultName;
+
+    private MimeMessageHelper createMimeMessageHelper(MimeMessage mimeMessage)
+            throws MessagingException {
+        var helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+        try {
+            helper.setFrom(defaultAddress, defaultName);
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        return helper;
+    }
+
     public void sendEmail(String to, String subject, String text) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(to);
@@ -34,7 +54,7 @@ public class MailService {
     public void sendResetPasswordVerificationMail(String to, String subject, String signature)
             throws MessagingException {
         MimeMessage mimeMessage = javaMailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+        MimeMessageHelper helper = createMimeMessageHelper(mimeMessage);
         Context context = new Context();
         context.setVariable("code", signature);
 
@@ -47,9 +67,10 @@ public class MailService {
         javaMailSender.send(mimeMessage);
     }
 
-    public void sendRegistrationEmail(String to, String name, String otp) throws MessagingException {
+    public void sendRegistrationEmail(String to, String name, String otp)
+            throws MessagingException {
         MimeMessage mimeMessage = javaMailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+        MimeMessageHelper helper = createMimeMessageHelper(mimeMessage);
         Context context = new Context();
 
         context.setVariable("name", name);
@@ -66,7 +87,7 @@ public class MailService {
 
     public void sendForgotPasswordEmail(String to, String otp) throws MessagingException {
         MimeMessage mimeMessage = javaMailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+        MimeMessageHelper helper = createMimeMessageHelper(mimeMessage);
         Context context = new Context();
 
         context.setVariable("otp", otp);
@@ -80,9 +101,10 @@ public class MailService {
         javaMailSender.send(mimeMessage);
     }
 
-    public void sendMemberAddedEmail(String to, String name, String orgName) throws MessagingException {
+    public void sendMemberAddedEmail(String to, String name, String orgName)
+            throws MessagingException {
         MimeMessage mimeMessage = javaMailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+        MimeMessageHelper helper = createMimeMessageHelper(mimeMessage);
         Context context = new Context();
 
         context.setVariable("name", name);
@@ -97,9 +119,10 @@ public class MailService {
         javaMailSender.send(mimeMessage);
     }
 
-    public void sendMemberRemovedEmail(String to, String name, String orgName) throws MessagingException {
+    public void sendMemberRemovedEmail(String to, String name, String orgName)
+            throws MessagingException {
         MimeMessage mimeMessage = javaMailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+        MimeMessageHelper helper = createMimeMessageHelper(mimeMessage);
         Context context = new Context();
 
         context.setVariable("name", name);
@@ -117,7 +140,7 @@ public class MailService {
     public void sendOrderPaidMail(String to, String name, String invoiceId, String total, String paidDate)
             throws MessagingException {
         MimeMessage mimeMessage = javaMailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+        MimeMessageHelper helper = createMimeMessageHelper(mimeMessage);
         Context context = new Context();
         context.setVariable("name", name);
         context.setVariable("invoiceId", invoiceId);
@@ -136,7 +159,7 @@ public class MailService {
     public void sendOrderRefundedMail(String to, String name, String invoiceId, String total, String refundedDate)
             throws MessagingException {
         MimeMessage mimeMessage = javaMailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+        MimeMessageHelper helper = createMimeMessageHelper(mimeMessage);
         Context context = new Context();
         context.setVariable("name", name);
         context.setVariable("invoiceId", invoiceId);
@@ -152,9 +175,10 @@ public class MailService {
         javaMailSender.send(mimeMessage);
     }
 
-    public void sendReminderEmail(String to, Event event, EventShow eventShow) throws MessagingException {
+    public void sendReminderEmail(String to, Event event, EventShow eventShow)
+            throws MessagingException {
         MimeMessage mimeMessage = javaMailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+        MimeMessageHelper helper = createMimeMessageHelper(mimeMessage);
         Context context = new Context();
 
         var eventImageUrl = event.getAssets().stream()
@@ -180,7 +204,7 @@ public class MailService {
     public void sendGiveawayNotificationEmail(String to, Event event, EventShow eventShow, String from)
             throws MessagingException {
         MimeMessage mimeMessage = javaMailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+        MimeMessageHelper helper = createMimeMessageHelper(mimeMessage);
         Context context = new Context();
 
         var eventImageUrl = event.getAssets().stream()
