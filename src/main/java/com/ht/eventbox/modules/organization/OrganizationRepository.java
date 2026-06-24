@@ -2,6 +2,8 @@ package com.ht.eventbox.modules.organization;
 
 import com.ht.eventbox.entities.Organization;
 import com.ht.eventbox.enums.OrganizationRole;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -13,6 +15,8 @@ public interface OrganizationRepository extends JpaRepository<Organization, Long
     Optional<Organization> findByIdAndUserOrganizationsUserIdAndUserOrganizationsRoleIs(Long orgId, Long userId, OrganizationRole userOrganizations_role);
 
     List<Organization> findByUserOrganizationsUserId(Long userId);
+
+    Page<Organization> findAllByOrderByIdAsc(Pageable pageable);
 
     boolean existsByIdAndUserOrganizationsUserId(Long orgId, Long userId);
 }

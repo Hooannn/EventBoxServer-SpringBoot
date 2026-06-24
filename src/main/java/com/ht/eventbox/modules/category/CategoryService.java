@@ -8,6 +8,8 @@ import com.ht.eventbox.modules.category.dtos.CreateCategoryDto;
 import com.ht.eventbox.modules.event.EventRepository;
 import lombok.*;
 import org.slf4j.Logger;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +28,10 @@ public class CategoryService {
     public List<Category> getAll() {
         // Lấy tất cả các category từ database và sắp xếp theo id tăng dần
         return categoryRepository.findAllByOrderByIdAsc();
+    }
+
+    public Page<Category> getAll(Pageable pageable) {
+        return categoryRepository.findAllByOrderByIdAsc(pageable);
     }
 
     public boolean createBulk(CreateBulkCategoriesDto createBulkCategoriesDto) {

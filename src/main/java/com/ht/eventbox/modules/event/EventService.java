@@ -27,6 +27,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.slf4j.Logger;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -516,6 +517,13 @@ public class EventService {
     ) {
         // Lấy tất cả các sự kiện có trạng thái trong danh sách statuses và sắp xếp theo ID tăng dần
         return eventRepository.findAllByStatusInOrderByIdAsc(statuses);
+    }
+
+    public Page<Event> getAllByStatusIn(
+            List<EventStatus> statuses,
+            Pageable pageable
+    ) {
+        return eventRepository.findAllByStatusInOrderByIdAsc(statuses, pageable);
     }
 
     public boolean eventPayout(Long userId, Long eventId) {

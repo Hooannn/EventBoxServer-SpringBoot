@@ -14,6 +14,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -114,12 +116,24 @@ public class UserService {
         return userRepository.findAllByOrderByIdAsc();
     }
 
+    public Page<User> getAll(Pageable pageable) {
+        return userRepository.findAllByOrderByIdAsc(pageable);
+    }
+
     public List<Role> getAllRoles() {
         return roleRepository.findAllByOrderByIdAsc();
     }
 
+    public Page<Role> getAllRoles(Pageable pageable) {
+        return roleRepository.findAllByOrderByIdAsc(pageable);
+    }
+
     public List<Permission> getAllPermissions() {
         return permissionRepository.findAllByOrderByIdAsc();
+    }
+
+    public Page<Permission> getAllPermissions(Pageable pageable) {
+        return permissionRepository.findAllByOrderByIdAsc(pageable);
     }
 
     public boolean updateUserRole(Long userId, UpdateUserRoleDto updateUserRoleDto) {

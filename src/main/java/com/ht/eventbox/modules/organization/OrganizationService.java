@@ -17,6 +17,8 @@ import com.ht.eventbox.utils.Helper;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -51,6 +53,10 @@ public class OrganizationService {
 
     public List<Organization> getAll() {
         return organizationRepository.findAll();
+    }
+
+    public Page<Organization> getAll(Pageable pageable) {
+        return organizationRepository.findAllByOrderByIdAsc(pageable);
     }
 
     public List<Organization> getByUserIdAndOrganizationRole(Long userId, OrganizationRole organizationRole) {

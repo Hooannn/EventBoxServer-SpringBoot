@@ -1,6 +1,8 @@
 package com.ht.eventbox.modules.user;
 
 import com.ht.eventbox.entities.Permission;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -10,6 +12,8 @@ public interface PermissionRepository extends JpaRepository<Permission, Long> {
     Optional<Permission> findByName(String permissionName);
 
     List<Permission> findAllByOrderByIdAsc();
+
+    Page<Permission> findAllByOrderByIdAsc(Pageable pageable);
 
     boolean existsByName(String name);
 

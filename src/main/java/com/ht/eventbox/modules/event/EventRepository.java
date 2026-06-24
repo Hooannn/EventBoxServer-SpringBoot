@@ -31,6 +31,8 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 
     List<Event> findAllByStatusInOrderByIdAsc(Collection<EventStatus> status);
 
+    Page<Event> findAllByStatusInOrderByIdAsc(Collection<EventStatus> status, Pageable pageable);
+
     Page<Event> findByStatusIn(Collection<EventStatus> status, Pageable pageable);
 
     Page<Event> findByStatusInAndShowsEndTimeAfter(Collection<EventStatus> status, LocalDateTime now, Pageable pageable);

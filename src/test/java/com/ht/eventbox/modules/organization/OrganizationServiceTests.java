@@ -28,6 +28,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -110,6 +112,17 @@ class OrganizationServiceTests {
         assertThat(result.organization).isSameAs(org);
         assertThat(result.subscribersCount).isEqualTo(12L);
         assertThat(result.eventsCount).isEqualTo(3L);
+    }
+
+    @Test
+    void getAllPaged_shouldDelegateToRepository() {
+        var page = new PageImpl<>(List.of(sampleOrganization(9L, 42L)), PageRequest.of(2, 5), 18);
+        when(organizationRepository.findAllByOrderByIdAsc(any())).thenReturn(page);
+
+        var result = organizationService.getAll(PageRequest.of(2, 5));
+
+        assertThat(result).isSameAs(page);
+        verify(organizationRepository).findAllByOrderByIdAsc(PageRequest.of(2, 5));
     }
 
     @Test

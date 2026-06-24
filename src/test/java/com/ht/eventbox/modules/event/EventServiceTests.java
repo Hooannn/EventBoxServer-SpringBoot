@@ -147,6 +147,18 @@ class EventServiceTests {
     }
 
     @Test
+    void getAllByStatusInPaged_shouldDelegateToRepository() {
+        var page = new PageImpl<>(List.of(Event.builder().id(11L).build()), PageRequest.of(1, 10), 33);
+        when(eventRepository.findAllByStatusInOrderByIdAsc(eq(List.of(EventStatus.PENDING, EventStatus.PUBLISHED)), any()))
+                .thenReturn(page);
+
+        var result = eventService.getAllByStatusIn(List.of(EventStatus.PENDING, EventStatus.PUBLISHED), PageRequest.of(1, 10));
+
+        assertThat(result).isSameAs(page);
+        verify(eventRepository).findAllByStatusInOrderByIdAsc(eq(List.of(EventStatus.PENDING, EventStatus.PUBLISHED)), eq(PageRequest.of(1, 10)));
+    }
+
+    @Test
     void search_shouldUseProvinceBranchWhenProvinceIsPresent() {
         var event = Event.builder().id(11L).build();
         when(eventRepository.searchEvents(eq("music"), eq("Singapore"), eq(List.of(1L, 2L)), eq(EventStatus.PUBLISHED), any(LocalDateTime.class)))
