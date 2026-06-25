@@ -120,6 +120,10 @@ public class UserService {
         return userRepository.findAllByOrderByIdAsc(pageable);
     }
 
+    public Page<User> getAll(String search, Pageable pageable) {
+        return userRepository.searchAllByOrderByIdAsc(normalizeSearch(search), pageable);
+    }
+
     public List<Role> getAllRoles() {
         return roleRepository.findAllByOrderByIdAsc();
     }
@@ -128,12 +132,20 @@ public class UserService {
         return roleRepository.findAllByOrderByIdAsc(pageable);
     }
 
+    public Page<Role> getAllRoles(String search, Pageable pageable) {
+        return roleRepository.searchAllByOrderByIdAsc(normalizeSearch(search), pageable);
+    }
+
     public List<Permission> getAllPermissions() {
         return permissionRepository.findAllByOrderByIdAsc();
     }
 
     public Page<Permission> getAllPermissions(Pageable pageable) {
         return permissionRepository.findAllByOrderByIdAsc(pageable);
+    }
+
+    public Page<Permission> getAllPermissions(String search, Pageable pageable) {
+        return permissionRepository.searchAllByOrderByIdAsc(normalizeSearch(search), pageable);
     }
 
     public boolean updateUserRole(Long userId, UpdateUserRoleDto updateUserRoleDto) {
@@ -305,5 +317,14 @@ public class UserService {
             assetRepository.deleteAll(assetsToRemove);
         }
         return true;
+    }
+
+    private String normalizeSearch(String search) {
+        if (search == null) {
+            return null;
+        }
+
+        var trimmed = search.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }

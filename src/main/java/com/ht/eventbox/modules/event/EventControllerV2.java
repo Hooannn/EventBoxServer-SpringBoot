@@ -23,14 +23,42 @@ public class EventControllerV2 {
     private final EventService eventService;
 
     @GetMapping
-    @RequiredPermissions({"read:events", "access:admin"})
+    @RequiredPermissions({ "read:events", "access:admin" })
     public ResponseEntity<QueryResponse<Event>> getAll(Pageable pageable) {
         var res = eventService.getAllByStatusIn(
                 List.of(EventStatus.PENDING, EventStatus.PUBLISHED),
-                pageable
-        );
+                pageable);
         return ResponseEntity.ok(
-                QueryResponse.from(res, HttpStatus.OK.value(), HttpStatus.OK.getReasonPhrase())
-        );
+                QueryResponse.from(res, HttpStatus.OK.value(), HttpStatus.OK.getReasonPhrase()));
+    }
+
+    @GetMapping("/pending")
+    @RequiredPermissions({ "read:events", "access:admin" })
+    public ResponseEntity<QueryResponse<Event>> getAllPending(Pageable pageable) {
+        var res = eventService.getAllByStatusIn(
+                List.of(EventStatus.PENDING, EventStatus.PUBLISHED),
+                pageable);
+        return ResponseEntity.ok(
+                QueryResponse.from(res, HttpStatus.OK.value(), HttpStatus.OK.getReasonPhrase()));
+    }
+
+    @GetMapping("/published")
+    @RequiredPermissions({ "read:events", "access:admin" })
+    public ResponseEntity<QueryResponse<Event>> getAllPublished(Pageable pageable) {
+        var res = eventService.getAllByStatusIn(
+                List.of(EventStatus.PENDING, EventStatus.PUBLISHED),
+                pageable);
+        return ResponseEntity.ok(
+                QueryResponse.from(res, HttpStatus.OK.value(), HttpStatus.OK.getReasonPhrase()));
+    }
+
+    @GetMapping("/ended")
+    @RequiredPermissions({ "read:events", "access:admin" })
+    public ResponseEntity<QueryResponse<Event>> getAllEnded(Pageable pageable) {
+        var res = eventService.getAllByStatusIn(
+                List.of(EventStatus.PENDING, EventStatus.PUBLISHED),
+                pageable);
+        return ResponseEntity.ok(
+                QueryResponse.from(res, HttpStatus.OK.value(), HttpStatus.OK.getReasonPhrase()));
     }
 }

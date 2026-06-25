@@ -18,6 +18,8 @@ import java.security.PublicKey;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -43,10 +45,11 @@ class CategoryControllerV2Tests {
 
     @Test
     void getAll_shouldReturnPagedCategories() throws Exception {
-        when(categoryService.getAll(any(Pageable.class)))
+        when(categoryService.getAll(eq("music"), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(sampleCategory(7L)), PageRequest.of(0, 20), 41));
 
-        mockMvc.perform(get("/api/v2/categories"))
+        mockMvc.perform(get("/api/v2/categories")
+                        .param("search", "music"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.message").value("OK"))
@@ -56,6 +59,8 @@ class CategoryControllerV2Tests {
                 .andExpect(jsonPath("$.size").value(20))
                 .andExpect(jsonPath("$.number").value(0))
                 .andExpect(jsonPath("$.numberOfElements").value(1));
+
+        verify(categoryService).getAll(eq("music"), any(Pageable.class));
     }
 
     private Category sampleCategory(Long id) {

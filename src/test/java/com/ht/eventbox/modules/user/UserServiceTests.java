@@ -1,6 +1,8 @@
 package com.ht.eventbox.modules.user;
 
 import com.ht.eventbox.entities.User;
+import com.ht.eventbox.entities.Permission;
+import com.ht.eventbox.entities.Role;
 import com.ht.eventbox.modules.asset.AssetRepository;
 import com.ht.eventbox.modules.storage.CloudinaryService;
 import org.junit.jupiter.api.Test;
@@ -15,6 +17,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -57,6 +60,17 @@ class UserServiceTests {
     }
 
     @Test
+    void getAllSearchPaged_shouldDelegateToRepository() {
+        var page = new PageImpl<>(List.of(User.builder().id(9L).build()), PageRequest.of(1, 10), 21);
+        when(userRepository.searchAllByOrderByIdAsc(eq("alice"), any())).thenReturn(page);
+
+        var result = userService.getAll("alice", PageRequest.of(1, 10));
+
+        assertThat(result).isSameAs(page);
+        verify(userRepository).searchAllByOrderByIdAsc("alice", PageRequest.of(1, 10));
+    }
+
+    @Test
     void getAllRolesPaged_shouldDelegateToRepository() {
         var page = new PageImpl<>(List.of(Role.builder().id(3L).build()), PageRequest.of(0, 15), 31);
         when(roleRepository.findAllByOrderByIdAsc(any())).thenReturn(page);
@@ -68,6 +82,17 @@ class UserServiceTests {
     }
 
     @Test
+    void getAllRolesSearchPaged_shouldDelegateToRepository() {
+        var page = new PageImpl<>(List.of(Role.builder().id(3L).build()), PageRequest.of(0, 15), 31);
+        when(roleRepository.searchAllByOrderByIdAsc(eq("admin"), any())).thenReturn(page);
+
+        var result = userService.getAllRoles("admin", PageRequest.of(0, 15));
+
+        assertThat(result).isSameAs(page);
+        verify(roleRepository).searchAllByOrderByIdAsc("admin", PageRequest.of(0, 15));
+    }
+
+    @Test
     void getAllPermissionsPaged_shouldDelegateToRepository() {
         var page = new PageImpl<>(List.of(Permission.builder().id(5L).build()), PageRequest.of(2, 7), 21);
         when(permissionRepository.findAllByOrderByIdAsc(any())).thenReturn(page);
@@ -76,5 +101,16 @@ class UserServiceTests {
 
         assertThat(result).isSameAs(page);
         verify(permissionRepository).findAllByOrderByIdAsc(PageRequest.of(2, 7));
+    }
+
+    @Test
+    void getAllPermissionsSearchPaged_shouldDelegateToRepository() {
+        var page = new PageImpl<>(List.of(Permission.builder().id(5L).build()), PageRequest.of(2, 7), 21);
+        when(permissionRepository.searchAllByOrderByIdAsc(eq("manage"), any())).thenReturn(page);
+
+        var result = userService.getAllPermissions("manage", PageRequest.of(2, 7));
+
+        assertThat(result).isSameAs(page);
+        verify(permissionRepository).searchAllByOrderByIdAsc("manage", PageRequest.of(2, 7));
     }
 }

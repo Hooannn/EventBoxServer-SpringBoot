@@ -20,6 +20,8 @@ import java.security.PublicKey;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -45,10 +47,11 @@ class UserControllerV2Tests {
 
     @Test
     void getAll_shouldReturnPagedUsers() throws Exception {
-        when(userService.getAll(any(Pageable.class)))
+        when(userService.getAll(eq("alice"), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(sampleUser(9L)), PageRequest.of(1, 10), 25));
 
         mockMvc.perform(get("/api/v2/users")
+                        .param("search", "alice")
                         .param("page", "1")
                         .param("size", "10"))
                 .andExpect(status().isOk())
@@ -60,14 +63,17 @@ class UserControllerV2Tests {
                 .andExpect(jsonPath("$.size").value(10))
                 .andExpect(jsonPath("$.number").value(1))
                 .andExpect(jsonPath("$.numberOfElements").value(1));
+
+        verify(userService).getAll(eq("alice"), any(Pageable.class));
     }
 
     @Test
     void getAllRoles_shouldReturnPagedRoles() throws Exception {
-        when(userService.getAllRoles(any(Pageable.class)))
+        when(userService.getAllRoles(eq("admin"), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(sampleRole(3L)), PageRequest.of(0, 15), 31));
 
         mockMvc.perform(get("/api/v2/users/roles")
+                        .param("search", "admin")
                         .param("page", "0")
                         .param("size", "15"))
                 .andExpect(status().isOk())
@@ -79,14 +85,17 @@ class UserControllerV2Tests {
                 .andExpect(jsonPath("$.size").value(15))
                 .andExpect(jsonPath("$.number").value(0))
                 .andExpect(jsonPath("$.numberOfElements").value(1));
+
+        verify(userService).getAllRoles(eq("admin"), any(Pageable.class));
     }
 
     @Test
     void getAllPermissions_shouldReturnPagedPermissions() throws Exception {
-        when(userService.getAllPermissions(any(Pageable.class)))
+        when(userService.getAllPermissions(eq("manage"), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(samplePermission(5L)), PageRequest.of(2, 7), 21));
 
         mockMvc.perform(get("/api/v2/users/roles/permissions")
+                        .param("search", "manage")
                         .param("page", "2")
                         .param("size", "7"))
                 .andExpect(status().isOk())
@@ -98,6 +107,8 @@ class UserControllerV2Tests {
                 .andExpect(jsonPath("$.size").value(7))
                 .andExpect(jsonPath("$.number").value(2))
                 .andExpect(jsonPath("$.numberOfElements").value(1));
+
+        verify(userService).getAllPermissions(eq("manage"), any(Pageable.class));
     }
 
     private User sampleUser(Long id) {

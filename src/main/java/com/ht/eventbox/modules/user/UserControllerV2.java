@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -23,8 +24,11 @@ public class UserControllerV2 {
 
     @GetMapping
     @RequiredPermissions({"read:users"})
-    public ResponseEntity<QueryResponse<User>> getAll(Pageable pageable) {
-        var res = userService.getAll(pageable);
+    public ResponseEntity<QueryResponse<User>> getAll(
+            @RequestParam(required = false) String search,
+            Pageable pageable
+    ) {
+        var res = userService.getAll(search, pageable);
         return ResponseEntity.ok(
                 QueryResponse.from(res, HttpStatus.OK.value(), HttpStatus.OK.getReasonPhrase())
         );
@@ -32,8 +36,11 @@ public class UserControllerV2 {
 
     @GetMapping("/roles")
     @RequiredPermissions({"read:roles"})
-    public ResponseEntity<QueryResponse<Role>> getAllRoles(Pageable pageable) {
-        var res = userService.getAllRoles(pageable);
+    public ResponseEntity<QueryResponse<Role>> getAllRoles(
+            @RequestParam(required = false) String search,
+            Pageable pageable
+    ) {
+        var res = userService.getAllRoles(search, pageable);
         return ResponseEntity.ok(
                 QueryResponse.from(res, HttpStatus.OK.value(), HttpStatus.OK.getReasonPhrase())
         );
@@ -41,8 +48,11 @@ public class UserControllerV2 {
 
     @GetMapping("/roles/permissions")
     @RequiredPermissions({"read:permissions"})
-    public ResponseEntity<QueryResponse<Permission>> getAllPermissions(Pageable pageable) {
-        var res = userService.getAllPermissions(pageable);
+    public ResponseEntity<QueryResponse<Permission>> getAllPermissions(
+            @RequestParam(required = false) String search,
+            Pageable pageable
+    ) {
+        var res = userService.getAllPermissions(search, pageable);
         return ResponseEntity.ok(
                 QueryResponse.from(res, HttpStatus.OK.value(), HttpStatus.OK.getReasonPhrase())
         );

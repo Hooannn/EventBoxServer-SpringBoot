@@ -14,6 +14,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -38,5 +39,16 @@ class CategoryServiceTests {
 
         assertThat(result).isSameAs(page);
         verify(categoryRepository).findAllByOrderByIdAsc(PageRequest.of(0, 20));
+    }
+
+    @Test
+    void getAllSearchPaged_shouldDelegateToRepository() {
+        var page = new PageImpl<>(List.of(Category.builder().id(7L).build()), PageRequest.of(0, 20), 41);
+        when(categoryRepository.searchAllByOrderByIdAsc(eq("music"), any())).thenReturn(page);
+
+        var result = categoryService.getAll("music", PageRequest.of(0, 20));
+
+        assertThat(result).isSameAs(page);
+        verify(categoryRepository).searchAllByOrderByIdAsc("music", PageRequest.of(0, 20));
     }
 }

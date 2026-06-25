@@ -34,6 +34,10 @@ public class CategoryService {
         return categoryRepository.findAllByOrderByIdAsc(pageable);
     }
 
+    public Page<Category> getAll(String search, Pageable pageable) {
+        return categoryRepository.searchAllByOrderByIdAsc(normalizeSearch(search), pageable);
+    }
+
     public boolean createBulk(CreateBulkCategoriesDto createBulkCategoriesDto) {
         logger.info("Creating bulk categories: {}", createBulkCategoriesDto);
         List<Category> categories = createBulkCategoriesDto.getCategories().stream()
@@ -101,5 +105,14 @@ public class CategoryService {
 
         categoryRepository.deleteById(id);
         return true;
+    }
+
+    private String normalizeSearch(String search) {
+        if (search == null) {
+            return null;
+        }
+
+        var trimmed = search.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }
