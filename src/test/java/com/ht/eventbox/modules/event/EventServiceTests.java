@@ -217,6 +217,79 @@ class EventServiceTests {
     }
 
     @Test
+    void getAllPendingByOrganizationIdSearchPaged_shouldDelegateToRepository() {
+        var page = new PageImpl<>(List.of(Event.builder().id(21L).build()), PageRequest.of(0, 10), 4);
+        when(eventRepository.searchAllByOrganizationIdAndStatusInOrderByIdAsc(eq(99L), eq(List.of(EventStatus.PENDING)), eq("draft"), any()))
+                .thenReturn(page);
+
+        var result = eventService.getAllPendingByOrganizationId(99L, "draft", PageRequest.of(0, 10));
+
+        assertThat(result).isSameAs(page);
+        verify(eventRepository).searchAllByOrganizationIdAndStatusInOrderByIdAsc(eq(99L), eq(List.of(EventStatus.PENDING)), eq("draft"), eq(PageRequest.of(0, 10)));
+    }
+
+    @Test
+    void getAllPublishedByOrganizationIdSearchPaged_shouldDelegateToRepository() {
+        var page = new PageImpl<>(List.of(Event.builder().id(22L).build()), PageRequest.of(1, 5), 6);
+        when(eventRepository.searchPublishedByOrganizationIdOrderByIdAsc(eq(99L), eq(EventStatus.PUBLISHED), eq("festival"), any(LocalDateTime.class), any()))
+                .thenReturn(page);
+
+        var result = eventService.getAllPublishedByOrganizationId(99L, "festival", PageRequest.of(1, 5));
+
+        assertThat(result).isSameAs(page);
+        verify(eventRepository).searchPublishedByOrganizationIdOrderByIdAsc(eq(99L), eq(EventStatus.PUBLISHED), eq("festival"), any(LocalDateTime.class), eq(PageRequest.of(1, 5)));
+    }
+
+    @Test
+    void getAllEndedByOrganizationIdSearchPaged_shouldDelegateToRepository() {
+        var page = new PageImpl<>(List.of(Event.builder().id(23L).build()), PageRequest.of(2, 7), 15);
+        when(eventRepository.searchEndedByOrganizationIdOrderByIdAsc(eq(99L), eq(EventStatus.PUBLISHED), eq("concert"), any(LocalDateTime.class), any()))
+                .thenReturn(page);
+
+        var result = eventService.getAllEndedByOrganizationId(99L, "concert", PageRequest.of(2, 7));
+
+        assertThat(result).isSameAs(page);
+        verify(eventRepository).searchEndedByOrganizationIdOrderByIdAsc(eq(99L), eq(EventStatus.PUBLISHED), eq("concert"), any(LocalDateTime.class), eq(PageRequest.of(2, 7)));
+    }
+
+    @Test
+    void getOverviewByOrganizationId_shouldDelegateToCountQueries() {
+        when(eventRepository.countSearchAllByOrganizationIdAndStatusIn(eq(99L), eq(List.of(EventStatus.PENDING)), eq("music")))
+                .thenReturn(1L);
+        when(eventRepository.countSearchPublishedByOrganizationId(eq(99L), eq(EventStatus.PUBLISHED), eq("music"), any(LocalDateTime.class)))
+                .thenReturn(2L);
+        when(eventRepository.countSearchEndedByOrganizationId(eq(99L), eq(EventStatus.PUBLISHED), eq("music"), any(LocalDateTime.class)))
+                .thenReturn(3L);
+        when(eventRepository.countSearchDraftByOrganizationId(eq(99L), eq(EventStatus.DRAFT), eq("music")))
+                .thenReturn(4L);
+
+        var result = eventService.getOverviewByOrganizationId(99L, "music");
+
+        assertThat(result).isEqualTo(EventOverviewDto.builder()
+                .pendingCount(1L)
+                .publishedCount(2L)
+                .endedCount(3L)
+                .draftCount(4L)
+                .build());
+        verify(eventRepository).countSearchAllByOrganizationIdAndStatusIn(eq(99L), eq(List.of(EventStatus.PENDING)), eq("music"));
+        verify(eventRepository).countSearchPublishedByOrganizationId(eq(99L), eq(EventStatus.PUBLISHED), eq("music"), any(LocalDateTime.class));
+        verify(eventRepository).countSearchEndedByOrganizationId(eq(99L), eq(EventStatus.PUBLISHED), eq("music"), any(LocalDateTime.class));
+        verify(eventRepository).countSearchDraftByOrganizationId(eq(99L), eq(EventStatus.DRAFT), eq("music"));
+    }
+
+    @Test
+    void getAllDraftByOrganizationIdSearchPaged_shouldDelegateToRepository() {
+        var page = new PageImpl<>(List.of(Event.builder().id(24L).build()), PageRequest.of(0, 3), 3);
+        when(eventRepository.searchDraftByOrganizationIdOrderByIdAsc(eq(99L), eq(EventStatus.DRAFT), eq("draft"), any()))
+                .thenReturn(page);
+
+        var result = eventService.getAllDraftByOrganizationId(99L, "draft", PageRequest.of(0, 3));
+
+        assertThat(result).isSameAs(page);
+        verify(eventRepository).searchDraftByOrganizationIdOrderByIdAsc(eq(99L), eq(EventStatus.DRAFT), eq("draft"), eq(PageRequest.of(0, 3)));
+    }
+
+    @Test
     void search_shouldUseProvinceBranchWhenProvinceIsPresent() {
         var event = Event.builder().id(11L).build();
         when(eventRepository.searchEvents(eq("music"), eq("Singapore"), eq(List.of(1L, 2L)), eq(EventStatus.PUBLISHED), any(LocalDateTime.class)))

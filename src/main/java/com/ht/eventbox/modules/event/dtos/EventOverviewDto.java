@@ -15,4 +15,7 @@ public class EventOverviewDto {
 
     @JsonProperty("ended_count")
     private long endedCount;
+
+    @JsonProperty("draft_count")
+    private long draftCount;
 }

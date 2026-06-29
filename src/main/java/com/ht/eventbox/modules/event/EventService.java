@@ -546,11 +546,38 @@ public class EventService {
         );
     }
 
+    public Page<Event> getAllPendingByOrganizationId(
+            Long organizationId,
+            String search,
+            Pageable pageable
+    ) {
+        return eventRepository.searchAllByOrganizationIdAndStatusInOrderByIdAsc(
+                organizationId,
+                List.of(EventStatus.PENDING),
+                normalizeSearch(search),
+                pageable
+        );
+    }
+
     public Page<Event> getAllPublished(
             String search,
             Pageable pageable
     ) {
         return eventRepository.searchPublishedByStatusOrderByIdAsc(
+                EventStatus.PUBLISHED,
+                normalizeSearch(search),
+                LocalDateTime.now(),
+                pageable
+        );
+    }
+
+    public Page<Event> getAllPublishedByOrganizationId(
+            Long organizationId,
+            String search,
+            Pageable pageable
+    ) {
+        return eventRepository.searchPublishedByOrganizationIdOrderByIdAsc(
+                organizationId,
                 EventStatus.PUBLISHED,
                 normalizeSearch(search),
                 LocalDateTime.now(),
@@ -566,6 +593,33 @@ public class EventService {
                 EventStatus.PUBLISHED,
                 normalizeSearch(search),
                 LocalDateTime.now(),
+                pageable
+        );
+    }
+
+    public Page<Event> getAllEndedByOrganizationId(
+            Long organizationId,
+            String search,
+            Pageable pageable
+    ) {
+        return eventRepository.searchEndedByOrganizationIdOrderByIdAsc(
+                organizationId,
+                EventStatus.PUBLISHED,
+                normalizeSearch(search),
+                LocalDateTime.now(),
+                pageable
+        );
+    }
+
+    public Page<Event> getAllDraftByOrganizationId(
+            Long organizationId,
+            String search,
+            Pageable pageable
+    ) {
+        return eventRepository.searchDraftByOrganizationIdOrderByIdAsc(
+                organizationId,
+                EventStatus.DRAFT,
+                normalizeSearch(search),
                 pageable
         );
     }
@@ -588,6 +642,40 @@ public class EventService {
                         EventStatus.PUBLISHED,
                         normalizedSearch,
                         now
+                ))
+                .draftCount(eventRepository.countSearchAllByStatusIn(
+                        List.of(EventStatus.DRAFT),
+                        normalizedSearch
+                ))
+                .build();
+    }
+
+    public EventOverviewDto getOverviewByOrganizationId(Long organizationId, String search) {
+        var normalizedSearch = normalizeSearch(search);
+        var now = LocalDateTime.now();
+
+        return EventOverviewDto.builder()
+                .pendingCount(eventRepository.countSearchAllByOrganizationIdAndStatusIn(
+                        organizationId,
+                        List.of(EventStatus.PENDING),
+                        normalizedSearch
+                ))
+                .publishedCount(eventRepository.countSearchPublishedByOrganizationId(
+                        organizationId,
+                        EventStatus.PUBLISHED,
+                        normalizedSearch,
+                        now
+                ))
+                .endedCount(eventRepository.countSearchEndedByOrganizationId(
+                        organizationId,
+                        EventStatus.PUBLISHED,
+                        normalizedSearch,
+                        now
+                ))
+                .draftCount(eventRepository.countSearchDraftByOrganizationId(
+                        organizationId,
+                        EventStatus.DRAFT,
+                        normalizedSearch
                 ))
                 .build();
     }
