@@ -20,6 +20,8 @@ import org.slf4j.Logger;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -432,6 +434,24 @@ public class OrderService {
     }
 
     public List<Order> getByShowId(Long userId, Long showId) {
+        ensureShowReportAccess(userId, showId);
+
+        return orderRepository.findAllByItemsTicketEventShowIdAndStatusIsOrderByIdAsc(
+                showId,
+                OrderStatus.FULFILLED);
+    }
+
+    public Page<Order> getByShowId(Long userId, Long showId, String search, Pageable pageable) {
+        ensureShowReportAccess(userId, showId);
+
+        return orderRepository.searchAllByItemsTicketEventShowIdAndStatusIsOrderByIdAsc(
+                showId,
+                OrderStatus.FULFILLED,
+                normalizeSearch(search),
+                pageable);
+    }
+
+    private void ensureShowReportAccess(Long userId, Long showId) {
         Event event = eventRepository.findByShowsId(showId)
                 .orElseThrow(() -> new HttpException(Constant.ErrorCode.EVENT_NOT_FOUND, HttpStatus.NOT_FOUND));
 
@@ -441,10 +461,15 @@ public class OrderService {
                 && List.of(OrganizationRole.MANAGER, OrganizationRole.OWNER).contains(m.getRole()))) {
             throw new HttpException(Constant.ErrorCode.NOT_ALLOWED_OPERATION, HttpStatus.FORBIDDEN);
         }
+    }
 
-        return orderRepository.findAllByItemsTicketEventShowIdAndStatusIsOrderByIdAsc(
-                showId,
-                OrderStatus.FULFILLED);
+    private String normalizeSearch(String search) {
+        if (search == null) {
+            return null;
+        }
+
+        var trimmed = search.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     private void buildRefundObject(Refund.RefundBuilder builder, com.paypal.sdk.models.Refund paypalRefund) {

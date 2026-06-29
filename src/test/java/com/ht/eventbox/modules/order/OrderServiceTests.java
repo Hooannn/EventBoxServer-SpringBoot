@@ -37,6 +37,7 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.data.domain.PageRequest;
 
 import java.util.ArrayList;
 import java.time.LocalDateTime;
@@ -515,6 +516,40 @@ class OrderServiceTests {
                     assertThat(ex.getMessage()).isEqualTo(Constant.ErrorCode.EVENT_NOT_FOUND);
                     assertThat(ex.getStatus().value()).isEqualTo(404);
                 });
+    }
+
+    @Test
+    void getByShowIdSearch_shouldNormalizeSearchAndDelegateToRepository() {
+        var event = Event.builder()
+                .id(7L)
+                .organization(Organization.builder()
+                        .id(9L)
+                        .userOrganizations(List.of(
+                                UserOrganization.builder()
+                                        .user(User.builder().id(42L).build())
+                                        .role(OrganizationRole.MANAGER)
+                                        .build()))
+                        .build())
+                .status(EventStatus.PUBLISHED)
+                .build();
+        var order = sampleOrder();
+        var page = new org.springframework.data.domain.PageImpl<>(List.of(order), PageRequest.of(1, 10), 25);
+
+        when(eventRepository.findByShowsId(55L)).thenReturn(Optional.of(event));
+        when(orderRepository.searchAllByItemsTicketEventShowIdAndStatusIsOrderByIdAsc(
+                eq(55L),
+                eq(OrderStatus.FULFILLED),
+                eq("alice"),
+                any())).thenReturn(page);
+
+        var result = orderService.getByShowId(42L, 55L, " alice ", PageRequest.of(1, 10));
+
+        assertThat(result).isSameAs(page);
+        verify(orderRepository).searchAllByItemsTicketEventShowIdAndStatusIsOrderByIdAsc(
+                eq(55L),
+                eq(OrderStatus.FULFILLED),
+                eq("alice"),
+                any());
     }
 
     private Ticket sampleTicket(LocalDateTime saleStartTime, LocalDateTime saleEndTime,
