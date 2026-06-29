@@ -21,6 +21,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -79,6 +81,20 @@ class VoucherServiceTests {
         var result = voucherService.getAllByEventId(42L, 7L);
 
         assertThat(result).containsExactly(voucher);
+    }
+
+    @Test
+    void getAllByEventIdSearchPaged_shouldNormalizeSearchAndDelegateToRepository() {
+        var voucher = sampleVoucher();
+        when(eventService.isMember(42L, 7L, List.of(OrganizationRole.MANAGER, OrganizationRole.STAFF, OrganizationRole.OWNER)))
+                .thenReturn(true);
+        when(voucherRepository.searchAllByEventIdOrderByIdAsc(eq(7L), eq("summer"), any()))
+                .thenReturn(new PageImpl<>(List.of(voucher), PageRequest.of(1, 10), 21));
+
+        var result = voucherService.getAllByEventId(42L, 7L, " summer ", PageRequest.of(1, 10));
+
+        assertThat(result.getContent()).containsExactly(voucher);
+        verify(voucherRepository).searchAllByEventIdOrderByIdAsc(eq(7L), eq("summer"), any());
     }
 
     @Test

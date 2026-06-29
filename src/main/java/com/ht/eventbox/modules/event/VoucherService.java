@@ -10,6 +10,8 @@ import com.ht.eventbox.modules.event.dtos.CreateVoucherDto;
 import com.ht.eventbox.modules.order.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +37,16 @@ public class VoucherService {
         }
 
         return voucherRepository.findAllByEventIdOrderByIdAsc(eventId);
+    }
+
+    public Page<Voucher> getAllByEventId(Long userId, Long eventId, String search, Pageable pageable) {
+        boolean isMember = eventService.isMember(userId, eventId, List.of(OrganizationRole.MANAGER, OrganizationRole.STAFF, OrganizationRole.OWNER));
+
+        if (!isMember) {
+            throw new HttpException(Constant.ErrorCode.NOT_ALLOWED_OPERATION, HttpStatus.FORBIDDEN);
+        }
+
+        return voucherRepository.searchAllByEventIdOrderByIdAsc(eventId, normalizeSearch(search), pageable);
     }
 
     public List<Voucher> getAllPublicByEventId(Long eventId) {
@@ -206,5 +218,14 @@ public class VoucherService {
         orderRepository.save(order);
 
         return true;
+    }
+
+    private String normalizeSearch(String search) {
+        if (search == null) {
+            return null;
+        }
+
+        var trimmed = search.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }

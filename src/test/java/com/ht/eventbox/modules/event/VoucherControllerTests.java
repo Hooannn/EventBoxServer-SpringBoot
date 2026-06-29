@@ -123,6 +123,29 @@ class VoucherControllerTests {
     }
 
     @Test
+    void getAllByEventIdV2_shouldReturnPagedVouchersWithSearch() throws Exception {
+        when(voucherService.getAllByEventId(eq(42L), eq(11L), eq("summer"), any()))
+                .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(sampleVoucher()), org.springframework.data.domain.PageRequest.of(1, 10), 21));
+
+        mockMvc.perform(get("/api/v2/vouchers/event/11")
+                        .requestAttr("sub", "42")
+                        .param("search", "summer")
+                        .param("page", "1")
+                        .param("size", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.message").value("OK"))
+                .andExpect(jsonPath("$.data[0].id").value(9L))
+                .andExpect(jsonPath("$.totalPages").value(3))
+                .andExpect(jsonPath("$.totalElements").value(21))
+                .andExpect(jsonPath("$.size").value(10))
+                .andExpect(jsonPath("$.number").value(1))
+                .andExpect(jsonPath("$.numberOfElements").value(1));
+
+        verify(voucherService).getAllByEventId(eq(42L), eq(11L), eq("summer"), any());
+    }
+
+    @Test
     void getAllPublicByEventId_shouldReturnPublicVouchers() throws Exception {
         when(voucherService.getAllPublicByEventId(11L)).thenReturn(List.of(sampleVoucher()));
 

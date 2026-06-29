@@ -2,9 +2,12 @@ package com.ht.eventbox.modules.event;
 
 import com.ht.eventbox.entities.Voucher;
 import jakarta.persistence.LockModeType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -21,6 +24,36 @@ public interface VoucherRepository extends JpaRepository<Voucher, Long> {
     boolean existsByCodeAndEventId(String code, Long eventId);
 
     List<Voucher> findAllByEventIdOrderByIdAsc(Long eventId);
+
+    @Query(value = """
+            SELECT v
+            FROM Voucher v
+            WHERE v.event.id = :eventId
+              AND (
+                    :search IS NULL
+                    OR :search = ''
+                    OR LOWER(STR(v.id)) LIKE LOWER(CONCAT('%', :search, '%'))
+                    OR LOWER(v.code) LIKE LOWER(CONCAT('%', :search, '%'))
+                    OR LOWER(v.name) LIKE LOWER(CONCAT('%', :search, '%'))
+              )
+            ORDER BY v.id ASC
+            """,
+            countQuery = """
+            SELECT COUNT(v)
+            FROM Voucher v
+            WHERE v.event.id = :eventId
+              AND (
+                    :search IS NULL
+                    OR :search = ''
+                    OR LOWER(STR(v.id)) LIKE LOWER(CONCAT('%', :search, '%'))
+                    OR LOWER(v.code) LIKE LOWER(CONCAT('%', :search, '%'))
+                    OR LOWER(v.name) LIKE LOWER(CONCAT('%', :search, '%'))
+              )
+            """)
+    Page<Voucher> searchAllByEventIdOrderByIdAsc(
+            @Param("eventId") Long eventId,
+            @Param("search") String search,
+            Pageable pageable);
 
     List<Voucher> findAllByEventIdAndIsPublicTrueAndIsActiveTrueOrderByIdAsc(Long eventId);
 
