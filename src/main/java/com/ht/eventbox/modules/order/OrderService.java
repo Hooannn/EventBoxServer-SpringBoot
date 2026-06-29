@@ -21,10 +21,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -451,6 +453,37 @@ public class OrderService {
                 pageable);
     }
 
+    public String exportByShowId(Long userId, Long showId, String search) {
+        var csv = new StringBuilder();
+        csv.append("order_id,user_name,user_email,status,place_total\n");
+
+        int pageNumber = 0;
+        int pageSize = 200;
+        while (true) {
+            var page = getByShowId(userId, showId, search, PageRequest.of(pageNumber, pageSize));
+            for (var order : page.getContent()) {
+                csv.append(csvValue(order.getId()))
+                        .append(',')
+                        .append(csvValue(order.getUser() != null ? order.getUser().getFullName() : ""))
+                        .append(',')
+                        .append(csvValue(order.getUser() != null ? order.getUser().getEmail() : ""))
+                        .append(',')
+                        .append(csvValue(order.getStatus() != null ? order.getStatus().name() : ""))
+                        .append(',')
+                        .append(csvValue(order.getPlaceTotal()))
+                        .append('\n');
+            }
+
+            if (!page.hasNext()) {
+                break;
+            }
+
+            pageNumber++;
+        }
+
+        return csv.toString();
+    }
+
     private void ensureShowReportAccess(Long userId, Long showId) {
         Event event = eventRepository.findByShowsId(showId)
                 .orElseThrow(() -> new HttpException(Constant.ErrorCode.EVENT_NOT_FOUND, HttpStatus.NOT_FOUND));
@@ -470,6 +503,19 @@ public class OrderService {
 
         var trimmed = search.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private String csvValue(Object value) {
+        if (value == null) {
+            return "";
+        }
+
+        var raw = value.toString();
+        var escaped = raw.replace("\"", "\"\"");
+        if (escaped.contains(",") || escaped.contains("\"") || escaped.contains("\n") || escaped.contains("\r")) {
+            return "\"" + escaped + "\"";
+        }
+        return escaped;
     }
 
     private void buildRefundObject(Refund.RefundBuilder builder, com.paypal.sdk.models.Refund paypalRefund) {

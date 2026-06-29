@@ -73,6 +73,26 @@ class OrderRepositoryTests {
         assertThat(byId.getTotalElements()).isEqualTo(1);
     }
 
+    @Test
+    void searchAllByShowIdList_shouldReturnAllMatchingOrdersForExport() {
+        var aliceOrder = persistFulfilledOrder(
+                "Alice",
+                "Smith",
+                "alice@example.com",
+                "Alice Smith",
+                "alice"
+        );
+
+        var results = orderRepository.searchAllByItemsTicketEventShowIdAndStatusIsOrderByIdAsc(
+                aliceOrder.showId(),
+                OrderStatus.FULFILLED,
+                "alice",
+                PageRequest.of(0, 50));
+
+        assertThat(results.getContent()).hasSize(1);
+        assertThat(results.getContent().get(0).getId()).isEqualTo(aliceOrder.order().getId());
+    }
+
     private PersistedOrder persistFulfilledOrder(
             String firstName,
             String lastName,

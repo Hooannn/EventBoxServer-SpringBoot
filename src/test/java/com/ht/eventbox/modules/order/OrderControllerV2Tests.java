@@ -24,6 +24,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -66,6 +68,26 @@ class OrderControllerV2Tests {
                 .andExpect(jsonPath("$.numberOfElements").value(1));
 
         verify(orderService).getByShowId(eq(42L), eq(77L), eq("alice"), any(Pageable.class));
+    }
+
+    @Test
+    void exportByShowIdAll_shouldReturnCsvAttachment() throws Exception {
+        when(orderService.exportByShowId(eq(42L), eq(77L), eq("alice")))
+                .thenReturn("""
+                        order_id,user_name,user_email,status,place_total
+                        61,Test User,test@example.com,FULFILLED,75000.0
+                        """);
+
+        mockMvc.perform(get("/api/v2/orders/shows/77/all/export")
+                        .requestAttr("sub", "42")
+                        .param("search", "alice"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", org.hamcrest.Matchers.containsString("text/csv")))
+                .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("attachment")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("order_id,user_name,user_email,status,place_total")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("61,Test User,test@example.com,FULFILLED,75000.0")));
+
+        verify(orderService).exportByShowId(eq(42L), eq(77L), eq("alice"));
     }
 
     private Order sampleOrder(Long id) {

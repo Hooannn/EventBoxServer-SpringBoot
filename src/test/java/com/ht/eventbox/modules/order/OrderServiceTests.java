@@ -38,6 +38,7 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.PageImpl;
 
 import java.util.ArrayList;
 import java.time.LocalDateTime;
@@ -550,6 +551,47 @@ class OrderServiceTests {
                 eq(OrderStatus.FULFILLED),
                 eq("alice"),
                 any());
+    }
+
+    @Test
+    void exportByShowId_shouldReturnCsvWithUserAndOrderColumns() {
+        var event = Event.builder()
+                .id(7L)
+                .organization(Organization.builder()
+                        .id(9L)
+                        .userOrganizations(List.of(
+                                UserOrganization.builder()
+                                        .user(User.builder().id(42L).build())
+                                        .role(OrganizationRole.MANAGER)
+                                        .build()))
+                        .build())
+                .status(EventStatus.PUBLISHED)
+                .build();
+        var firstOrder = sampleOrder();
+        firstOrder.setId(500L);
+        var secondOrder = sampleOrder();
+        secondOrder.setId(501L);
+
+        when(eventRepository.findByShowsId(55L)).thenReturn(Optional.of(event));
+        when(orderRepository.searchAllByItemsTicketEventShowIdAndStatusIsOrderByIdAsc(
+                eq(55L),
+                eq(OrderStatus.FULFILLED),
+                eq("alice"),
+                any()))
+                .thenReturn(new PageImpl<>(List.of(firstOrder), PageRequest.of(0, 1), 2))
+                .thenReturn(new PageImpl<>(List.of(secondOrder), PageRequest.of(1, 1), 2));
+
+        var result = orderService.exportByShowId(42L, 55L, " alice ");
+
+        assertThat(result).contains("order_id,user_name,user_email,status,place_total");
+        assertThat(result).contains("500,Test User,user@example.com,WAITING_FOR_PAYMENT,100000.0");
+        assertThat(result).contains("501,Test User,user@example.com,WAITING_FOR_PAYMENT,100000.0");
+        verify(orderRepository, org.mockito.Mockito.times(2))
+                .searchAllByItemsTicketEventShowIdAndStatusIsOrderByIdAsc(
+                        eq(55L),
+                        eq(OrderStatus.FULFILLED),
+                        eq("alice"),
+                        any());
     }
 
     private Ticket sampleTicket(LocalDateTime saleStartTime, LocalDateTime saleEndTime,
