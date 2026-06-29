@@ -12,6 +12,7 @@ import com.ht.eventbox.modules.backgroundjobs.NotificationJobService;
 import com.ht.eventbox.modules.asset.AssetRepository;
 import com.ht.eventbox.modules.category.CategoryRepository;
 import com.ht.eventbox.modules.event.dtos.CreateEventDto;
+import com.ht.eventbox.modules.event.dtos.EventOverviewDto;
 import com.ht.eventbox.modules.event.dtos.UpdateEventDto;
 import com.ht.eventbox.modules.event.dtos.UpdateEventTagsDto;
 import com.ht.eventbox.modules.keyword.KeywordRepository;
@@ -526,6 +527,71 @@ public class EventService {
         return eventRepository.findAllByStatusInOrderByIdAsc(statuses, pageable);
     }
 
+    public Page<Event> getAllByStatusIn(
+            List<EventStatus> statuses,
+            String search,
+            Pageable pageable
+    ) {
+        return eventRepository.searchAllByStatusInOrderByIdAsc(statuses, normalizeSearch(search), pageable);
+    }
+
+    public Page<Event> getAllPending(
+            String search,
+            Pageable pageable
+    ) {
+        return eventRepository.searchAllByStatusInOrderByIdAsc(
+                List.of(EventStatus.PENDING),
+                normalizeSearch(search),
+                pageable
+        );
+    }
+
+    public Page<Event> getAllPublished(
+            String search,
+            Pageable pageable
+    ) {
+        return eventRepository.searchPublishedByStatusOrderByIdAsc(
+                EventStatus.PUBLISHED,
+                normalizeSearch(search),
+                LocalDateTime.now(),
+                pageable
+        );
+    }
+
+    public Page<Event> getAllEnded(
+            String search,
+            Pageable pageable
+    ) {
+        return eventRepository.searchEndedByStatusOrderByIdAsc(
+                EventStatus.PUBLISHED,
+                normalizeSearch(search),
+                LocalDateTime.now(),
+                pageable
+        );
+    }
+
+    public EventOverviewDto getOverview(String search) {
+        var normalizedSearch = normalizeSearch(search);
+        var now = LocalDateTime.now();
+
+        return EventOverviewDto.builder()
+                .pendingCount(eventRepository.countSearchAllByStatusIn(
+                        List.of(EventStatus.PENDING),
+                        normalizedSearch
+                ))
+                .publishedCount(eventRepository.countSearchPublishedByStatus(
+                        EventStatus.PUBLISHED,
+                        normalizedSearch,
+                        now
+                ))
+                .endedCount(eventRepository.countSearchEndedByStatus(
+                        EventStatus.PUBLISHED,
+                        normalizedSearch,
+                        now
+                ))
+                .build();
+    }
+
     public boolean eventPayout(Long userId, Long eventId) {
         var event = eventRepository.findByIdAndStatusIs(eventId, EventStatus.PUBLISHED)
                 .orElseThrow(() -> new HttpException(Constant.ErrorCode.EVENT_NOT_FOUND, HttpStatus.NOT_FOUND));
@@ -597,5 +663,14 @@ public class EventService {
 
         return event.getOrganization().getUserOrganizations().stream()
                 .anyMatch(orgUser -> orgUser.getUser().getId().equals(userId) && roles.contains(orgUser.getRole()));
+    }
+
+    private String normalizeSearch(String search) {
+        if (search == null) {
+            return null;
+        }
+
+        var trimmed = search.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }

@@ -1,6 +1,7 @@
 package com.ht.eventbox.modules.event;
 
 import com.ht.eventbox.entities.Event;
+import com.ht.eventbox.entities.EventShow;
 import com.ht.eventbox.enums.EventStatus;
 import com.ht.eventbox.enums.OrganizationRole;
 import org.springframework.data.domain.Page;
@@ -32,6 +33,214 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     List<Event> findAllByStatusInOrderByIdAsc(Collection<EventStatus> status);
 
     Page<Event> findAllByStatusInOrderByIdAsc(Collection<EventStatus> status, Pageable pageable);
+
+    @Query("""
+            SELECT COUNT(DISTINCT e)
+            FROM Event e
+            JOIN e.organization o
+            WHERE e.status IN :statuses
+              AND (
+                :search IS NULL
+                OR :search = ''
+                OR LOWER(e.title) LIKE LOWER(CONCAT('%', :search, '%'))
+                OR LOWER(e.description) LIKE LOWER(CONCAT('%', :search, '%'))
+                OR LOWER(e.address) LIKE LOWER(CONCAT('%', :search, '%'))
+                OR LOWER(o.name) LIKE LOWER(CONCAT('%', :search, '%'))
+                OR LOWER(COALESCE(o.description, '')) LIKE LOWER(CONCAT('%', :search, '%'))
+              )
+            """)
+    long countSearchAllByStatusIn(
+            @Param("statuses") Collection<EventStatus> statuses,
+            @Param("search") String search
+    );
+
+    @Query(value = """
+            SELECT DISTINCT e
+            FROM Event e
+            JOIN e.organization o
+            WHERE e.status IN :statuses
+              AND (
+                :search IS NULL
+                OR :search = ''
+                OR LOWER(e.title) LIKE LOWER(CONCAT('%', :search, '%'))
+                OR LOWER(e.description) LIKE LOWER(CONCAT('%', :search, '%'))
+                OR LOWER(e.address) LIKE LOWER(CONCAT('%', :search, '%'))
+                OR LOWER(o.name) LIKE LOWER(CONCAT('%', :search, '%'))
+                OR LOWER(COALESCE(o.description, '')) LIKE LOWER(CONCAT('%', :search, '%'))
+              )
+            ORDER BY e.id ASC
+            """, countQuery = """
+            SELECT COUNT(DISTINCT e)
+            FROM Event e
+            JOIN e.organization o
+            WHERE e.status IN :statuses
+              AND (
+                :search IS NULL
+                OR :search = ''
+                OR LOWER(e.title) LIKE LOWER(CONCAT('%', :search, '%'))
+                OR LOWER(e.description) LIKE LOWER(CONCAT('%', :search, '%'))
+                OR LOWER(e.address) LIKE LOWER(CONCAT('%', :search, '%'))
+                OR LOWER(o.name) LIKE LOWER(CONCAT('%', :search, '%'))
+                OR LOWER(COALESCE(o.description, '')) LIKE LOWER(CONCAT('%', :search, '%'))
+              )
+            """)
+    Page<Event> searchAllByStatusInOrderByIdAsc(
+            @Param("statuses") Collection<EventStatus> statuses,
+            @Param("search") String search,
+            Pageable pageable
+    );
+
+    @Query(value = """
+            SELECT DISTINCT e
+            FROM Event e
+            JOIN e.organization o
+            WHERE e.status = :status
+              AND EXISTS (
+                SELECT s
+                FROM EventShow s
+                WHERE s.event = e
+                  AND s.endTime >= :now
+              )
+              AND (
+                :search IS NULL
+                OR :search = ''
+                OR LOWER(e.title) LIKE LOWER(CONCAT('%', :search, '%'))
+                OR LOWER(e.description) LIKE LOWER(CONCAT('%', :search, '%'))
+                OR LOWER(e.address) LIKE LOWER(CONCAT('%', :search, '%'))
+                OR LOWER(o.name) LIKE LOWER(CONCAT('%', :search, '%'))
+                OR LOWER(COALESCE(o.description, '')) LIKE LOWER(CONCAT('%', :search, '%'))
+              )
+            ORDER BY e.id ASC
+            """, countQuery = """
+            SELECT COUNT(DISTINCT e)
+            FROM Event e
+            JOIN e.organization o
+            WHERE e.status = :status
+              AND EXISTS (
+                SELECT s
+                FROM EventShow s
+                WHERE s.event = e
+                  AND s.endTime >= :now
+              )
+              AND (
+                :search IS NULL
+                OR :search = ''
+                OR LOWER(e.title) LIKE LOWER(CONCAT('%', :search, '%'))
+                OR LOWER(e.description) LIKE LOWER(CONCAT('%', :search, '%'))
+                OR LOWER(e.address) LIKE LOWER(CONCAT('%', :search, '%'))
+                OR LOWER(o.name) LIKE LOWER(CONCAT('%', :search, '%'))
+                OR LOWER(COALESCE(o.description, '')) LIKE LOWER(CONCAT('%', :search, '%'))
+              )
+            """)
+    Page<Event> searchPublishedByStatusOrderByIdAsc(
+            @Param("status") EventStatus status,
+            @Param("search") String search,
+            @Param("now") LocalDateTime now,
+            Pageable pageable
+    );
+
+    @Query(value = """
+            SELECT DISTINCT e
+            FROM Event e
+            JOIN e.organization o
+            WHERE e.status = :status
+              AND NOT EXISTS (
+                SELECT s
+                FROM EventShow s
+                WHERE s.event = e
+                  AND s.endTime >= :now
+              )
+              AND (
+                :search IS NULL
+                OR :search = ''
+                OR LOWER(e.title) LIKE LOWER(CONCAT('%', :search, '%'))
+                OR LOWER(e.description) LIKE LOWER(CONCAT('%', :search, '%'))
+                OR LOWER(e.address) LIKE LOWER(CONCAT('%', :search, '%'))
+                OR LOWER(o.name) LIKE LOWER(CONCAT('%', :search, '%'))
+                OR LOWER(COALESCE(o.description, '')) LIKE LOWER(CONCAT('%', :search, '%'))
+              )
+            ORDER BY e.id ASC
+            """, countQuery = """
+            SELECT COUNT(DISTINCT e)
+            FROM Event e
+            JOIN e.organization o
+            WHERE e.status = :status
+              AND NOT EXISTS (
+                SELECT s
+                FROM EventShow s
+                WHERE s.event = e
+                  AND s.endTime >= :now
+              )
+              AND (
+                :search IS NULL
+                OR :search = ''
+                OR LOWER(e.title) LIKE LOWER(CONCAT('%', :search, '%'))
+                OR LOWER(e.description) LIKE LOWER(CONCAT('%', :search, '%'))
+                OR LOWER(e.address) LIKE LOWER(CONCAT('%', :search, '%'))
+                OR LOWER(o.name) LIKE LOWER(CONCAT('%', :search, '%'))
+                OR LOWER(COALESCE(o.description, '')) LIKE LOWER(CONCAT('%', :search, '%'))
+              )
+            """)
+    Page<Event> searchEndedByStatusOrderByIdAsc(
+            @Param("status") EventStatus status,
+            @Param("search") String search,
+            @Param("now") LocalDateTime now,
+            Pageable pageable
+    );
+
+    @Query("""
+            SELECT COUNT(DISTINCT e)
+            FROM Event e
+            JOIN e.organization o
+            WHERE e.status = :status
+              AND EXISTS (
+                SELECT s
+                FROM EventShow s
+                WHERE s.event = e
+                  AND s.endTime >= :now
+              )
+              AND (
+                :search IS NULL
+                OR :search = ''
+                OR LOWER(e.title) LIKE LOWER(CONCAT('%', :search, '%'))
+                OR LOWER(e.description) LIKE LOWER(CONCAT('%', :search, '%'))
+                OR LOWER(e.address) LIKE LOWER(CONCAT('%', :search, '%'))
+                OR LOWER(o.name) LIKE LOWER(CONCAT('%', :search, '%'))
+                OR LOWER(COALESCE(o.description, '')) LIKE LOWER(CONCAT('%', :search, '%'))
+              )
+            """)
+    long countSearchPublishedByStatus(
+            @Param("status") EventStatus status,
+            @Param("search") String search,
+            @Param("now") LocalDateTime now
+    );
+
+    @Query("""
+            SELECT COUNT(DISTINCT e)
+            FROM Event e
+            JOIN e.organization o
+            WHERE e.status = :status
+              AND NOT EXISTS (
+                SELECT s
+                FROM EventShow s
+                WHERE s.event = e
+                  AND s.endTime >= :now
+              )
+              AND (
+                :search IS NULL
+                OR :search = ''
+                OR LOWER(e.title) LIKE LOWER(CONCAT('%', :search, '%'))
+                OR LOWER(e.description) LIKE LOWER(CONCAT('%', :search, '%'))
+                OR LOWER(e.address) LIKE LOWER(CONCAT('%', :search, '%'))
+                OR LOWER(o.name) LIKE LOWER(CONCAT('%', :search, '%'))
+                OR LOWER(COALESCE(o.description, '')) LIKE LOWER(CONCAT('%', :search, '%'))
+              )
+            """)
+    long countSearchEndedByStatus(
+            @Param("status") EventStatus status,
+            @Param("search") String search,
+            @Param("now") LocalDateTime now
+    );
 
     Page<Event> findByStatusIn(Collection<EventStatus> status, Pageable pageable);
 

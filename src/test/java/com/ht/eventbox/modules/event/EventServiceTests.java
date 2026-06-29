@@ -21,6 +21,7 @@ import com.ht.eventbox.modules.backgroundjobs.NotificationJobService;
 import com.ht.eventbox.modules.asset.AssetRepository;
 import com.ht.eventbox.modules.category.CategoryRepository;
 import com.ht.eventbox.modules.event.dtos.CreateEventDto;
+import com.ht.eventbox.modules.event.dtos.EventOverviewDto;
 import com.ht.eventbox.modules.event.dtos.UpdateEventDto;
 import com.ht.eventbox.modules.event.dtos.UpdateEventTagsDto;
 import com.ht.eventbox.modules.keyword.KeywordRepository;
@@ -156,6 +157,63 @@ class EventServiceTests {
 
         assertThat(result).isSameAs(page);
         verify(eventRepository).findAllByStatusInOrderByIdAsc(eq(List.of(EventStatus.PENDING, EventStatus.PUBLISHED)), eq(PageRequest.of(1, 10)));
+    }
+
+    @Test
+    void getAllByStatusInSearchPaged_shouldDelegateToRepository() {
+        var page = new PageImpl<>(List.of(Event.builder().id(11L).build()), PageRequest.of(1, 10), 33);
+        when(eventRepository.searchAllByStatusInOrderByIdAsc(eq(List.of(EventStatus.PENDING, EventStatus.PUBLISHED)), eq("music"), any()))
+                .thenReturn(page);
+
+        var result = eventService.getAllByStatusIn(List.of(EventStatus.PENDING, EventStatus.PUBLISHED), "music", PageRequest.of(1, 10));
+
+        assertThat(result).isSameAs(page);
+        verify(eventRepository).searchAllByStatusInOrderByIdAsc(eq(List.of(EventStatus.PENDING, EventStatus.PUBLISHED)), eq("music"), eq(PageRequest.of(1, 10)));
+    }
+
+    @Test
+    void getAllPublishedSearchPaged_shouldDelegateToRepository() {
+        var page = new PageImpl<>(List.of(Event.builder().id(12L).build()), PageRequest.of(0, 5), 6);
+        when(eventRepository.searchPublishedByStatusOrderByIdAsc(eq(EventStatus.PUBLISHED), eq("festival"), any(LocalDateTime.class), any()))
+                .thenReturn(page);
+
+        var result = eventService.getAllPublished("festival", PageRequest.of(0, 5));
+
+        assertThat(result).isSameAs(page);
+        verify(eventRepository).searchPublishedByStatusOrderByIdAsc(eq(EventStatus.PUBLISHED), eq("festival"), any(LocalDateTime.class), eq(PageRequest.of(0, 5)));
+    }
+
+    @Test
+    void getAllEndedSearchPaged_shouldDelegateToRepository() {
+        var page = new PageImpl<>(List.of(Event.builder().id(13L).build()), PageRequest.of(2, 7), 15);
+        when(eventRepository.searchEndedByStatusOrderByIdAsc(eq(EventStatus.PUBLISHED), eq("concert"), any(LocalDateTime.class), any()))
+                .thenReturn(page);
+
+        var result = eventService.getAllEnded("concert", PageRequest.of(2, 7));
+
+        assertThat(result).isSameAs(page);
+        verify(eventRepository).searchEndedByStatusOrderByIdAsc(eq(EventStatus.PUBLISHED), eq("concert"), any(LocalDateTime.class), eq(PageRequest.of(2, 7)));
+    }
+
+    @Test
+    void getOverview_shouldDelegateToCountQueries() {
+        when(eventRepository.countSearchAllByStatusIn(eq(List.of(EventStatus.PENDING)), eq("music")))
+                .thenReturn(4L);
+        when(eventRepository.countSearchPublishedByStatus(eq(EventStatus.PUBLISHED), eq("music"), any(LocalDateTime.class)))
+                .thenReturn(7L);
+        when(eventRepository.countSearchEndedByStatus(eq(EventStatus.PUBLISHED), eq("music"), any(LocalDateTime.class)))
+                .thenReturn(2L);
+
+        var result = eventService.getOverview("music");
+
+        assertThat(result).isEqualTo(EventOverviewDto.builder()
+                .pendingCount(4L)
+                .publishedCount(7L)
+                .endedCount(2L)
+                .build());
+        verify(eventRepository).countSearchAllByStatusIn(eq(List.of(EventStatus.PENDING)), eq("music"));
+        verify(eventRepository).countSearchPublishedByStatus(eq(EventStatus.PUBLISHED), eq("music"), any(LocalDateTime.class));
+        verify(eventRepository).countSearchEndedByStatus(eq(EventStatus.PUBLISHED), eq("music"), any(LocalDateTime.class));
     }
 
     @Test
