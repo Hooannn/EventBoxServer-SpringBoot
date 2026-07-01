@@ -5,6 +5,7 @@ import com.ht.eventbox.entities.Permission;
 import com.ht.eventbox.entities.Role;
 import com.ht.eventbox.modules.asset.AssetRepository;
 import com.ht.eventbox.modules.storage.CloudinaryService;
+import com.ht.eventbox.modules.user.dtos.UpdateUserDto;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -13,7 +14,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -112,5 +115,36 @@ class UserServiceTests {
 
         assertThat(result).isSameAs(page);
         verify(permissionRepository).searchAllByOrderByIdAsc("manage", PageRequest.of(2, 7));
+    }
+
+    @Test
+    void updateById_shouldPatchOnlyProvidedFields() {
+        var user = User.builder()
+                .id(1L)
+                .firstName("Old")
+                .lastName("Name")
+                .email("old@example.com")
+                .password("encoded-old")
+                .phone("111")
+                .birthday(LocalDateTime.of(2000, 1, 1, 0, 0))
+                .build();
+        when(userRepository.findById(1L)).thenReturn(java.util.Optional.of(user));
+        when(userRepository.findByEmail("new@example.com")).thenReturn(Optional.empty());
+        when(passwordEncoder.encode("new-password")).thenReturn("encoded-new");
+
+        var result = userService.updateById(1L, UpdateUserDto.builder()
+                .firstName("New")
+                .email("new@example.com")
+                .password("new-password")
+                .build());
+
+        assertThat(result).isTrue();
+        assertThat(user.getFirstName()).isEqualTo("New");
+        assertThat(user.getLastName()).isEqualTo("Name");
+        assertThat(user.getEmail()).isEqualTo("new@example.com");
+        assertThat(user.getPassword()).isEqualTo("encoded-new");
+        assertThat(user.getPhone()).isEqualTo("111");
+        assertThat(user.getBirthday()).isEqualTo(LocalDateTime.of(2000, 1, 1, 0, 0));
+        verify(userRepository).save(user);
     }
 }

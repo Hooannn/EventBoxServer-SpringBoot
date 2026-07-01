@@ -148,6 +148,43 @@ public class UserService {
         return permissionRepository.searchAllByOrderByIdAsc(normalizeSearch(search), pageable);
     }
 
+    public boolean updateById(Long userId, UpdateUserDto updateUserDto) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new HttpException(Constant.ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND));
+
+        if (updateUserDto.getEmail() != null) {
+            userRepository.findByEmail(updateUserDto.getEmail())
+                    .filter(existingUser -> !existingUser.getId().equals(userId))
+                    .ifPresent(existingUser -> {
+                        throw new HttpException(Constant.ErrorCode.USER_ALREADY_EXISTS, HttpStatus.BAD_REQUEST);
+                    });
+            user.setEmail(updateUserDto.getEmail());
+        }
+
+        if (updateUserDto.getFirstName() != null) {
+            user.setFirstName(updateUserDto.getFirstName());
+        }
+
+        if (updateUserDto.getLastName() != null) {
+            user.setLastName(updateUserDto.getLastName());
+        }
+
+        if (updateUserDto.getPassword() != null) {
+            user.setPassword(passwordEncoder.encode(updateUserDto.getPassword()));
+        }
+
+        if (updateUserDto.getPhone() != null) {
+            user.setPhone(updateUserDto.getPhone());
+        }
+
+        if (updateUserDto.getBirthday() != null) {
+            user.setBirthday(updateUserDto.getBirthday());
+        }
+
+        userRepository.save(user);
+        return true;
+    }
+
     public boolean updateUserRole(Long userId, UpdateUserRoleDto updateUserRoleDto) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new HttpException(Constant.ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND));

@@ -4,6 +4,7 @@ import com.ht.eventbox.config.GlobalExceptionHandler;
 import com.ht.eventbox.entities.Permission;
 import com.ht.eventbox.entities.Role;
 import com.ht.eventbox.entities.User;
+import com.ht.eventbox.modules.user.dtos.UpdateUserDto;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -23,6 +24,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -109,6 +112,28 @@ class UserControllerV2Tests {
                 .andExpect(jsonPath("$.numberOfElements").value(1));
 
         verify(userService).getAllPermissions(eq("manage"), any(Pageable.class));
+    }
+
+    @Test
+    void updateById_shouldPatchUser() throws Exception {
+        when(userService.updateById(eq(12L), any(UpdateUserDto.class))).thenReturn(true);
+
+        mockMvc.perform(patch("/api/v2/users/12")
+                        .contentType(APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "first_name": "Alice",
+                                  "email": "alice@example.com",
+                                  "password": "secret",
+                                  "birthday": "2026-07-01T10:15:30"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.message").value("UPDATE_SUCCESSFULLY"))
+                .andExpect(jsonPath("$.data").value(true));
+
+        verify(userService).updateById(eq(12L), any(UpdateUserDto.class));
     }
 
     private User sampleUser(Long id) {
