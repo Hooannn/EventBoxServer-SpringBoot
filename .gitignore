@@ -43,6 +43,7 @@ ehthumbs.db
 
 src/main/resources/application.properties
 src/main/resources/application-*.properties
+!src/main/resources/application-example.properties
 service-account-key.json
 *.pem
 note.md
