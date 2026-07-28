@@ -40,4 +40,14 @@ public class TicketItemTrace {
     @Column(name = "created_at")
     @JsonProperty("created_at")
     private java.time.LocalDateTime createdAt;
+
+    @Override
+    public boolean equals(Object o) {
+        return EntityIdentity.equals(this, o, id, o instanceof TicketItemTrace that ? that.getId() : null);
+    }
+
+    @Override
+    public int hashCode() {
+        return EntityIdentity.hashCode(this);
+    }
 }

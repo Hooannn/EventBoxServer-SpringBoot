@@ -67,4 +67,14 @@ public class Ticket {
     @Column(name = "updated_at")
     @JsonProperty("updated_at")
     private java.time.LocalDateTime updatedAt;
+
+    @Override
+    public boolean equals(Object o) {
+        return EntityIdentity.equals(this, o, id, o instanceof Ticket that ? that.getId() : null);
+    }
+
+    @Override
+    public int hashCode() {
+        return EntityIdentity.hashCode(this);
+    }
 }

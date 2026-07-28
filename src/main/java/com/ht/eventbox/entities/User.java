@@ -86,4 +86,14 @@ public class User {
     public String getFullName() {
         return firstName + " " + lastName;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        return EntityIdentity.equals(this, o, id, o instanceof User that ? that.getId() : null);
+    }
+
+    @Override
+    public int hashCode() {
+        return EntityIdentity.hashCode(this);
+    }
 }

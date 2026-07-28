@@ -379,6 +379,21 @@ class OrganizationServiceTests {
         verify(userRepository).save(user);
     }
 
+    @Test
+    void subscribe_shouldRemoveSubscriptionWhenPresentAsDifferentEntityInstance() {
+        var subscribedOrg = sampleOrganization(9L, 99L);
+        var fetchedOrg = sampleOrganization(9L, 100L);
+        var user = User.builder().id(42L).subscriptions(new HashSet<>(Set.of(subscribedOrg))).build();
+        when(userRepository.findById(42L)).thenReturn(Optional.of(user));
+        when(organizationRepository.findById(9L)).thenReturn(Optional.of(fetchedOrg));
+
+        var result = organizationService.subscribe(42L, 9L);
+
+        assertThat(result).isTrue();
+        assertThat(user.getSubscriptions()).isEmpty();
+        verify(userRepository).save(user);
+    }
+
     private Organization sampleOrganization(Long orgId, Long ownerUserId) {
         var org = Organization.builder()
                 .id(orgId)

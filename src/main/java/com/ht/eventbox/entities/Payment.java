@@ -90,4 +90,14 @@ public class Payment {
     @Column(name = "net_amount_currency")
     @JsonProperty("net_amount_currency")
     private String netAmountCurrency;
+
+    @Override
+    public boolean equals(Object o) {
+        return EntityIdentity.equals(this, o, id, o instanceof Payment that ? that.getId() : null);
+    }
+
+    @Override
+    public int hashCode() {
+        return EntityIdentity.hashCode(this);
+    }
 }

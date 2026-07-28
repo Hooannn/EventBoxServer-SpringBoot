@@ -90,4 +90,14 @@ public class Capture {
     @Column(name = "final_capture", nullable = false)
     @JsonProperty("final_capture")
     private Boolean finalCapture = false;
+
+    @Override
+    public boolean equals(Object o) {
+        return EntityIdentity.equals(this, o, id, o instanceof Capture that ? that.getId() : null);
+    }
+
+    @Override
+    public int hashCode() {
+        return EntityIdentity.hashCode(this);
+    }
 }

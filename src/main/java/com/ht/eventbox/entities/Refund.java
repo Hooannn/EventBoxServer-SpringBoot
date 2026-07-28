@@ -114,4 +114,14 @@ public class Refund {
     @JsonProperty("acquirer_reference_number")
     @Column(name = "acquirer_reference_number")
     private String acquirerReferenceNumber;
+
+    @Override
+    public boolean equals(Object o) {
+        return EntityIdentity.equals(this, o, id, o instanceof Refund that ? that.getId() : null);
+    }
+
+    @Override
+    public int hashCode() {
+        return EntityIdentity.hashCode(this);
+    }
 }

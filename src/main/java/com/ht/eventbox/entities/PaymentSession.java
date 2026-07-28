@@ -42,4 +42,14 @@ public class PaymentSession {
     @Column(name = "provider")
     @JsonProperty("provider")
     private String provider;
+
+    @Override
+    public boolean equals(Object o) {
+        return EntityIdentity.equals(this, o, id, o instanceof PaymentSession that ? that.getId() : null);
+    }
+
+    @Override
+    public int hashCode() {
+        return EntityIdentity.hashCode(this);
+    }
 }
