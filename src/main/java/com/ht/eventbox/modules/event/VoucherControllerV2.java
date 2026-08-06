@@ -1,6 +1,7 @@
 package com.ht.eventbox.modules.event;
 
-import com.ht.eventbox.annotations.RequiredPermissions;
+import org.springframework.security.access.prepost.PreAuthorize;
+import java.security.Principal;
 import com.ht.eventbox.config.QueryResponse;
 import com.ht.eventbox.entities.Voucher;
 import lombok.RequiredArgsConstructor;
@@ -23,14 +24,14 @@ public class VoucherControllerV2 {
     private final VoucherService voucherService;
 
     @GetMapping("/event/{eventId}")
-    @RequiredPermissions({"read:vouchers"})
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'read:vouchers')")
     public ResponseEntity<QueryResponse<Voucher>> getAllByEventId(
-            @RequestAttribute("sub") String sub,
+            Principal principal,
             @PathVariable Long eventId,
             @RequestParam(required = false) String search,
             Pageable pageable
     ) {
-        var res = voucherService.getAllByEventId(Long.valueOf(sub), eventId, search, pageable);
+        var res = voucherService.getAllByEventId(Long.valueOf(principal.getName()), eventId, search, pageable);
         return ResponseEntity.ok(
                 QueryResponse.from(res, HttpStatus.OK.value(), HttpStatus.OK.getReasonPhrase())
         );

@@ -1,6 +1,7 @@
 package com.ht.eventbox.modules.ticket;
 
-import com.ht.eventbox.annotations.RequiredPermissions;
+import org.springframework.security.access.prepost.PreAuthorize;
+import java.security.Principal;
 import com.ht.eventbox.config.Response;
 import com.ht.eventbox.constant.Constant;
 import com.ht.eventbox.entities.TicketItem;
@@ -32,10 +33,10 @@ public class TicketController {
          * toán (FULFILLED), dùng cho mobile app giao diện người dùng (vé của tôi)
          */
         @GetMapping("/items/me")
-        @RequiredPermissions({ "read:orders" })
+        @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'read:orders')")
         public ResponseEntity<Response<List<TicketService.TicketItemDetails>>> getMyTicketItems(
-                        @RequestAttribute("sub") String sub) {
-                var res = ticketService.getTicketItemsByUserIdAndOrderStatusIn(Long.valueOf(sub),
+                        Principal principal) {
+                var res = ticketService.getTicketItemsByUserIdAndOrderStatusIn(Long.valueOf(principal.getName()),
                                 Arrays.asList(OrderStatus.FULFILLED, OrderStatus.APPROVED));
 
                 return ResponseEntity.ok(
@@ -50,9 +51,9 @@ public class TicketController {
          * giao diện người dùng (vé của tôi)
          */
         @GetMapping("/items/{ticketItemId}")
-        @RequiredPermissions({ "read:orders" })
+        @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'read:orders')")
         public ResponseEntity<Response<TicketService.TicketItemDetails>> getTicketItemById(
-                        @RequestAttribute("sub") String sub,
+                        Principal principal,
                         @PathVariable Long ticketItemId) {
                 var res = ticketService.getTicketItemById(ticketItemId);
                 return ResponseEntity.ok(
@@ -67,11 +68,11 @@ public class TicketController {
          * dùng (vé của tôi)
          */
         @GetMapping("/items/{ticketItemId}/qrcode")
-        @RequiredPermissions({ "read:orders" })
+        @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'read:orders')")
         public ResponseEntity<Response<String>> getTicketItemQrCode(
-                        @RequestAttribute("sub") String sub,
+                        Principal principal,
                         @PathVariable String ticketItemId) {
-                var res = ticketService.getTicketItemQrCode(Long.valueOf(sub), Long.valueOf(ticketItemId));
+                var res = ticketService.getTicketItemQrCode(Long.valueOf(principal.getName()), Long.valueOf(ticketItemId));
                 return ResponseEntity.ok(
                                 new Response<>(
                                                 HttpStatus.OK.value(),
@@ -84,9 +85,9 @@ public class TicketController {
          */
         @PostMapping("/validate")
         public ResponseEntity<Response<TicketService.TicketItemDetails>> validateTicketItem(
-                        @RequestAttribute("sub") String sub,
+                        Principal principal,
                         @Valid @RequestBody ValidateTicketItemDto validateTicketItemDto) {
-                var res = ticketService.validateTicketItem(Long.valueOf(sub), validateTicketItemDto);
+                var res = ticketService.validateTicketItem(Long.valueOf(principal.getName()), validateTicketItemDto);
                 return ResponseEntity.ok(
                                 new Response<>(
                                                 HttpStatus.OK.value(),
@@ -100,9 +101,9 @@ public class TicketController {
          */
         @PostMapping("/traces")
         public ResponseEntity<Response<Boolean>> createTicketItemTrace(
-                        @RequestAttribute("sub") String sub,
+                        Principal principal,
                         @Valid @RequestBody ValidateTicketItemDto createTicketItemTraceDto) {
-                var res = ticketService.createTicketItemTrace(Long.valueOf(sub), createTicketItemTraceDto);
+                var res = ticketService.createTicketItemTrace(Long.valueOf(principal.getName()), createTicketItemTraceDto);
                 return ResponseEntity.ok(
                                 new Response<>(
                                                 HttpStatus.OK.value(),
@@ -115,11 +116,11 @@ public class TicketController {
          * tổ chức khi xem báo cáo
          */
         @GetMapping("/shows/{showId}/items")
-        @RequiredPermissions({ "read:orders" })
+        @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'read:orders')")
         public ResponseEntity<Response<List<TicketItem>>> getTicketItemByShowId(
-                        @RequestAttribute("sub") String sub,
+                        Principal principal,
                         @PathVariable Long showId) {
-                var res = ticketService.getTicketItemByShowId(Long.valueOf(sub), showId);
+                var res = ticketService.getTicketItemByShowId(Long.valueOf(principal.getName()), showId);
                 return ResponseEntity.ok(
                                 new Response<>(
                                                 HttpStatus.OK.value(),
@@ -132,12 +133,12 @@ public class TicketController {
          * app giao diện người dùng (vé của tôi)
          */
         @PostMapping("/items/{ticketItemId}/feedback")
-        @RequiredPermissions({ "create:orders" })
+        @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'create:orders')")
         public ResponseEntity<Response<Boolean>> createTicketItemFeedback(
-                        @RequestAttribute("sub") String sub,
+                        Principal principal,
                         @Valid @RequestBody FeedbackTicketItemDto feedbackTicketItemDto,
                         @PathVariable String ticketItemId) {
-                var res = ticketService.createTicketItemFeedback(Long.valueOf(sub), Long.valueOf(ticketItemId),
+                var res = ticketService.createTicketItemFeedback(Long.valueOf(principal.getName()), Long.valueOf(ticketItemId),
                                 feedbackTicketItemDto);
                 return ResponseEntity.created(null).body(
                                 new Response<>(
@@ -151,12 +152,12 @@ public class TicketController {
          * (vé của tôi)
          */
         @PostMapping("/items/{ticketItemId}/giveaway")
-        @RequiredPermissions({ "create:orders" })
+        @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'create:orders')")
         public ResponseEntity<Response<Boolean>> giveawayTicketItem(
-                        @RequestAttribute("sub") String sub,
+                        Principal principal,
                         @Valid @RequestBody GiveawayTicketItemDto giveawayTicketItemDto,
                         @PathVariable String ticketItemId) {
-                var res = ticketService.giveawayTicketItem(Long.valueOf(sub), Long.valueOf(ticketItemId),
+                var res = ticketService.giveawayTicketItem(Long.valueOf(principal.getName()), Long.valueOf(ticketItemId),
                                 giveawayTicketItemDto);
                 return ResponseEntity.ok(
                                 new Response<>(
@@ -170,9 +171,9 @@ public class TicketController {
          * mobile app giao diện người dùng xem thông tin ban tổ chức
          */
         @GetMapping("/items/feedback/organizations/{organizationId}")
-        @RequiredPermissions({ "read:organizations" })
+        @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'read:organizations')")
         public ResponseEntity<Response<List<TicketService.TicketItemDetails>>> getLatestTicketItemFeedbackByOrganization(
-                        @RequestAttribute("sub") String sub,
+                        Principal principal,
                         @PathVariable String organizationId) {
                 var res = ticketService.getLatestTicketItemFeedbackByOrganizationId(Long.valueOf(organizationId));
                 return ResponseEntity.ok(
@@ -187,11 +188,11 @@ public class TicketController {
          * chức khi xem báo cáo
          */
         @GetMapping("/items/feedback/event/{eventId}")
-        @RequiredPermissions({ "read:orders" })
+        @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'read:orders')")
         public ResponseEntity<Response<List<TicketService.TicketItemDetails>>> getTicketItemFeedbackByEvent(
-                        @RequestAttribute("sub") String sub,
+                        Principal principal,
                         @PathVariable String eventId) {
-                var res = ticketService.getTicketItemFeedbackByEventId(Long.valueOf(sub), Long.valueOf(eventId));
+                var res = ticketService.getTicketItemFeedbackByEventId(Long.valueOf(principal.getName()), Long.valueOf(eventId));
                 return ResponseEntity.ok(
                                 new Response<>(
                                                 HttpStatus.OK.value(),
@@ -200,7 +201,7 @@ public class TicketController {
         }
 
         @PostMapping("/items/{ticketItemId}/reminder/trigger")
-        @RequiredPermissions({ "access:admin" })
+        @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'access:admin')")
         public ResponseEntity<Response<Boolean>> triggerReminder(
                         @PathVariable String ticketItemId) {
                 var res = ticketService.triggerReminder(Long.valueOf(ticketItemId));

@@ -99,7 +99,7 @@ class EventControllerTests {
         when(eventService.updateTags(eq(11L), any(UpdateEventTagsDto.class))).thenReturn(true);
 
         mockMvc.perform(put("/api/v1/events/11/admin/tags")
-                        .requestAttr("sub", "42")
+                        .principal(() -> "42")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(UpdateEventTagsDto.builder()
                                 .featured(true)
@@ -118,7 +118,7 @@ class EventControllerTests {
         when(eventService.create(eq(42L), any(CreateEventDto.class))).thenReturn(true);
 
         mockMvc.perform(post("/api/v1/events")
-                        .requestAttr("sub", "42")
+                        .principal(() -> "42")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(sampleCreateEventDto())))
                 .andExpect(status().isCreated())
@@ -132,7 +132,7 @@ class EventControllerTests {
         when(eventService.update(eq(42L), eq(11L), any(UpdateEventDto.class))).thenReturn(true);
 
         mockMvc.perform(put("/api/v1/events/11")
-                        .requestAttr("sub", "42")
+                        .principal(() -> "42")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(sampleUpdateEventDto())))
                 .andExpect(status().isOk())
@@ -146,7 +146,7 @@ class EventControllerTests {
         when(eventService.archive(42L, 11L)).thenReturn(true);
 
         mockMvc.perform(post("/api/v1/events/11/archive")
-                        .requestAttr("sub", "42"))
+                        .principal(() -> "42"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.message").value(Constant.SuccessCode.UPDATE_SUCCESSFULLY))
@@ -158,7 +158,7 @@ class EventControllerTests {
         when(eventService.inactive(42L, 11L)).thenReturn(true);
 
         mockMvc.perform(post("/api/v1/events/11/inactive")
-                        .requestAttr("sub", "42"))
+                        .principal(() -> "42"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.message").value(Constant.SuccessCode.UPDATE_SUCCESSFULLY))
@@ -170,7 +170,7 @@ class EventControllerTests {
         when(eventService.active(42L, 11L)).thenReturn(true);
 
         mockMvc.perform(post("/api/v1/events/11/active")
-                        .requestAttr("sub", "42"))
+                        .principal(() -> "42"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.message").value(Constant.SuccessCode.UPDATE_SUCCESSFULLY))
@@ -284,7 +284,7 @@ class EventControllerTests {
         when(eventService.eventPayout(42L, 11L)).thenReturn(true);
 
         mockMvc.perform(post("/api/v1/events/11/payout/request")
-                        .requestAttr("sub", "42"))
+                        .principal(() -> "42"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.message").value(Constant.SuccessCode.REQUEST_FOR_PAYOUT_SUCCESSFULLY))

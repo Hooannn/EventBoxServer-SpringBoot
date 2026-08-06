@@ -53,7 +53,7 @@ class OrderControllerV2Tests {
                 .thenReturn(new PageImpl<>(List.of(sampleOrder(61L)), PageRequest.of(1, 10), 25));
 
         mockMvc.perform(get("/api/v2/orders/shows/77/all")
-                        .requestAttr("sub", "42")
+                        .principal(() -> "42")
                         .param("search", "alice")
                         .param("page", "1")
                         .param("size", "10"))
@@ -79,7 +79,7 @@ class OrderControllerV2Tests {
                         """);
 
         mockMvc.perform(get("/api/v2/orders/shows/77/all/export")
-                        .requestAttr("sub", "42")
+                        .principal(() -> "42")
                         .param("search", "alice"))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Content-Type", org.hamcrest.Matchers.containsString("text/csv")))

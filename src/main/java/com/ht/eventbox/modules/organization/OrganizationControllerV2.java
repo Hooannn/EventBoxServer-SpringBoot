@@ -1,6 +1,6 @@
 package com.ht.eventbox.modules.organization;
 
-import com.ht.eventbox.annotations.RequiredPermissions;
+import org.springframework.security.access.prepost.PreAuthorize;
 import com.ht.eventbox.config.QueryResponse;
 import com.ht.eventbox.entities.Organization;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +20,7 @@ public class OrganizationControllerV2 {
     private final OrganizationService organizationService;
 
     @GetMapping
-    @RequiredPermissions({"read:organizations"})
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'read:organizations')")
     public ResponseEntity<QueryResponse<Organization>> getAll(Pageable pageable) {
         var res = organizationService.getAll(pageable);
         return ResponseEntity.ok(

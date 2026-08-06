@@ -87,7 +87,7 @@ class OrderControllerTests {
         when(orderService.createReservation(eq(42L), any(CreateReservationDto.class))).thenReturn(responseOrder);
 
                 mockMvc.perform(post("/api/v1/orders/reservation")
-                        .requestAttr("sub", "42")
+                        .principal(() -> "42")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(CreateReservationDto.builder()
                                 .tickets(java.util.List.of(reserveTicket))
@@ -104,7 +104,7 @@ class OrderControllerTests {
         when(orderService.cancelReservation(42L)).thenReturn(true);
 
         mockMvc.perform(post("/api/v1/orders/reservation/cancel")
-                        .requestAttr("sub", "42"))
+                        .principal(() -> "42"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.message").value(Constant.SuccessCode.UPDATE_SUCCESSFULLY))
@@ -119,7 +119,7 @@ class OrderControllerTests {
         when(orderService.createPayment(eq(42L), any(CreatePaymentDto.class))).thenReturn(paypalOrder);
 
         mockMvc.perform(post("/api/v1/orders/reservation/payment")
-                        .requestAttr("sub", "42")
+                        .principal(() -> "42")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(CreatePaymentDto.builder()
                                 .orderId(500L)
@@ -137,7 +137,7 @@ class OrderControllerTests {
         when(orderService.cancelReservation(42L, 55L)).thenReturn(true);
 
         mockMvc.perform(post("/api/v1/orders/55/reservation/cancel")
-                        .requestAttr("sub", "42"))
+                        .principal(() -> "42"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.message").value(Constant.SuccessCode.UPDATE_SUCCESSFULLY))
@@ -157,7 +157,7 @@ class OrderControllerTests {
                 .thenReturn(List.of(order));
 
         mockMvc.perform(get("/api/v1/orders/shows/77")
-                        .requestAttr("sub", "42")
+                        .principal(() -> "42")
                         .param("from", "2026-05-15T00:00:00")
                         .param("to", "2026-05-16T00:00:00")
                         .contentType(MediaType.APPLICATION_JSON))
@@ -179,7 +179,7 @@ class OrderControllerTests {
         when(orderService.getByShowId(eq(42L), eq(77L))).thenReturn(List.of(order));
 
         mockMvc.perform(get("/api/v1/orders/shows/77/all")
-                        .requestAttr("sub", "42")
+                        .principal(() -> "42")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))

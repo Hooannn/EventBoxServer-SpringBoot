@@ -63,7 +63,7 @@ class VoucherControllerTests {
         when(voucherService.getUsage(42L, 9L, 11L)).thenReturn(4L);
 
         mockMvc.perform(get("/api/v1/vouchers/9/event/11/usage")
-                .requestAttr("sub", "42"))
+                .principal(() -> "42"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.message").value("OK"))
@@ -75,7 +75,7 @@ class VoucherControllerTests {
         when(voucherService.getByOrderId(42L, 100L)).thenReturn(sampleVoucher());
 
         mockMvc.perform(get("/api/v1/vouchers/order/100")
-                .requestAttr("sub", "42"))
+                .principal(() -> "42"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.message").value("OK"))
@@ -87,7 +87,7 @@ class VoucherControllerTests {
         when(voucherService.applyByOrderId(eq(42L), eq(100L), any(ApplyVoucherDto.class))).thenReturn(true);
 
         mockMvc.perform(post("/api/v1/vouchers/order/100/apply")
-                .requestAttr("sub", "42")
+                .principal(() -> "42")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(ApplyVoucherDto.builder().code("summer10").build())))
                 .andExpect(status().isOk())
@@ -103,7 +103,7 @@ class VoucherControllerTests {
         when(voucherService.removeByOrderId(42L, 100L)).thenReturn(true);
 
         mockMvc.perform(post("/api/v1/vouchers/order/100/remove")
-                .requestAttr("sub", "42"))
+                .principal(() -> "42"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.message").value("OK"))
@@ -115,7 +115,7 @@ class VoucherControllerTests {
         when(voucherService.getAllByEventId(42L, 11L)).thenReturn(List.of(sampleVoucher()));
 
         mockMvc.perform(get("/api/v1/vouchers/event/11")
-                .requestAttr("sub", "42"))
+                .principal(() -> "42"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.message").value("OK"))
@@ -138,7 +138,7 @@ class VoucherControllerTests {
         when(voucherService.createByEventId(eq(42L), eq(11L), any(CreateVoucherDto.class))).thenReturn(true);
 
         mockMvc.perform(post("/api/v1/vouchers/event/11")
-                .requestAttr("sub", "42")
+                .principal(() -> "42")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(sampleCreateVoucherDto())))
                 .andExpect(status().isCreated())
@@ -152,7 +152,7 @@ class VoucherControllerTests {
         when(voucherService.updateByEventId(eq(42L), eq(9L), eq(11L), any(CreateVoucherDto.class))).thenReturn(true);
 
         mockMvc.perform(put("/api/v1/vouchers/9/event/11")
-                .requestAttr("sub", "42")
+                .principal(() -> "42")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(sampleCreateVoucherDto())))
                 .andExpect(status().isOk())
@@ -166,7 +166,7 @@ class VoucherControllerTests {
         when(voucherService.deleteByEventId(42L, 9L, 11L)).thenReturn(true);
 
         mockMvc.perform(delete("/api/v1/vouchers/9/event/11")
-                .requestAttr("sub", "42"))
+                .principal(() -> "42"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.message").value("OK"))

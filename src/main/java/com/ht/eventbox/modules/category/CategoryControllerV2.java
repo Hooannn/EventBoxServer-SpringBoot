@@ -1,6 +1,6 @@
 package com.ht.eventbox.modules.category;
 
-import com.ht.eventbox.annotations.RequiredPermissions;
+import org.springframework.security.access.prepost.PreAuthorize;
 import com.ht.eventbox.config.QueryResponse;
 import com.ht.eventbox.entities.Category;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +21,7 @@ public class CategoryControllerV2 {
     private final CategoryService categoryService;
 
     @GetMapping
-    @RequiredPermissions({"read:categories"})
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'read:categories')")
     public ResponseEntity<QueryResponse<Category>> getAll(
             @RequestParam(required = false) String search,
             Pageable pageable

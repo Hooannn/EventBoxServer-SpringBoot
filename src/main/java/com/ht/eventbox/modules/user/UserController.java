@@ -1,6 +1,7 @@
 package com.ht.eventbox.modules.user;
 
-import com.ht.eventbox.annotations.RequiredPermissions;
+import org.springframework.security.access.prepost.PreAuthorize;
+import java.security.Principal;
 import com.ht.eventbox.config.Response;
 import com.ht.eventbox.constant.Constant;
 import com.ht.eventbox.entities.Permission;
@@ -26,7 +27,7 @@ public class UserController {
     API dùng để lấy tất cả người dùng, dùng cho web admin
     */
     @GetMapping
-    @RequiredPermissions({"read:users"})
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'read:users')")
     public ResponseEntity<Response<List<User>>> getAll() {
         var res = userService.getAll();
         return ResponseEntity.ok(
@@ -42,7 +43,7 @@ public class UserController {
     API dùng để lấy tất cả các vai trò (roles) của hệ thống, dùng cho web admin
     */
     @GetMapping("/roles")
-    @RequiredPermissions({"read:roles"})
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'read:roles')")
     public ResponseEntity<Response<List<Role>>> getAllRoles() {
         var res = userService.getAllRoles();
         return ResponseEntity.ok(
@@ -58,7 +59,7 @@ public class UserController {
     API dùng để tạo một vai trò mới, dùng cho web admin
     */
     @PostMapping("/roles")
-    @RequiredPermissions({"create:roles"})
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'create:roles')")
     public ResponseEntity<Response<Boolean>> createRole(
             @Valid @RequestBody CreateRoleDto createRoleDto
     ) {
@@ -76,7 +77,7 @@ public class UserController {
     API dùng để cập nhật một vai trò, dùng cho web admin
     */
     @PutMapping("/roles/{roleId}")
-    @RequiredPermissions({"update:roles"})
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'update:roles')")
     public ResponseEntity<Response<Boolean>> updateRole(
             @PathVariable Long roleId,
             @Valid @RequestBody UpdateRoleDto updateRoleDto
@@ -95,7 +96,7 @@ public class UserController {
     API dùng để xóa một vai trò, dùng cho web admin
     */
     @DeleteMapping("/roles/{roleId}")
-    @RequiredPermissions({"delete:roles"})
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'delete:roles')")
     public ResponseEntity<Response<Boolean>> deleteRole(
             @PathVariable Long roleId
     ) {
@@ -113,7 +114,7 @@ public class UserController {
     API dùng để lấy tất cả quyền (permissions) của hệ thống, dùng cho web admin
     */
     @GetMapping("/roles/permissions")
-    @RequiredPermissions({"read:permissions"})
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'read:permissions')")
     public ResponseEntity<Response<List<Permission>>> getAllPermissions() {
         var res = userService.getAllPermissions();
         return ResponseEntity.ok(
@@ -129,7 +130,7 @@ public class UserController {
     API dùng để tạo một quyền mới, dùng cho web admin
     */
     @PostMapping("/roles/permissions")
-    @RequiredPermissions({"create:permissions"})
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'create:permissions')")
     public ResponseEntity<Response<Boolean>> createPermission(
             @Valid @RequestBody CreatePermissionDto createPermissionDto
     ) {
@@ -147,7 +148,7 @@ public class UserController {
     API dùng để cập nhật một quyền, dùng cho web admin
     */
     @PutMapping("/roles/permissions/{permissionId}")
-    @RequiredPermissions({"update:roles"})
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'update:roles')")
     public ResponseEntity<Response<Boolean>> updatePermission(
             @PathVariable Long permissionId,
             @Valid @RequestBody UpdatePermissionDto updatePermissionDto
@@ -166,7 +167,7 @@ public class UserController {
     API dùng để xóa một quyền, dùng cho web admin
     */
     @DeleteMapping("/roles/permissions/{permissionId}")
-    @RequiredPermissions({"delete:roles"})
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'delete:roles')")
     public ResponseEntity<Response<Boolean>> deletePermission(
             @PathVariable Long permissionId
     ) {
@@ -184,7 +185,7 @@ public class UserController {
     API dùng để cập nhật vai trò của người dùng, dùng cho web admin
     */
     @PutMapping("/{userId}/role")
-    @RequiredPermissions({"update:users"})
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'update:users')")
     public ResponseEntity<Response<Boolean>> updateRole(
             @Valid @RequestBody UpdateUserRoleDto updateUserRoleDto,
             @PathVariable Long userId) {
@@ -199,8 +200,8 @@ public class UserController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<Response<User>> getAuthenticated(@RequestAttribute("sub") String sub) {
-        var res = userService.getById(Long.valueOf(sub));
+    public ResponseEntity<Response<User>> getAuthenticated(Principal principal) {
+        var res = userService.getById(Long.valueOf(principal.getName()));
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
@@ -215,9 +216,9 @@ public class UserController {
     */
     @PutMapping("/me/change-password")
     public ResponseEntity<Response<Boolean>> changePassword(
-            @RequestAttribute("sub") String sub,
+            Principal principal,
             @Valid @RequestBody ChangePasswordDto changePasswordDto) {
-        var res = userService.changePassword(Long.valueOf(sub), changePasswordDto);
+        var res = userService.changePassword(Long.valueOf(principal.getName()), changePasswordDto);
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
@@ -232,9 +233,9 @@ public class UserController {
     */
     @PutMapping("/me/update")
     public ResponseEntity<Response<Boolean>> updateInformation(
-            @RequestAttribute("sub") String sub,
+            Principal principal,
             @Valid @RequestBody UpdateInformationDto updateInformationDto) {
-        var res = userService.updateInformation(Long.valueOf(sub), updateInformationDto);
+        var res = userService.updateInformation(Long.valueOf(principal.getName()), updateInformationDto);
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
@@ -248,7 +249,7 @@ public class UserController {
     API dùng để tạo một người dùng mới (không sử dụng)
     */
     @PostMapping
-    @RequiredPermissions({"create:users"})
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'create:users')")
     public ResponseEntity<Response<Boolean>> create(
             @Valid @RequestBody CreateUserDto createUserDto
     ) {
@@ -266,7 +267,7 @@ public class UserController {
     API dùng để tạo một người dùng mới (không sử dụng)
     */
     @PostMapping("/bulk")
-    @RequiredPermissions({"create:users"})
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'create:users')")
     public ResponseEntity<Response<Boolean>> createBulk(
             @Valid @RequestBody CreateBulkUsersDto createBulkUsersDto
     ) {
@@ -285,10 +286,10 @@ public class UserController {
     */
     @PutMapping("/fcm/tokens")
     public ResponseEntity<Response<Boolean>> updateFCMTokens(
-            @RequestAttribute("sub") String sub,
+            Principal principal,
             @Valid @RequestBody UpdateFCMTokensDto updateFCMTokensDto
     ) {
-        var res = userService.updateFCMTokens(Long.valueOf(sub), updateFCMTokensDto);
+        var res = userService.updateFCMTokens(Long.valueOf(principal.getName()), updateFCMTokensDto);
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),

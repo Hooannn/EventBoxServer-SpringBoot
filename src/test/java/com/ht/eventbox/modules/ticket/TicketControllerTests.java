@@ -75,7 +75,7 @@ class TicketControllerTests {
                 .thenReturn(List.of(sampleTicketItemDetails(88L)));
 
         mockMvc.perform(get("/api/v1/tickets/items/me")
-                        .requestAttr("sub", "42"))
+                        .principal(() -> "42"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.message").value("OK"))
@@ -87,7 +87,7 @@ class TicketControllerTests {
         when(ticketService.getTicketItemById(88L)).thenReturn(sampleTicketItemDetails(88L));
 
         mockMvc.perform(get("/api/v1/tickets/items/88")
-                        .requestAttr("sub", "42"))
+                        .principal(() -> "42"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.message").value("OK"))
@@ -99,7 +99,7 @@ class TicketControllerTests {
         when(ticketService.getTicketItemQrCode(42L, 88L)).thenReturn("qr-token");
 
         mockMvc.perform(get("/api/v1/tickets/items/88/qrcode")
-                        .requestAttr("sub", "42"))
+                        .principal(() -> "42"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.message").value("OK"))
@@ -112,7 +112,7 @@ class TicketControllerTests {
                 .thenReturn(sampleTicketItemDetails(88L));
 
         mockMvc.perform(post("/api/v1/tickets/validate")
-                        .requestAttr("sub", "42")
+                        .principal(() -> "42")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(ValidateTicketItemDto.builder()
                                 .token("token")
@@ -129,7 +129,7 @@ class TicketControllerTests {
         when(ticketService.createTicketItemTrace(eq(42L), any(ValidateTicketItemDto.class))).thenReturn(true);
 
         mockMvc.perform(post("/api/v1/tickets/traces")
-                        .requestAttr("sub", "42")
+                        .principal(() -> "42")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(ValidateTicketItemDto.builder()
                                 .token("token")
@@ -146,7 +146,7 @@ class TicketControllerTests {
         when(ticketService.getTicketItemByShowId(42L, 77L)).thenReturn(List.of(sampleTicketItemEntity(88L)));
 
         mockMvc.perform(get("/api/v1/tickets/shows/77/items")
-                        .requestAttr("sub", "42"))
+                        .principal(() -> "42"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.message").value("OK"))
@@ -159,7 +159,7 @@ class TicketControllerTests {
                 .thenReturn(true);
 
         mockMvc.perform(post("/api/v1/tickets/items/88/feedback")
-                        .requestAttr("sub", "42")
+                        .principal(() -> "42")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(FeedbackTicketItemDto.builder()
                                 .feedback("Great")
@@ -176,7 +176,7 @@ class TicketControllerTests {
                 .thenReturn(true);
 
         mockMvc.perform(post("/api/v1/tickets/items/88/giveaway")
-                        .requestAttr("sub", "42")
+                        .principal(() -> "42")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(GiveawayTicketItemDto.builder()
                                 .recipientEmail("friend@example.com")
@@ -193,7 +193,7 @@ class TicketControllerTests {
         when(ticketService.getLatestTicketItemFeedbackByOrganizationId(9L)).thenReturn(List.of(sampleTicketItemDetails(88L)));
 
         mockMvc.perform(get("/api/v1/tickets/items/feedback/organizations/9")
-                        .requestAttr("sub", "42"))
+                        .principal(() -> "42"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.message").value("OK"))
@@ -205,7 +205,7 @@ class TicketControllerTests {
         when(ticketService.getTicketItemFeedbackByEventId(42L, 77L)).thenReturn(List.of(sampleTicketItemDetails(88L)));
 
         mockMvc.perform(get("/api/v1/tickets/items/feedback/event/77")
-                        .requestAttr("sub", "42"))
+                        .principal(() -> "42"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.message").value("OK"))

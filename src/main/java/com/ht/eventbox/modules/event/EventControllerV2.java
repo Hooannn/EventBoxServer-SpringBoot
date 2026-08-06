@@ -1,6 +1,6 @@
 package com.ht.eventbox.modules.event;
 
-import com.ht.eventbox.annotations.RequiredPermissions;
+import org.springframework.security.access.prepost.PreAuthorize;
 import com.ht.eventbox.config.QueryResponse;
 import com.ht.eventbox.config.Response;
 import com.ht.eventbox.entities.Event;
@@ -27,7 +27,7 @@ public class EventControllerV2 {
     private final EventService eventService;
 
     @GetMapping
-    @RequiredPermissions({ "read:events", "access:admin" })
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'read:events', 'access:admin')")
     public ResponseEntity<QueryResponse<Event>> getAll(
             @RequestParam(required = false) String search,
             Pageable pageable) {
@@ -40,7 +40,7 @@ public class EventControllerV2 {
     }
 
     @GetMapping("/pending")
-    @RequiredPermissions({ "read:events", "access:admin" })
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'read:events', 'access:admin')")
     public ResponseEntity<QueryResponse<Event>> getAllPending(
             @RequestParam(required = false) String search,
             Pageable pageable) {
@@ -50,7 +50,7 @@ public class EventControllerV2 {
     }
 
     @GetMapping("/published")
-    @RequiredPermissions({ "read:events", "access:admin" })
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'read:events', 'access:admin')")
     public ResponseEntity<QueryResponse<Event>> getAllPublished(
             @RequestParam(required = false) String search,
             Pageable pageable) {
@@ -60,7 +60,7 @@ public class EventControllerV2 {
     }
 
     @GetMapping("/ended")
-    @RequiredPermissions({ "read:events", "access:admin" })
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'read:events', 'access:admin')")
     public ResponseEntity<QueryResponse<Event>> getAllEnded(
             @RequestParam(required = false) String search,
             Pageable pageable) {
@@ -70,7 +70,7 @@ public class EventControllerV2 {
     }
 
     @GetMapping("/overview")
-    @RequiredPermissions({ "read:events", "access:admin" })
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'read:events', 'access:admin')")
     public ResponseEntity<Response<EventOverviewDto>> getOverview(
             @RequestParam(required = false) String search) {
         var res = eventService.getOverview(search);
@@ -82,7 +82,7 @@ public class EventControllerV2 {
     }
 
     @GetMapping("/organization/{organizationId}/pending")
-    @RequiredPermissions({ "read:events" })
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'read:events')")
     public ResponseEntity<QueryResponse<Event>> getPendingByOrganizationId(
             @PathVariable Long organizationId,
             @RequestParam(required = false) String search,
@@ -93,7 +93,7 @@ public class EventControllerV2 {
     }
 
     @GetMapping("/organization/{organizationId}/draft")
-    @RequiredPermissions({ "read:events" })
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'read:events')")
     public ResponseEntity<QueryResponse<Event>> getDraftByOrganizationId(
             @PathVariable Long organizationId,
             @RequestParam(required = false) String search,
@@ -104,7 +104,7 @@ public class EventControllerV2 {
     }
 
     @GetMapping("/organization/{organizationId}/published")
-    @RequiredPermissions({ "read:events" })
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'read:events')")
     public ResponseEntity<QueryResponse<Event>> getPublishedByOrganizationId(
             @PathVariable Long organizationId,
             @RequestParam(required = false) String search,
@@ -115,7 +115,7 @@ public class EventControllerV2 {
     }
 
     @GetMapping("/organization/{organizationId}/ended")
-    @RequiredPermissions({ "read:events" })
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'read:events')")
     public ResponseEntity<QueryResponse<Event>> getEndedByOrganizationId(
             @PathVariable Long organizationId,
             @RequestParam(required = false) String search,
@@ -126,7 +126,7 @@ public class EventControllerV2 {
     }
 
     @GetMapping("/organization/{organizationId}/overview")
-    @RequiredPermissions({ "read:events" })
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'read:events')")
     public ResponseEntity<Response<EventOverviewDto>> getOverviewByOrganizationId(
             @PathVariable Long organizationId,
             @RequestParam(required = false) String search) {

@@ -2,7 +2,8 @@ package com.ht.eventbox.modules.order;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ht.eventbox.annotations.RequiredPermissions;
+import org.springframework.security.access.prepost.PreAuthorize;
+import java.security.Principal;
 import com.ht.eventbox.config.HttpException;
 import com.ht.eventbox.config.Response;
 import com.ht.eventbox.constant.Constant;
@@ -175,11 +176,11 @@ public class OrderController {
         }
 
         @PostMapping("/reservation")
-        @RequiredPermissions({ "create:orders" })
+        @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'create:orders')")
         public ResponseEntity<Response<Order>> createReservation(
-                        @RequestAttribute("sub") String sub,
+                        Principal principal,
                         @Valid @RequestBody CreateReservationDto createReservationDto) {
-                var res = orderService.createReservation(Long.valueOf(sub), createReservationDto);
+                var res = orderService.createReservation(Long.valueOf(principal.getName()), createReservationDto);
                 return ResponseEntity.ok(
                                 new Response<>(
                                                 HttpStatus.OK.value(),
@@ -188,11 +189,11 @@ public class OrderController {
         }
 
         @PostMapping("/reservation/payment")
-        @RequiredPermissions({ "create:orders" })
+        @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'create:orders')")
         public ResponseEntity<Response<com.paypal.sdk.models.Order>> createPayment(
-                        @RequestAttribute("sub") String sub,
+                        Principal principal,
                         @Valid @RequestBody CreatePaymentDto createPaymentDto) {
-                var res = orderService.createPayment(Long.valueOf(sub), createPaymentDto);
+                var res = orderService.createPayment(Long.valueOf(principal.getName()), createPaymentDto);
                 return ResponseEntity.ok(
                                 new Response<>(
                                                 HttpStatus.OK.value(),
@@ -201,11 +202,11 @@ public class OrderController {
         }
 
         @PostMapping("/{orderId}/reservation/cancel")
-        @RequiredPermissions({ "create:orders" })
+        @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'create:orders')")
         public ResponseEntity<Response<Boolean>> cancelReservationById(
-                        @RequestAttribute("sub") String sub,
+                        Principal principal,
                         @PathVariable Long orderId) {
-                var res = orderService.cancelReservation(Long.valueOf(sub), orderId);
+                var res = orderService.cancelReservation(Long.valueOf(principal.getName()), orderId);
                 return ResponseEntity.ok(
                                 new Response<>(
                                                 HttpStatus.OK.value(),
@@ -214,10 +215,10 @@ public class OrderController {
         }
 
         @PostMapping("/reservation/cancel")
-        @RequiredPermissions({ "create:orders" })
+        @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'create:orders')")
         public ResponseEntity<Response<Boolean>> cancelReservation(
-                        @RequestAttribute("sub") String sub) {
-                var res = orderService.cancelReservation(Long.valueOf(sub));
+                        Principal principal) {
+                var res = orderService.cancelReservation(Long.valueOf(principal.getName()));
                 return ResponseEntity.ok(
                                 new Response<>(
                                                 HttpStatus.OK.value(),
@@ -230,13 +231,13 @@ public class OrderController {
          * gian từ "from" đến "to", dùng cho web ban tổ chức khi xem báo cáo
          */
         @GetMapping("/shows/{showId}")
-        @RequiredPermissions({ "read:orders" })
+        @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'read:orders')")
         public ResponseEntity<Response<List<Order>>> getByShowId(
-                        @RequestAttribute("sub") String sub,
+                        Principal principal,
                         @RequestParam(value = "from") LocalDateTime from,
                         @RequestParam(value = "to") LocalDateTime to,
                         @PathVariable Long showId) {
-                var res = orderService.getByShowId(Long.valueOf(sub), showId, from, to);
+                var res = orderService.getByShowId(Long.valueOf(principal.getName()), showId, from, to);
                 return ResponseEntity.ok(
                                 new Response<>(
                                                 HttpStatus.OK.value(),
@@ -249,11 +250,11 @@ public class OrderController {
          * tổ chức khi xem báo cáo
          */
         @GetMapping("/shows/{showId}/all")
-        @RequiredPermissions({ "read:orders" })
+        @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'read:orders')")
         public ResponseEntity<Response<List<Order>>> getByShowId(
-                        @RequestAttribute("sub") String sub,
+                        Principal principal,
                         @PathVariable Long showId) {
-                var res = orderService.getByShowId(Long.valueOf(sub), showId);
+                var res = orderService.getByShowId(Long.valueOf(principal.getName()), showId);
                 return ResponseEntity.ok(
                                 new Response<>(
                                                 HttpStatus.OK.value(),
@@ -262,9 +263,9 @@ public class OrderController {
         }
 
         @GetMapping("/paypal/orders/{orderId}")
-        @RequiredPermissions({ "read:paypal_orders", "access:admin" })
+        @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'read:paypal_orders', 'access:admin')")
         public ResponseEntity<Response<com.paypal.sdk.models.Order>> getPaypalOrderById(
-                        @RequestAttribute("sub") String sub,
+                        Principal principal,
                         @PathVariable String orderId) {
                 try {
                         var res = payPalService.getOrderById(orderId);

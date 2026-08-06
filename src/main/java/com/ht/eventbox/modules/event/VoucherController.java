@@ -1,6 +1,7 @@
 package com.ht.eventbox.modules.event;
 
-import com.ht.eventbox.annotations.RequiredPermissions;
+import org.springframework.security.access.prepost.PreAuthorize;
+import java.security.Principal;
 import com.ht.eventbox.config.Response;
 import com.ht.eventbox.constant.Constant;
 import com.ht.eventbox.entities.Voucher;
@@ -27,13 +28,13 @@ public class VoucherController {
     API dùng để lấy tất cả lượt sử dụng voucher, id là id của voucher, eventId là id của event, dùng cho web giao diện ban tổ chức
     */
     @GetMapping("/{id}/event/{eventId}/usage")
-    @RequiredPermissions({"read:vouchers"})
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'read:vouchers')")
     public ResponseEntity<Response<Long>> getUsage(
-            @RequestAttribute("sub") String sub,
+            Principal principal,
             @PathVariable Long eventId,
             @PathVariable Long id
     ) {
-        var res = voucherService.getUsage(Long.valueOf(sub), id, eventId);
+        var res = voucherService.getUsage(Long.valueOf(principal.getName()), id, eventId);
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
@@ -47,12 +48,12 @@ public class VoucherController {
     API dùng để lấy voucher hiện tại của một đơn hàng, dùng cho mobile app giao diện người dùng
     */
     @GetMapping("/order/{orderId}")
-    @RequiredPermissions({"read:vouchers"})
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'read:vouchers')")
     public ResponseEntity<Response<Voucher>> getByOrderId(
-            @RequestAttribute("sub") String sub,
+            Principal principal,
             @PathVariable Long orderId
     ) {
-        var res = voucherService.getByOrderId(Long.valueOf(sub), orderId);
+        var res = voucherService.getByOrderId(Long.valueOf(principal.getName()), orderId);
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
@@ -66,13 +67,13 @@ public class VoucherController {
     API dùng để áp dụng voucher cho một đơn hàng, dùng cho mobile app giao diện người dùng
     */
     @PostMapping("/order/{orderId}/apply")
-    @RequiredPermissions({"read:vouchers", "create:orders"})
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'read:vouchers', 'create:orders')")
     public ResponseEntity<Response<Boolean>> applyByOrderId(
-            @RequestAttribute("sub") String sub,
+            Principal principal,
             @Valid @RequestBody ApplyVoucherDto applyVoucherDto,
             @PathVariable Long orderId
     ) {
-        var res = voucherService.applyByOrderId(Long.valueOf(sub), orderId, applyVoucherDto);
+        var res = voucherService.applyByOrderId(Long.valueOf(principal.getName()), orderId, applyVoucherDto);
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
@@ -86,12 +87,12 @@ public class VoucherController {
     API dùng để huỷ bỏ voucher cho một đơn hàng, dùng cho mobile app giao diện người dùng
     */
     @PostMapping("/order/{orderId}/remove")
-    @RequiredPermissions({"read:vouchers", "create:orders"})
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'read:vouchers', 'create:orders')")
     public ResponseEntity<Response<Boolean>> removeByOrderId(
-            @RequestAttribute("sub") String sub,
+            Principal principal,
             @PathVariable Long orderId
     ) {
-        var res = voucherService.removeByOrderId(Long.valueOf(sub), orderId);
+        var res = voucherService.removeByOrderId(Long.valueOf(principal.getName()), orderId);
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
@@ -105,12 +106,12 @@ public class VoucherController {
     API dùng để lấy tất cả vouchers của một event, dùng cho web giao diện ban tổ chức
     */
     @GetMapping("/event/{eventId}")
-    @RequiredPermissions({"read:vouchers"})
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'read:vouchers')")
     public ResponseEntity<Response<List<Voucher>>> getAllByEventId(
-            @RequestAttribute("sub") String sub,
+            Principal principal,
             @PathVariable Long eventId
     ) {
-        var res = voucherService.getAllByEventId(Long.valueOf(sub), eventId);
+        var res = voucherService.getAllByEventId(Long.valueOf(principal.getName()), eventId);
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
@@ -124,7 +125,7 @@ public class VoucherController {
     API dùng để lấy tất cả public vouchers của một event, dùng cho mobile app giao diện người dùng
     */
     @GetMapping("/event/{eventId}/public")
-    @RequiredPermissions({"read:vouchers"})
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'read:vouchers')")
     public ResponseEntity<Response<List<Voucher>>> getAllPublicByEventId(
             @PathVariable Long eventId
     ) {
@@ -142,13 +143,13 @@ public class VoucherController {
     API dùng để tạo mới một voucher, tạo mới voucher từ body CreateVoucherDto, dùng cho web giao diện ban tổ chức
     */
     @PostMapping("/event/{eventId}")
-    @RequiredPermissions({"create:vouchers"})
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'create:vouchers')")
     public ResponseEntity<Response<Boolean>> createByEventId(
-            @RequestAttribute("sub") String sub,
+            Principal principal,
             @Valid @RequestBody CreateVoucherDto createVoucherDto,
             @PathVariable Long eventId
     ) {
-        var res = voucherService.createByEventId(Long.valueOf(sub), eventId, createVoucherDto);
+        var res = voucherService.createByEventId(Long.valueOf(principal.getName()), eventId, createVoucherDto);
         return ResponseEntity.created(null).body(
                 new Response<>(
                         HttpStatus.CREATED.value(),
@@ -162,14 +163,14 @@ public class VoucherController {
     API dùng để cập nhật một voucher, cập nhật voucher từ body CreateVoucherDto, id là id của voucher cần cập nhật, dùng cho web giao diện ban tổ chức
     */
     @PutMapping("/{id}/event/{eventId}")
-    @RequiredPermissions({"update:vouchers"})
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'update:vouchers')")
     public ResponseEntity<Response<Boolean>> updateByEventId(
-            @RequestAttribute("sub") String sub,
+            Principal principal,
             @PathVariable Long id,
             @Valid @RequestBody CreateVoucherDto createVoucherDto,
             @PathVariable Long eventId
     ) {
-        var res = voucherService.updateByEventId(Long.valueOf(sub), id, eventId, createVoucherDto);
+        var res = voucherService.updateByEventId(Long.valueOf(principal.getName()), id, eventId, createVoucherDto);
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
@@ -183,13 +184,13 @@ public class VoucherController {
     API dùng để xóa một voucher, id là id của voucher cần xóa, dùng cho web giao diện ban tổ chức
      */
     @DeleteMapping("/{id}/event/{eventId}")
-    @RequiredPermissions({"delete:vouchers"})
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'delete:vouchers')")
     public ResponseEntity<Response<Boolean>> deleteByEventId(
-            @RequestAttribute("sub") String sub,
+            Principal principal,
             @PathVariable Long id,
             @PathVariable Long eventId
     ) {
-        var res = voucherService.deleteByEventId(Long.valueOf(sub), id, eventId);
+        var res = voucherService.deleteByEventId(Long.valueOf(principal.getName()), id, eventId);
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),

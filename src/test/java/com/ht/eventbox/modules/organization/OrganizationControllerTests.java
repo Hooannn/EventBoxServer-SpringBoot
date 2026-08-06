@@ -78,7 +78,7 @@ class OrganizationControllerTests {
                 .thenReturn(List.of(sampleOrganization(9L)));
 
         mockMvc.perform(get("/api/v1/organizations/me")
-                        .requestAttr("sub", "42"))
+                        .principal(() -> "42"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.message").value("OK"))
@@ -90,7 +90,7 @@ class OrganizationControllerTests {
         when(organizationService.getByUserId(42L)).thenReturn(List.of(sampleOrganization(9L)));
 
         mockMvc.perform(get("/api/v1/organizations/me/member")
-                        .requestAttr("sub", "42"))
+                        .principal(() -> "42"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.message").value("OK"))
@@ -106,7 +106,7 @@ class OrganizationControllerTests {
                 .build());
 
         mockMvc.perform(get("/api/v1/organizations/9/details")
-                        .requestAttr("sub", "42"))
+                        .principal(() -> "42"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.message").value("OK"))
@@ -119,7 +119,7 @@ class OrganizationControllerTests {
         when(organizationService.getById(9L)).thenReturn(sampleOrganization(9L));
 
         mockMvc.perform(get("/api/v1/organizations/9")
-                        .requestAttr("sub", "42"))
+                        .principal(() -> "42"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.message").value("OK"))
@@ -131,7 +131,7 @@ class OrganizationControllerTests {
         when(organizationService.update(eq(42L), eq(9L), any(UpdateOrganizationDto.class))).thenReturn(true);
 
         mockMvc.perform(put("/api/v1/organizations/9")
-                        .requestAttr("sub", "42")
+                        .principal(() -> "42")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(sampleUpdateOrganizationDto())))
                 .andExpect(status().isOk())
@@ -145,7 +145,7 @@ class OrganizationControllerTests {
         when(organizationService.deleteById(42L, 9L)).thenReturn(true);
 
         mockMvc.perform(delete("/api/v1/organizations/9")
-                        .requestAttr("sub", "42"))
+                        .principal(() -> "42"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.message").value(Constant.SuccessCode.DELETE_SUCCESSFULLY))
@@ -157,7 +157,7 @@ class OrganizationControllerTests {
         when(organizationService.create(eq(42L), any(CreateOrganizationDto.class))).thenReturn(true);
 
         mockMvc.perform(post("/api/v1/organizations")
-                        .requestAttr("sub", "42")
+                        .principal(() -> "42")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(sampleCreateOrganizationDto())))
                 .andExpect(status().isCreated())
@@ -171,7 +171,7 @@ class OrganizationControllerTests {
         when(organizationService.addMember(eq(42L), eq(9L), any(AddMemberDto.class))).thenReturn(true);
 
         mockMvc.perform(post("/api/v1/organizations/9/members")
-                        .requestAttr("sub", "42")
+                        .principal(() -> "42")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(sampleAddMemberDto())))
                 .andExpect(status().isCreated())
@@ -185,7 +185,7 @@ class OrganizationControllerTests {
         when(organizationService.updateMember(eq(42L), eq(9L), any(UpdateMemberDto.class))).thenReturn(true);
 
         mockMvc.perform(put("/api/v1/organizations/9/members")
-                        .requestAttr("sub", "42")
+                        .principal(() -> "42")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(sampleUpdateMemberDto())))
                 .andExpect(status().isOk())
@@ -199,7 +199,7 @@ class OrganizationControllerTests {
         when(organizationService.removeMember(eq(42L), eq(9L), any(RemoveMemberDto.class))).thenReturn(true);
 
         mockMvc.perform(post("/api/v1/organizations/9/members/remove")
-                        .requestAttr("sub", "42")
+                        .principal(() -> "42")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(sampleRemoveMemberDto())))
                 .andExpect(status().isOk())
@@ -213,7 +213,7 @@ class OrganizationControllerTests {
         when(organizationService.subscribe(42L, 9L)).thenReturn(true);
 
         mockMvc.perform(post("/api/v1/organizations/9/subscribe")
-                        .requestAttr("sub", "42"))
+                        .principal(() -> "42"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.message").value(Constant.SuccessCode.UPDATE_SUCCESSFULLY))
@@ -225,7 +225,7 @@ class OrganizationControllerTests {
         when(organizationService.update(eq(42L), eq(9L), any(UpdateOrganizationDto.class))).thenReturn(true);
 
         mockMvc.perform(put("/api/v1/organizations/9")
-                        .requestAttr("sub", "42")
+                        .principal(() -> "42")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(sampleUpdateOrganizationDto())))
                 .andExpect(status().isOk());

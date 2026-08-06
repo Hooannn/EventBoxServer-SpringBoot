@@ -1,6 +1,7 @@
 package com.ht.eventbox.modules.organization;
 
-import com.ht.eventbox.annotations.RequiredPermissions;
+import org.springframework.security.access.prepost.PreAuthorize;
+import java.security.Principal;
 import com.ht.eventbox.config.Response;
 import com.ht.eventbox.constant.Constant;
 import com.ht.eventbox.entities.Organization;
@@ -25,7 +26,7 @@ public class OrganizationController {
     API dùng để lấy tất cả các tổ chức (không xài)
     */
     @GetMapping
-    @RequiredPermissions({"read:organizations"})
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'read:organizations')")
     public ResponseEntity<Response<List<Organization>>> getAll() {
         var res = organizationService.getAll();
         return ResponseEntity.ok(
@@ -41,11 +42,11 @@ public class OrganizationController {
     API dùng để lấy tất cả các tổ chức của người dùng hiện tại với vai trò là OWNER (không xài)
     */
     @GetMapping("/me")
-    @RequiredPermissions({"read:organizations"})
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'read:organizations')")
     public ResponseEntity<Response<List<Organization>>> getMyOwn(
-            @RequestAttribute("sub") String sub
+            Principal principal
     ) {
-        var res = organizationService.getByUserIdAndOrganizationRole(Long.valueOf(sub), OrganizationRole.OWNER);
+        var res = organizationService.getByUserIdAndOrganizationRole(Long.valueOf(principal.getName()), OrganizationRole.OWNER);
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
@@ -59,11 +60,11 @@ public class OrganizationController {
     API dùng để lấy tất cả các tổ chức của người dùng hiện tại đang tham gia, dùng cho web ban tổ chức và mobile app giao diện ban tổ chức
     */
     @GetMapping("/me/member")
-    @RequiredPermissions({"read:organizations"})
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'read:organizations')")
     public ResponseEntity<Response<List<Organization>>> getMy(
-            @RequestAttribute("sub") String sub
+            Principal principal
     ) {
-        var res = organizationService.getByUserId(Long.valueOf(sub));
+        var res = organizationService.getByUserId(Long.valueOf(principal.getName()));
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
@@ -77,9 +78,9 @@ public class OrganizationController {
     API dùng để lấy thông tin của một tổ chức theo ID, dùng cho mobile app giao diện người dùng
     */
     @GetMapping("/{id}/details")
-    @RequiredPermissions({"read:organizations"})
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'read:organizations')")
     public ResponseEntity<Response<OrganizationService.OrganizationDetails>> getDetailsById(
-            @RequestAttribute("sub") String sub,
+            Principal principal,
             @PathVariable Long id) {
         var res = organizationService.getDetailsById(id);
         return ResponseEntity.ok(
@@ -95,9 +96,9 @@ public class OrganizationController {
     API dùng để lấy thông tin của một tổ chức theo ID, dùng cho web ban tổ chức
     */
     @GetMapping("/{id}")
-    @RequiredPermissions({"read:organizations"})
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'read:organizations')")
     public ResponseEntity<Response<Organization>> getById(
-            @RequestAttribute("sub") String sub,
+            Principal principal,
             @PathVariable Long id) {
         var res = organizationService.getById(id);
         return ResponseEntity.ok(
@@ -113,12 +114,12 @@ public class OrganizationController {
     API dùng để cập nhật thông tin của một tổ chức theo ID, dùng cho web ban tổ chức
     */
     @PutMapping("/{id}")
-    @RequiredPermissions({"update:organizations"})
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'update:organizations')")
     public ResponseEntity<Response<Boolean>> updateById(
-            @RequestAttribute("sub") String sub,
+            Principal principal,
             @PathVariable Long id,
             @Valid @RequestBody UpdateOrganizationDto updateOrganizationDto) {
-        var res = organizationService.update(Long.valueOf(sub), id, updateOrganizationDto);
+        var res = organizationService.update(Long.valueOf(principal.getName()), id, updateOrganizationDto);
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
@@ -132,11 +133,11 @@ public class OrganizationController {
     API dùng để xóa một tổ chức theo ID, dùng cho web ban tổ chức
     */
     @DeleteMapping("/{id}")
-    @RequiredPermissions({"delete:organizations"})
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'delete:organizations')")
     public ResponseEntity<Response<Boolean>> deleteById(
-            @RequestAttribute("sub") String sub,
+            Principal principal,
             @PathVariable Long id) {
-        var res = organizationService.deleteById(Long.valueOf(sub), id);
+        var res = organizationService.deleteById(Long.valueOf(principal.getName()), id);
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
@@ -150,10 +151,10 @@ public class OrganizationController {
     API dùng để tạo một tổ chức mới, dùng cho web ban tổ chức
     */
     @PostMapping
-    @RequiredPermissions({"create:organizations"})
-    public ResponseEntity<Response<Boolean>> create(@RequestAttribute("sub") String sub,
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'create:organizations')")
+    public ResponseEntity<Response<Boolean>> create(Principal principal,
                                                     @Valid @RequestBody CreateOrganizationDto createOrganizationDto) {
-        var res = organizationService.create(Long.valueOf(sub), createOrganizationDto);
+        var res = organizationService.create(Long.valueOf(principal.getName()), createOrganizationDto);
         return ResponseEntity.created(null).body(
                 new Response<>(
                         HttpStatus.CREATED.value(),
@@ -167,12 +168,12 @@ public class OrganizationController {
     API dùng để thêm thành viên vào tổ chức, dùng cho web ban tổ chức
     */
     @PostMapping("/{id}/members")
-    @RequiredPermissions({"update:organizations"})
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'update:organizations')")
     public ResponseEntity<Response<Boolean>> addMember(
-            @RequestAttribute("sub") String sub,
+            Principal principal,
             @Valid @RequestBody AddMemberDto addMemberDto,
             @PathVariable Long id) {
-        var res = organizationService.addMember(Long.valueOf(sub), id, addMemberDto);
+        var res = organizationService.addMember(Long.valueOf(principal.getName()), id, addMemberDto);
         return ResponseEntity.created(null).body(
                 new Response<>(
                         HttpStatus.CREATED.value(),
@@ -186,12 +187,12 @@ public class OrganizationController {
     API dùng để cập nhật vai trò của thành viên trong tổ chức, dùng cho web ban tổ chức
     */
     @PutMapping("/{id}/members")
-    @RequiredPermissions({"update:organizations"})
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'update:organizations')")
     public ResponseEntity<Response<Boolean>> updateMember(
-            @RequestAttribute("sub") String sub,
+            Principal principal,
             @Valid @RequestBody UpdateMemberDto updateMemberDto,
             @PathVariable Long id) {
-        var res = organizationService.updateMember(Long.valueOf(sub), id, updateMemberDto);
+        var res = organizationService.updateMember(Long.valueOf(principal.getName()), id, updateMemberDto);
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
@@ -205,12 +206,12 @@ public class OrganizationController {
     API dùng để xóa thành viên khỏi tổ chức, dùng cho web ban tổ chức
     */
     @PostMapping("/{id}/members/remove")
-    @RequiredPermissions({"update:organizations"})
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'update:organizations')")
     public ResponseEntity<Response<Boolean>> removeMember(
-            @RequestAttribute("sub") String sub,
+            Principal principal,
             @Valid @RequestBody RemoveMemberDto removeMemberDto,
             @PathVariable Long id) {
-        var res = organizationService.removeMember(Long.valueOf(sub), id, removeMemberDto);
+        var res = organizationService.removeMember(Long.valueOf(principal.getName()), id, removeMemberDto);
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
@@ -225,9 +226,9 @@ public class OrganizationController {
     */
     @PostMapping("/{id}/subscribe")
     public ResponseEntity<Response<Boolean>> subscribe(
-            @RequestAttribute("sub") String sub,
+            Principal principal,
             @PathVariable Long id) {
-        var res = organizationService.subscribe(Long.valueOf(sub), id);
+        var res = organizationService.subscribe(Long.valueOf(principal.getName()), id);
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),

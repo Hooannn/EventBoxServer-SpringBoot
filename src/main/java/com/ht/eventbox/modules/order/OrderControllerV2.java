@@ -1,6 +1,7 @@
 package com.ht.eventbox.modules.order;
 
-import com.ht.eventbox.annotations.RequiredPermissions;
+import org.springframework.security.access.prepost.PreAuthorize;
+import java.security.Principal;
 import com.ht.eventbox.config.QueryResponse;
 import com.ht.eventbox.entities.Order;
 import lombok.RequiredArgsConstructor;
@@ -27,27 +28,27 @@ public class OrderControllerV2 {
     private final OrderService orderService;
 
     @GetMapping("/shows/{showId}/all")
-    @RequiredPermissions({"read:orders"})
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'read:orders')")
     public ResponseEntity<QueryResponse<Order>> getByShowId(
-            @RequestAttribute("sub") String sub,
+            Principal principal,
             @PathVariable Long showId,
             @RequestParam(required = false) String search,
             Pageable pageable
     ) {
-        var res = orderService.getByShowId(Long.valueOf(sub), showId, search, pageable);
+        var res = orderService.getByShowId(Long.valueOf(principal.getName()), showId, search, pageable);
         return ResponseEntity.ok(
                 QueryResponse.from(res, HttpStatus.OK.value(), HttpStatus.OK.getReasonPhrase())
         );
     }
 
     @GetMapping(value = "/shows/{showId}/all/export", produces = "text/csv")
-    @RequiredPermissions({"read:orders"})
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'read:orders')")
     public ResponseEntity<byte[]> exportByShowId(
-            @RequestAttribute("sub") String sub,
+            Principal principal,
             @PathVariable Long showId,
             @RequestParam(required = false) String search
     ) {
-        var csv = orderService.exportByShowId(Long.valueOf(sub), showId, search);
+        var csv = orderService.exportByShowId(Long.valueOf(principal.getName()), showId, search);
         var fileName = "orders-show-" + showId + ".csv";
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")

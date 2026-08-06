@@ -3,7 +3,6 @@ package com.ht.eventbox.modules.auth;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ht.eventbox.config.GlobalExceptionHandler;
 import com.ht.eventbox.constant.Constant;
-import com.ht.eventbox.filter.JwtService;
 import com.ht.eventbox.enums.Platform;
 import com.ht.eventbox.modules.auth.dtos.AuthenticateDto;
 import com.ht.eventbox.modules.auth.dtos.ForgotPasswordDto;
@@ -24,10 +23,10 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.security.PublicKey;
 import jakarta.servlet.http.Cookie;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -57,12 +56,6 @@ class AuthControllerTests {
 
         @MockBean
         private AuthService authService;
-
-        @MockBean
-        private JwtService jwtService;
-
-        @MockBean
-        private PublicKey atPublicKey;
 
         @Test
         void register_shouldReturnCreatedResponse() throws Exception {
@@ -249,8 +242,8 @@ class AuthControllerTests {
         }
 
         @Test
+        @WithMockUser(username = "42")
         void logout_shouldClearCookiesAndReturnSuccessResponse() throws Exception {
-                when(jwtService.extractSub("access-token", atPublicKey)).thenReturn("42");
                 when(authService.logout(eq(42L), any(LogoutDto.class))).thenReturn(true);
                 when(cookieUtil.cleanAccessTokenCookie())
                                 .thenReturn(cookie(Constant.ContextKey.ACCESS_TOKEN, "", "/api"));

@@ -1,6 +1,6 @@
 package com.ht.eventbox.modules.user;
 
-import com.ht.eventbox.annotations.RequiredPermissions;
+import org.springframework.security.access.prepost.PreAuthorize;
 import com.ht.eventbox.config.QueryResponse;
 import com.ht.eventbox.config.Response;
 import com.ht.eventbox.constant.Constant;
@@ -30,7 +30,7 @@ public class UserControllerV2 {
     private final UserService userService;
 
     @GetMapping
-    @RequiredPermissions({"read:users"})
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'read:users')")
     public ResponseEntity<QueryResponse<User>> getAll(
             @RequestParam(required = false) String search,
             Pageable pageable
@@ -42,7 +42,7 @@ public class UserControllerV2 {
     }
 
     @GetMapping("/roles")
-    @RequiredPermissions({"read:roles"})
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'read:roles')")
     public ResponseEntity<QueryResponse<Role>> getAllRoles(
             @RequestParam(required = false) String search,
             Pageable pageable
@@ -54,7 +54,7 @@ public class UserControllerV2 {
     }
 
     @GetMapping("/roles/permissions")
-    @RequiredPermissions({"read:permissions"})
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'read:permissions')")
     public ResponseEntity<QueryResponse<Permission>> getAllPermissions(
             @RequestParam(required = false) String search,
             Pageable pageable
@@ -66,7 +66,7 @@ public class UserControllerV2 {
     }
 
     @PatchMapping("/{userId}")
-    @RequiredPermissions({"update:users", "access:admin"})
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'update:users', 'access:admin')")
     public ResponseEntity<Response<Boolean>> updateById(
             @PathVariable Long userId,
             @Valid @RequestBody UpdateUserDto updateUserDto

@@ -1,6 +1,6 @@
 package com.ht.eventbox.modules.category;
 
-import com.ht.eventbox.annotations.RequiredPermissions;
+import org.springframework.security.access.prepost.PreAuthorize;
 import com.ht.eventbox.config.Response;
 import com.ht.eventbox.constant.Constant;
 import com.ht.eventbox.entities.Category;
@@ -25,7 +25,7 @@ public class CategoryController {
     API dùng để lấy tất cả category, dùng cho admin web
     */
     @GetMapping
-    @RequiredPermissions({"read:categories"})
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'read:categories')")
     public ResponseEntity<Response<List<Category>>> getAll() {
         var res = categoryService.getAll();
         return ResponseEntity.ok(
@@ -41,7 +41,7 @@ public class CategoryController {
     API dùng để tạo mới một category, tạo mới category từ body CreateCategoryDto, dùng cho admin web
     */
     @PostMapping
-    @RequiredPermissions({"create:categories"})
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'create:categories')")
     public ResponseEntity<Response<Boolean>> create(@Valid @RequestBody CreateCategoryDto createCategoryDto) {
         var res = categoryService.create(createCategoryDto);
         return ResponseEntity.created(null).body(
@@ -57,7 +57,7 @@ public class CategoryController {
     API dùng để cập nhật một category, cập nhật category từ body CreateCategoryDto, id là id của category cần cập nhật, dùng cho admin web
     */
     @PutMapping("/{id}")
-    @RequiredPermissions({"update:categories"})
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'update:categories')")
     public ResponseEntity<Response<Boolean>> update(@PathVariable Long id,
                                                    @Valid @RequestBody CreateCategoryDto createCategoryDto) {
         var res = categoryService.update(id, createCategoryDto);
@@ -74,7 +74,7 @@ public class CategoryController {
     API dùng để xóa một category, id là id của category cần xóa, dùng cho admin web
      */
     @DeleteMapping("/{id}")
-    @RequiredPermissions({"delete:categories"})
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'delete:categories')")
     public ResponseEntity<Response<Boolean>> delete(@PathVariable Long id) {
         var res = categoryService.delete(id);
         return ResponseEntity.ok(
@@ -90,7 +90,7 @@ public class CategoryController {
     API dùng để lấy tất cả category có featured = true, sắp xếp theo id tăng dần, dùng để hiện trên app mobile
      */
     @GetMapping("/featured")
-    @RequiredPermissions({"read:categories"})
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'read:categories')")
     public ResponseEntity<Response<List<Category>>> getAllFeatured() {
         var res = categoryService.getAllFeatured();
         return ResponseEntity.ok(
@@ -106,7 +106,7 @@ public class CategoryController {
     API dùng để tạo mới nhiều category cùng lúc, từ body CreateBulkCategoriesDto (hiện không sử dụng trong app)
      */
     @PostMapping("/bulk")
-    @RequiredPermissions({"create:categories"})
+    @PreAuthorize("@permissionAuthorization.hasAll(authentication, 'create:categories')")
     public ResponseEntity<Response<Boolean>> createBulk(@Valid @RequestBody CreateBulkCategoriesDto createBulkCategoriesDto) {
         var res = categoryService.createBulk(createBulkCategoriesDto);
         return ResponseEntity.created(null).body(

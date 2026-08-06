@@ -3,10 +3,8 @@ package com.ht.eventbox.modules.auth;
 import com.ht.eventbox.config.HttpException;
 import com.ht.eventbox.config.Response;
 import com.ht.eventbox.constant.Constant;
-import com.ht.eventbox.filter.JwtService;
 import com.ht.eventbox.modules.auth.dtos.*;
 import com.ht.eventbox.utils.CookieUtil;
-import com.ht.eventbox.utils.Helper;
 import com.ht.eventbox.utils.Request;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -16,10 +14,11 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Nullable;
-import java.security.PublicKey;
 
 @RestController
 @CrossOrigin
@@ -28,8 +27,6 @@ import java.security.PublicKey;
 public class AuthController {
     private final CookieUtil cookieUtil;
     private final AuthService authService;
-    private final JwtService jwtService;
-    private final PublicKey atPublicKey;
 
     @PostMapping("/register")
     public ResponseEntity<Response<Boolean>> register(@Valid @RequestBody RegisterDto registerDto) {
@@ -89,14 +86,10 @@ public class AuthController {
 
     @PostMapping("/logout")
     public ResponseEntity<Response<Boolean>> logout(
-            @NonNull HttpServletRequest request,
             @Valid @RequestBody LogoutDto logoutDto
     ) {
-        String jwt = Request.getTokenFromHeader(request)
-                .or(() -> Request.getTokenFromCookie(request))
-                .orElse(null);
-
-        if (jwt == null) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
             throw new HttpException(
                     Constant.ErrorCode.UNAUTHORIZED,
                     HttpStatus.UNAUTHORIZED
@@ -104,8 +97,7 @@ public class AuthController {
         }
 
         try {
-            String sub = jwtService.extractSub(jwt, atPublicKey);
-            var res = authService.logout(Long.valueOf(sub), logoutDto);
+            var res = authService.logout(Long.valueOf(authentication.getName()), logoutDto);
 
             ResponseCookie atCookie = cookieUtil.cleanAccessTokenCookie();
             ResponseCookie rtCookie = cookieUtil.cleanRefreshTokenCookie();

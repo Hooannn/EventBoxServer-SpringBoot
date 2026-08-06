@@ -51,7 +51,7 @@ class VoucherControllerV2Tests {
                 .thenReturn(new PageImpl<>(List.of(sampleVoucher()), PageRequest.of(1, 10), 21));
 
         mockMvc.perform(get("/api/v2/vouchers/event/11")
-                        .requestAttr("sub", "42")
+                        .principal(() -> "42")
                         .param("search", "summer")
                         .param("page", "1")
                         .param("size", "10"))
